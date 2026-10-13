@@ -1,60 +1,68 @@
-# Nalaro Store — Foundation (Phase 0 + UX Pilot)
+# Nalaro Store
 
-Hybrid commerce platform from Nalaro Digital: **SaaS monthly/yearly (pricing configured by owner) + custom e-commerce development**. Cloudflare Workers/static assets + Aiven PostgreSQL (through Hyperdrive once provisioned).
+Commerce SaaS for Nalaro Digital: independent merchant stores, manual customer payments, owner-managed monthly/yearly subscriptions, and separately contracted custom projects. React/TypeScript/Vite + Cloudflare Workers/R2 + Aiven PostgreSQL through Hyperdrive.
 
-> **Current state:** a working UI prototype and a read-only backend foundation. The storefront is a labeled demonstration with a persistent client-side cart and a simulated checkout. **It does not place real orders, store personal data on a server, accept payments, or create subscription billing.** Merchant dashboards use sample data. Do not represent it as production-ready commerce.
+**Release state:** phases 1–3 are implemented and under verification. Aiven `nalarostore-pg` Free in Singapore and R2 `nalarostore-media` have been created. The production database has not been migrated or connected to Hyperdrive. Email Sending and tenant DNS/TLS still need account-level configuration. **Real checkout remains disabled.** Demo data is confined to `/demo/atelier` and `/demo/workspace`.
 
-## Included in this delivery
+## What is implemented
 
-- Professional responsive marketing (`/`), custom-project brief (`/custom`), storefront demo (`/demo/atelier`), search/category catalog, product detail, variants, cart, checkout simulation and confirmation.
-- Merchant UX pilot (`/app`, `/app/orders`, `/app/products`, `/app/design`) with static sample data. Disabled write controls remain visibly disabled.
-- 45 original premium SVG UI icons in **`src/assets/icons/`** via a typed `<Icon />` component. Brand favicon supplied by Nalaro remains in `/public`.
-- Worker API read-only: `/api/health`, `/api/public/capabilities`, `/api/public/plans`, `/api/public/stores/:slug`, `/api/public/stores/:slug/products`. Only works with Aiven for store reads after Hyperdrive is configured. No public writes.
-- PostgreSQL foundation migration for multi-tenant stores, catalog, order/inventory transaction schema, monthly/yearly SaaS pricing, subscriptions, custom-project leads.
-- Updated `PRD-Nalaro-Store.md`, `desain.md`, CI foundation and follow-up implementation plan.
+| Phase | Behavior                                                                                                                                                                                                                                                                   |
+| ----- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1     | Registration/email verification, Secure HttpOnly host-only sessions, merchant membership checks, store creation, product/variant editors, stock changes, R2 image validation/uploads, tenant-specific catalog and workspace                                                |
+| 2     | Guest checkout with server price/stock validation, atomic order/item/reservation writes, idempotent retries, order counters, opaque expiring tracking links, audited payment checks, fulfillment transitions, cancellation/expiry and retryable transactional email outbox |
+| 3     | Owner-only package/price/policy administration, monthly/yearly subscription invoices with price snapshots, verification/renewal/grace/expiry, quota enforcement, self-service onboarding/HTTPS subdomain proof, custom lead→quote→delivery with ownership/license fields   |
 
-## Run locally
+Storefront/cart/checkout never consume production demo products. Customer payments settle to each merchant's bank/QRIS; subscription invoices are separately verified by Nalaro admins. No gateway, automatic settlement or refund processing is included.
 
-Requirements: Node 22+ and npm.
+## Local development
+
+Node 22+, npm. No production credentials are required for local testing.
 
 ```bash
-npm install
-npm run dev
-# open http://localhost:5173
-npm run db:check
+npm ci
+npm run check
+npm run dev             # UI only
 npm run build
+npm run dev:full        # disposable PostgreSQL-engine database + development-only account
 ```
 
-The local Vite demo does not need an Aiven account. The Worker API is deployed separately by Wrangler along with the built static assets. `npm run preview` previews the frontend, not a live API. Use `npx wrangler dev` after building to test Worker endpoints.
+`dev:full` uses PGlite. It creates `owner@local.test` with `local-dev-password-123`; these credentials exist only in the disposable development server. Never deploy that server or its database. The production Worker does not import it. Local transaction tests serialize PGlite transactions; GitHub Actions reruns them against native PostgreSQL 17 using separate connections and verifies backup/restore.
 
-### Cloudflare + Aiven (not provisioned by this bundle)
+```bash
+npx playwright install chromium
+npm run test:e2e
+# Optional existing browser:
+CHROMIUM_PATH=/path/to/chromium npm run test:e2e
+```
 
-1. Create one Aiven PostgreSQL Free service and review the limits. Do not commit usernames/passwords or connection strings.
-2. Run `db/0001_foundation.sql` using a **trusted local PostgreSQL client** with TLS, after checking the target database. This is a forward-only foundation migration; make a backup before executing in an existing database. **Never expose database credentials to browser code.**
-3. Create Hyperdrive in Cloudflare with Aiven connection URL, test TLS and pooling; check effective connections with `pg_stat_activity` under test load. Current Aiven Free documentation limits total connections to 20; Hyperdrive pooling is distributed and not a guaranteed global hard cap.
-4. Insert real `[[hyperdrive]]` binding and id in `wrangler.toml`. Keep `APP_ENV` suitable for deployed env. Do not change `ENABLE_LIVE_CHECKOUT` to true: no checkout write endpoint exists in this phase.
-5. Optional: provision R2 bucket and bind `MEDIA` after checking usage and billing. Files are not uploaded in this version.
-6. `npm run deploy` **only after reviewing Cloudflare account, Worker name, routes, costs and desired release branch**. No infrastructure resources are created by this source package.
-7. Implement auth/tenant gates, checkout transactions, stock-reservation expiry and webhook verification before any real purchase. Add backups to independent encrypted storage and practice restoration.
+The browser tests create a store/product, guest order, payment verification and completed pickup; they check 320/390/768/1440px layouts. QA screenshots are written to `test-results` and published as an Actions artifact. These are fixture data, never real customers or sales.
 
-## Asset notes
+## Production configuration
 
-The demo uses externally hosted **Unsplash sample images** as placeholders for layout review; these are not merchant product photos. Replace with owned or licensed Nalaro imagery in R2 before production. SVG icons are original project assets under `src/assets/icons/`. Original Nalaro favicon files are copied verbatim from the provided archive.
+Follow [DEPLOYMENT.md](DEPLOYMENT.md). Required bindings/configuration:
 
-## Source / licensing
+- `HYPERDRIVE`: Aiven PostgreSQL, **query caching disabled**; validate TLS and actual connection usage.
+- `MEDIA`: the dedicated R2 media bucket; no private customer documents are accepted.
+- `EMAIL`: Cloudflare Email Sending binding, with an onboarded sender domain.
+- `TOKEN_SECRET`: 32+ random bytes as a Cloudflare secret; never a `VITE_` variable.
+- `APP_ORIGIN`, `ROOT_DOMAIN`, `OWNER_EMAIL`: verified platform URL/domain/owner address.
+- `ENABLE_LIVE_CHECKOUT`: stays `false` until release gates pass.
 
-This repository is designed for Nalaro Digital's internal product development. No blanket permission to redistribute its proprietary modules or templates is granted by the presence of source files. Custom client IP ownership, source handover, support, licenses and hosting terms must be defined in individual contracts. Do not publish a source-code sale by default.
+Owner privileges are granted only after the exact configured owner email is verified. No public admin bootstrap endpoint exists. Session cookies have no parent-domain attribute. All state-changing API requests require same-origin requests. Catalog and upload writes recheck the user's store membership in the backend.
 
-## Production gates
+A new store is draft. Publication requires an active stocked variant, valid manual payment instructions, and a configured fulfillment method. Subdomains remain pending until a real HTTPS proof from the exact hostname succeeds. `/s/{slug}` remains the fallback platform store address.
 
-- [ ] Aiven/Hyperdrive connection tested under concurrency; monitoring, storage & outage limits understood.
-- [ ] Auth sessions and merchant RBAC, tenant isolation and hostile cross-tenant test suite complete.
-- [ ] Product/upload CRUD, R2 media limits and content safety checks live.
-- [ ] Guest checkout atomic order + stock reservation, idempotency and expiry tested.
-- [ ] Manual payment verification with audit actor and reconciliation in place.
-- [ ] SSR/SEO storefront strategy and verified wildcard hostname/DNS/TLS implemented.
-- [ ] Complete accessibility and responsive QA (320 through 1920px, keyboard/screen reader).
-- [ ] Real email deliveries, restore drills, bot/rate limits, privacy policy and incident plan in place.
-- [ ] Cloudflare / Aiven Free Tier cost and upgrade triggers reviewed.
+Pricing is not seeded or hardcoded. Admins publish packages and fill Nalaro billing instructions. Trial/grace policy applies to new subscriptions; existing prices/period invoices retain their agreed snapshots. Product quotas count retained catalog records, order quotas count successfully created orders per UTC month, and media quota counts uploaded bytes per UTC month. Pilot stores without a subscription remain available until a subscription is selected.
 
-See [ROADMAP.md](ROADMAP.md), [PRD-Nalaro-Store.md](PRD-Nalaro-Store.md) and [desain.md](desain.md).
+## Operations and limitations
+
+- Cron every ten minutes releases unpaid expired reservations, advances subscription status, processes the email outbox, and cleans expired authentication/rate-limit records. Paid orders are never expired by reservation cleanup.
+- Outbox delivery is at-least-once; an email can repeat after a provider acceptance/DB acknowledgment failure. Eight failures move the event to `failed`; operators inspect and retry deliberately. Web tracking remains the primary fallback.
+- Guest links expire after 30 days and expose no buyer name, email, phone or address. Tracking remains accessible after store pause/subscription expiry.
+- R2 accepts bounded raster files only: JPG/PNG/WebP, at most 5MB, sane dimensions; no SVG, HTML, executable, or customer payment-document uploads. Stored product images are public only for published stores or authenticated store members.
+- Password hashing uses salted PBKDF2-SHA256 with 100,000 iterations, within the Workers Web Crypto limit. Account/IP rate limits and minimum 12-character passwords are enforced. Validate Worker CPU/latency on the actual account before public launch; consider stronger managed authentication as the service grows.
+- There is no claim of Aiven/Hyperdrive live load or production restore verification until performed on the account. Cloudflare email permission currently blocks sender-domain setup via the connector; Aiven's connector redacts database passwords.
+- Custom domains, gateways, carrier APIs, refunds, more themes and advanced analytics remain phase 4.
+- Demo photography references Unsplash URLs from the original foundation. Replace them with approved local/R2 assets before public marketing launch; the automated test environment may not load external photography.
+
+Original Nalaro favicon assets are preserved. Business/legal source handover for custom work is defined per contract; public repository visibility does not grant a blanket redistribution license.

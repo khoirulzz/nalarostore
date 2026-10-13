@@ -1,11 +1,113 @@
 // Explicit local development only. Uses disposable PostgreSQL/PGlite and simulated email.
-import { createServer } from 'node:http';
-import { readFile } from 'node:fs/promises';
-import { resolve,extname } from 'node:path';
-import { startDB,newTestConnection } from './test-db';
-import { handleAPI,type RuntimeEnv } from '../worker';
-import { HttpError,hash,passwordHash,token } from '../worker/lib/security';
-const pg=await startDB();const db=await newTestConnection();const email='owner@local.test',password='local-dev-password-123';const uid=crypto.randomUUID();await db.query('INSERT INTO users(id,email,password_hash,email_verified_at) VALUES($1,$2,$3,now())',[uid,email,await passwordHash(password)]);await db.query('INSERT INTO platform_admins(user_id) VALUES($1)',[uid]);const raw=token();await db.query(`INSERT INTO auth_sessions(token_hash,user_id,expires_at) VALUES($1,$2,now()+interval '1 day')`,[await hash(raw),uid]);
-const env={APP_ENV:'development',APP_ORIGIN:'http://localhost:5173',ROOT_DOMAIN:'store.nalaro.digital',OWNER_EMAIL:email,ENABLE_LIVE_CHECKOUT:'true',EMAIL_FROM:'hello@nalaro.digital',TOKEN_SECRET:'local-only-secret-not-for-production-32-bytes'} as RuntimeEnv;
-const server=createServer(async(req,res)=>{const url=new URL(req.url||'/',env.APP_ORIGIN);try{if(url.pathname.startsWith('/api/')){const chunks:Buffer[]=[];let size=0;for await(const c of req){size+=c.length;if(size>6*1024*1024)throw new HttpError(413,'Permintaan terlalu besar.');chunks.push(c);}const r=new Request(url,{method:req.method,headers:req.headers as Record<string,string>,body:['GET','HEAD'].includes(req.method||'GET')?undefined:Buffer.concat(chunks)});let response:Response;try{response=await handleAPI(db,r,env);}catch(e){if(!(e instanceof HttpError))throw e;response=Response.json({error:e.message},{status:e.status});}res.writeHead(response.status,Object.fromEntries(response.headers));res.end(Buffer.from(await response.arrayBuffer()));return;}const path=resolve('dist',url.pathname.slice(1));if(!path.startsWith(resolve('dist')+'/'))throw new HttpError(404,'Not found');let data:Buffer;let ext=extname(path);try{data=await readFile(path);}catch{data=await readFile('dist/index.html');ext='.html';}res.setHeader('content-type',({'.html':'text/html','.js':'application/javascript','.css':'text/css','.png':'image/png','.ico':'image/x-icon','.webmanifest':'application/manifest+json'} as Record<string,string>)[ext]||'application/octet-stream');res.end(data);}catch(e){res.writeHead(e instanceof HttpError?e.status:500);res.end(JSON.stringify({error:e instanceof HttpError?e.message:'Local server error'}));}});server.listen(5173,'127.0.0.1',()=>console.log('Local development http://localhost:5173 — account '+email+' / '+password));
-for(const signal of ['SIGINT','SIGTERM'] as const)process.on(signal,async()=>{server.close();await db.client.end();await pg.stop();process.exit(0);});
+import { createServer } from "node:http";
+import { readFile } from "node:fs/promises";
+import { resolve, extname } from "node:path";
+import { startDB, newTestConnection } from "./test-db";
+import { handleAPI, type RuntimeEnv } from "../worker";
+import { HttpError, hash, passwordHash, token } from "../worker/lib/security";
+const pg = await startDB();
+const db = await newTestConnection();
+const email = "owner@local.test",
+  password = "local-dev-password-123";
+const uid = crypto.randomUUID();
+await db.query(
+  "INSERT INTO users(id,email,password_hash,email_verified_at) VALUES($1,$2,$3,now())",
+  [uid, email, await passwordHash(password)],
+);
+await db.query("INSERT INTO platform_admins(user_id) VALUES($1)", [uid]);
+const raw = token();
+await db.query(
+  `INSERT INTO auth_sessions(token_hash,user_id,expires_at) VALUES($1,$2,now()+interval '1 day')`,
+  [await hash(raw), uid],
+);
+const env = {
+  APP_ENV: "development",
+  APP_ORIGIN: "http://localhost:5173",
+  ROOT_DOMAIN: "store.nalaro.digital",
+  OWNER_EMAIL: email,
+  ENABLE_LIVE_CHECKOUT: "true",
+  EMAIL_FROM: "hello@nalaro.digital",
+  TOKEN_SECRET: "local-only-secret-not-for-production-32-bytes",
+} as RuntimeEnv;
+const server = createServer(async (req, res) => {
+  const url = new URL(req.url || "/", env.APP_ORIGIN);
+  try {
+    if (url.pathname.startsWith("/api/")) {
+      const chunks: Buffer[] = [];
+      let size = 0;
+      for await (const c of req) {
+        size += c.length;
+        if (size > 6 * 1024 * 1024)
+          throw new HttpError(413, "Permintaan terlalu besar.");
+        chunks.push(c);
+      }
+      const r = new Request(url, {
+        method: req.method,
+        headers: req.headers as Record<string, string>,
+        body: ["GET", "HEAD"].includes(req.method || "GET")
+          ? undefined
+          : Buffer.concat(chunks),
+      });
+      let response: Response;
+      try {
+        response = await handleAPI(db, r, env);
+      } catch (e) {
+        if (!(e instanceof HttpError)) throw e;
+        response = Response.json({ error: e.message }, { status: e.status });
+      }
+      res.writeHead(response.status, Object.fromEntries(response.headers));
+      res.end(Buffer.from(await response.arrayBuffer()));
+      return;
+    }
+    const path = resolve(
+      "dist",
+      url.pathname === "/" ? "index.html" : url.pathname.slice(1),
+    );
+    if (!path.startsWith(resolve("dist") + "/"))
+      throw new HttpError(404, "Not found");
+    let data: Buffer;
+    let ext = extname(path);
+    try {
+      data = await readFile(path);
+    } catch {
+      data = await readFile("dist/index.html");
+      ext = ".html";
+    }
+    res.setHeader(
+      "content-type",
+      (
+        {
+          ".html": "text/html",
+          ".js": "application/javascript",
+          ".css": "text/css",
+          ".png": "image/png",
+          ".ico": "image/x-icon",
+          ".webmanifest": "application/manifest+json",
+        } as Record<string, string>
+      )[ext] || "application/octet-stream",
+    );
+    res.end(data);
+  } catch (e) {
+    res.writeHead(e instanceof HttpError ? e.status : 500);
+    res.end(
+      JSON.stringify({
+        error: e instanceof HttpError ? e.message : "Local server error",
+      }),
+    );
+  }
+});
+server.listen(5173, "127.0.0.1", () =>
+  console.log(
+    "Local development http://localhost:5173 — account " +
+      email +
+      " / " +
+      password,
+  ),
+);
+for (const signal of ["SIGINT", "SIGTERM"] as const)
+  process.on(signal, async () => {
+    server.close();
+    await db.client.end();
+    await pg.stop();
+    process.exit(0);
+  });

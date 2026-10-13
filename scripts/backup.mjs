@@ -1,13 +1,90 @@
-import { spawn } from 'node:child_process';
-import { createCipheriv,createDecipheriv,randomBytes } from 'node:crypto';
-import { createReadStream,createWriteStream } from 'node:fs';
-import { appendFile,open,stat,rename } from 'node:fs/promises';
-import { pipeline } from 'node:stream/promises';
+import { spawn } from "node:child_process";
+import { createCipheriv, createDecipheriv, randomBytes } from "node:crypto";
+import { createReadStream, createWriteStream } from "node:fs";
+import { appendFile, open, stat, rename, rm } from "node:fs/promises";
+import { pipeline } from "node:stream/promises";
 // pg_dump / pg_restore must match or exceed server version. Never pass credentials in CLI args.
-const [mode,file]=process.argv.slice(2);if(!['backup','restore'].includes(mode)||!file)throw Error('Usage: node scripts/backup.mjs backup|restore /absolute/path/backup.enc');
-const key=Buffer.from(process.env.BACKUP_KEY_HEX||'','hex');if(key.length!==32)throw Error('BACKUP_KEY_HEX must contain 32 random bytes in hexadecimal.');
-const u=new URL(process.env.DATABASE_URL||'');if(!process.env.PG_CA_CERT_FILE&&!['localhost','127.0.0.1'].includes(u.hostname))throw Error('PG_CA_CERT_FILE is required for remote TLS.');
-if(mode==='restore'&&process.env.ALLOW_RESTORE!=='yes')throw Error('Restore only to an explicitly selected empty staging database. Set ALLOW_RESTORE=yes.');
-const vars={...process.env,PGHOST:u.hostname,PGPORT:u.port||'5432',PGUSER:decodeURIComponent(u.username),PGPASSWORD:decodeURIComponent(u.password),PGDATABASE:u.pathname.slice(1),PGSSLMODE:process.env.PG_CA_CERT_FILE?'verify-full':'disable',PGSSLROOTCERT:process.env.PG_CA_CERT_FILE||''};
-const done=child=>new Promise((resolve,reject)=>{child.once('error',reject);child.once('exit',code=>code===0?resolve():reject(Error('PostgreSQL tool failed.')));});
-if(mode==='backup'){const iv=randomBytes(12),cipher=createCipheriv('aes-256-gcm',key,iv),partial=file+'.partial';const child=spawn('pg_dump',['--format=custom','--no-owner','--no-acl'],{env:vars,stdio:['ignore','pipe','ignore']});const finished=done(child);const output=createWriteStream(partial,{mode:0o600});output.write(iv);await Promise.all([pipeline(child.stdout,cipher,output),finished]);await appendFile(partial,cipher.getAuthTag());await rename(partial,file);console.log('Encrypted backup written.');}else{const size=(await stat(file)).size;if(size<29)throw Error('Invalid backup.');const handle=await open(file,'r');const iv=Buffer.alloc(12),tag=Buffer.alloc(16);await handle.read(iv,0,12,0);await handle.read(tag,0,16,size-16);await handle.close();const decipher=createDecipheriv('aes-256-gcm',key,iv);decipher.setAuthTag(tag);const child=spawn('pg_restore',['--no-owner','--no-acl','--exit-on-error'],{env:vars,stdio:['pipe','ignore','ignore']});const finished=done(child);await Promise.all([pipeline(createReadStream(file,{start:12,end:size-17}),decipher,child.stdin),finished]);console.log('Restore completed. Validate data integrity before use.');}
+const [mode, file] = process.argv.slice(2);
+if (!["backup", "restore"].includes(mode) || !file)
+  throw Error(
+    "Usage: node scripts/backup.mjs backup|restore /absolute/path/backup.enc",
+  );
+const key = Buffer.from(process.env.BACKUP_KEY_HEX || "", "hex");
+if (key.length !== 32)
+  throw Error("BACKUP_KEY_HEX must contain 32 random bytes in hexadecimal.");
+const u = new URL(process.env.DATABASE_URL || "");
+if (
+  !process.env.PG_CA_CERT_FILE &&
+  !["localhost", "127.0.0.1"].includes(u.hostname)
+)
+  throw Error("PG_CA_CERT_FILE is required for remote TLS.");
+if (mode === "restore" && process.env.ALLOW_RESTORE !== "yes")
+  throw Error(
+    "Restore only to an explicitly selected empty staging database. Set ALLOW_RESTORE=yes.",
+  );
+const vars = {
+  ...process.env,
+  PGHOST: u.hostname,
+  PGPORT: u.port || "5432",
+  PGUSER: decodeURIComponent(u.username),
+  PGPASSWORD: decodeURIComponent(u.password),
+  PGDATABASE: u.pathname.slice(1),
+  PGSSLMODE: process.env.PG_CA_CERT_FILE ? "verify-full" : "disable",
+  PGSSLROOTCERT: process.env.PG_CA_CERT_FILE || "",
+};
+const done = (child) =>
+  new Promise((resolve, reject) => {
+    child.once("error", reject);
+    child.once("exit", (code) =>
+      code === 0 ? resolve() : reject(Error("PostgreSQL tool failed.")),
+    );
+  });
+if (mode === "backup") {
+  const iv = randomBytes(12),
+    cipher = createCipheriv("aes-256-gcm", key, iv),
+    partial = file + ".partial";
+  const child = spawn(
+    "pg_dump",
+    ["--format=custom", "--no-owner", "--no-acl"],
+    { env: vars, stdio: ["ignore", "pipe", "ignore"] },
+  );
+  const finished = done(child);
+  const output = createWriteStream(partial, { mode: 0o600 });
+  output.write(iv);
+  await Promise.all([pipeline(child.stdout, cipher, output), finished]);
+  await appendFile(partial, cipher.getAuthTag());
+  await rename(partial, file);
+  console.log("Encrypted backup written.");
+} else {
+  const size = (await stat(file)).size;
+  if (size < 29) throw Error("Invalid backup.");
+  const handle = await open(file, "r");
+  const iv = Buffer.alloc(12),
+    tag = Buffer.alloc(16);
+  await handle.read(iv, 0, 12, 0);
+  await handle.read(tag, 0, 16, size - 16);
+  await handle.close();
+  const decipher = createDecipheriv("aes-256-gcm", key, iv);
+  decipher.setAuthTag(tag);
+  const plain = file + ".verified-staging";
+  try {
+    await pipeline(
+      createReadStream(file, { start: 12, end: size - 17 }),
+      decipher,
+      createWriteStream(plain, { mode: 0o600 }),
+    );
+    const child = spawn(
+      "pg_restore",
+      ["--no-owner", "--no-acl", "--exit-on-error", "--single-transaction"],
+      { env: vars, stdio: ["pipe", "ignore", "ignore"] },
+    );
+    const finished = done(child);
+    await Promise.all([
+      pipeline(createReadStream(plain), child.stdin),
+      finished,
+    ]);
+    console.log("Restore completed. Validate data integrity before use.");
+  } finally {
+    await rm(plain, { force: true });
+  }
+}

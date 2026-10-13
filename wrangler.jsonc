@@ -1,13 +1,27 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "nalarostore",
+  "account_id": "fa9e4b5cc90250f132b17fb7c067490b",
+  "r2_buckets": [{ "binding": "MEDIA", "bucket_name": "nalarostore-media" }],
   "main": "worker/index.ts",
   "compatibility_date": "2026-10-13",
   "compatibility_flags": ["nodejs_compat"],
-  "assets": {"directory":"./dist","binding":"ASSETS","not_found_handling":"single-page-application","run_worker_first":true},
-  "vars": {"APP_ENV":"production","APP_ORIGIN":"https://store.nalaro.digital","ROOT_DOMAIN":"store.nalaro.digital","OWNER_EMAIL":"uniquefactuhl@gmail.com","ENABLE_LIVE_CHECKOUT":"false","EMAIL_FROM":"hello@nalaro.digital"},
-  "triggers": {"crons":["*/10 * * * *"]},
-  "observability": {"enabled":true,"head_sampling_rate":0.1}
+  "assets": {
+    "directory": "./dist",
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application",
+    "run_worker_first": true,
+  },
+  "vars": {
+    "APP_ENV": "production",
+    "APP_ORIGIN": "https://store.nalaro.digital",
+    "ROOT_DOMAIN": "store.nalaro.digital",
+    "OWNER_EMAIL": "uniquefactuhl@gmail.com",
+    "ENABLE_LIVE_CHECKOUT": "false",
+    "EMAIL_FROM": "hello@nalaro.digital",
+  },
+  "triggers": { "crons": ["*/10 * * * *"] },
+  "observability": { "enabled": true, "head_sampling_rate": 0.1 },
   // HYPERDRIVE (caching disabled), MEDIA and EMAIL are added after provisioning.
   // TOKEN_SECRET must be a random 32+ byte Cloudflare secret.
 }

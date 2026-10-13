@@ -1,15 +1,179 @@
-import { z } from 'zod';
-export class HttpError extends Error {constructor(readonly status:number,message:string){super(message);}}
-export function assert(condition:unknown,status:number,message:string):asserts condition{if(!condition)throw new HttpError(status,message);}
-export const id=z.string().uuid();
-export const slug=z.string().regex(/^[a-z0-9][a-z0-9-]{1,46}[a-z0-9]$/).refine(s=>!['api','admin','www','app','mail','store','demo','support','login','register','checkout','assets'].includes(s),'Alamat toko tidak tersedia.');
-export const money=z.number().int().min(0).max(1_000_000_000);
-export const safeURL=z.string().max(2000).refine(s=>s===''||s.startsWith('/api/media/')||(/^https:\/\//.test(s)&&!new URL(s).username),'Gunakan URL HTTPS atau media toko.');
-export const token=()=>Array.from(crypto.getRandomValues(new Uint8Array(32)),b=>b.toString(16).padStart(2,'0')).join('');
-export async function hash(value:string){return Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(value))),b=>b.toString(16).padStart(2,'0')).join('');}
-export async function passwordHash(password:string,salt=token()){const key=await crypto.subtle.importKey('raw',new TextEncoder().encode(password),'PBKDF2',false,['deriveBits']);const bits=await crypto.subtle.deriveBits({name:'PBKDF2',hash:'SHA-256',salt:new TextEncoder().encode(salt),iterations:100000},key,256);return `pbkdf2:100000:${salt}:${Array.from(new Uint8Array(bits),b=>b.toString(16).padStart(2,'0')).join('')}`;}
-export async function passwordValid(value:string,saved:string){if(!saved?.startsWith('pbkdf2:100000:'))return false;const computed=await passwordHash(value,saved.split(':')[2]);const a=new TextEncoder().encode(computed),b=new TextEncoder().encode(saved);let delta=a.length^b.length;for(let i=0;i<a.length;i++)delta|=a[i]^(b[i]??0);return delta===0;}
-export async function seal(value:string,secret:string){const key=await crypto.subtle.importKey('raw',await crypto.subtle.digest('SHA-256',new TextEncoder().encode(secret)),'AES-GCM',false,['encrypt']);const iv=crypto.getRandomValues(new Uint8Array(12));const body=new Uint8Array(await crypto.subtle.encrypt({name:'AES-GCM',iv},key,new TextEncoder().encode(value)));return btoa(String.fromCharCode(...iv,...body));}
-export async function unseal(value:string,secret:string){const bytes=Uint8Array.from(atob(value),c=>c.charCodeAt(0));const key=await crypto.subtle.importKey('raw',await crypto.subtle.digest('SHA-256',new TextEncoder().encode(secret)),'AES-GCM',false,['decrypt']);return new TextDecoder().decode(await crypto.subtle.decrypt({name:'AES-GCM',iv:bytes.slice(0,12)},key,bytes.slice(12)));}
-export async function body<T>(request:Request,schema:z.ZodType<T>):Promise<T>{assert(Number(request.headers.get('content-length')||0)<=100000,413,'Permintaan terlalu besar.');const reader=request.body?.getReader();assert(reader,400,'Data diperlukan.');let size=0;const chunks:Uint8Array[]=[];while(true){const part=await reader.read();if(part.done)break;size+=part.value.length;if(size>100000){await reader.cancel();throw new HttpError(413,'Permintaan terlalu besar.');}chunks.push(part.value);}const bytes=new Uint8Array(size);let offset=0;for(const chunk of chunks){bytes.set(chunk,offset);offset+=chunk.length;}try{return schema.parse(JSON.parse(new TextDecoder().decode(bytes)));}catch(e){if(e instanceof z.ZodError)throw new HttpError(400,e.issues.map(i=>`${i.path.join('.')}: ${i.message}`).join('; '));throw new HttpError(400,'Data tidak valid.');}}
-export const json=(data:unknown,status=200,extra:Record<string,string>={})=>new Response(JSON.stringify(data),{status,headers:{'content-type':'application/json; charset=utf-8','cache-control':'no-store','x-content-type-options':'nosniff',...extra}});
+import { z } from "zod";
+export class HttpError extends Error {
+  constructor(
+    readonly status: number,
+    message: string,
+  ) {
+    super(message);
+  }
+}
+export function assert(
+  condition: unknown,
+  status: number,
+  message: string,
+): asserts condition {
+  if (!condition) throw new HttpError(status, message);
+}
+export const id = z.string().uuid();
+export const slug = z
+  .string()
+  .regex(/^[a-z0-9][a-z0-9-]{1,46}[a-z0-9]$/)
+  .refine(
+    (s) =>
+      ![
+        "api",
+        "admin",
+        "www",
+        "app",
+        "mail",
+        "store",
+        "demo",
+        "support",
+        "login",
+        "register",
+        "checkout",
+        "assets",
+      ].includes(s),
+    "Alamat toko tidak tersedia.",
+  );
+export const money = z.number().int().min(0).max(1_000_000_000);
+export const safeURL = z
+  .string()
+  .max(2000)
+  .refine(
+    (s) =>
+      s === "" ||
+      s.startsWith("/api/media/") ||
+      (/^https:\/\//.test(s) && !new URL(s).username),
+    "Gunakan URL HTTPS atau media toko.",
+  );
+export const token = () =>
+  Array.from(crypto.getRandomValues(new Uint8Array(32)), (b) =>
+    b.toString(16).padStart(2, "0"),
+  ).join("");
+export async function hash(value: string) {
+  return Array.from(
+    new Uint8Array(
+      await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value)),
+    ),
+    (b) => b.toString(16).padStart(2, "0"),
+  ).join("");
+}
+export async function passwordHash(password: string, salt = token()) {
+  const key = await crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(password),
+    "PBKDF2",
+    false,
+    ["deriveBits"],
+  );
+  const bits = await crypto.subtle.deriveBits(
+    {
+      name: "PBKDF2",
+      hash: "SHA-256",
+      salt: new TextEncoder().encode(salt),
+      iterations: 100000,
+    },
+    key,
+    256,
+  );
+  return `pbkdf2:100000:${salt}:${Array.from(new Uint8Array(bits), (b) => b.toString(16).padStart(2, "0")).join("")}`;
+}
+export async function passwordValid(value: string, saved: string) {
+  if (!saved?.startsWith("pbkdf2:100000:")) return false;
+  const computed = await passwordHash(value, saved.split(":")[2]);
+  const a = new TextEncoder().encode(computed),
+    b = new TextEncoder().encode(saved);
+  let delta = a.length ^ b.length;
+  for (let i = 0; i < a.length; i++) delta |= a[i] ^ (b[i] ?? 0);
+  return delta === 0;
+}
+export async function seal(value: string, secret: string) {
+  const key = await crypto.subtle.importKey(
+    "raw",
+    await crypto.subtle.digest("SHA-256", new TextEncoder().encode(secret)),
+    "AES-GCM",
+    false,
+    ["encrypt"],
+  );
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const body = new Uint8Array(
+    await crypto.subtle.encrypt(
+      { name: "AES-GCM", iv },
+      key,
+      new TextEncoder().encode(value),
+    ),
+  );
+  return btoa(String.fromCharCode(...iv, ...body));
+}
+export async function unseal(value: string, secret: string) {
+  const bytes = Uint8Array.from(atob(value), (c) => c.charCodeAt(0));
+  const key = await crypto.subtle.importKey(
+    "raw",
+    await crypto.subtle.digest("SHA-256", new TextEncoder().encode(secret)),
+    "AES-GCM",
+    false,
+    ["decrypt"],
+  );
+  return new TextDecoder().decode(
+    await crypto.subtle.decrypt(
+      { name: "AES-GCM", iv: bytes.slice(0, 12) },
+      key,
+      bytes.slice(12),
+    ),
+  );
+}
+export async function body<T>(
+  request: Request,
+  schema: z.ZodType<T>,
+): Promise<T> {
+  assert(
+    Number(request.headers.get("content-length") || 0) <= 100000,
+    413,
+    "Permintaan terlalu besar.",
+  );
+  const reader = request.body?.getReader();
+  assert(reader, 400, "Data diperlukan.");
+  let size = 0;
+  const chunks: Uint8Array[] = [];
+  while (true) {
+    const part = await reader.read();
+    if (part.done) break;
+    size += part.value.length;
+    if (size > 100000) {
+      await reader.cancel();
+      throw new HttpError(413, "Permintaan terlalu besar.");
+    }
+    chunks.push(part.value);
+  }
+  const bytes = new Uint8Array(size);
+  let offset = 0;
+  for (const chunk of chunks) {
+    bytes.set(chunk, offset);
+    offset += chunk.length;
+  }
+  try {
+    return schema.parse(JSON.parse(new TextDecoder().decode(bytes)));
+  } catch (e) {
+    if (e instanceof z.ZodError)
+      throw new HttpError(
+        400,
+        e.issues.map((i) => `${i.path.join(".")}: ${i.message}`).join("; "),
+      );
+    throw new HttpError(400, "Data tidak valid.");
+  }
+}
+export const json = (
+  data: unknown,
+  status = 200,
+  extra: Record<string, string> = {},
+) =>
+  new Response(JSON.stringify(data), {
+    status,
+    headers: {
+      "content-type": "application/json; charset=utf-8",
+      "cache-control": "no-store",
+      "x-content-type-options": "nosniff",
+      ...extra,
+    },
+  });

@@ -1,45 +1,39 @@
-# Nalaro Store — Delivery status and next phases
+# Nalaro Store delivery status
 
-## Delivered in this session (foundation / visual pilot)
+## Phase 1: merchant identity and real data
 
-- [x] Locked **hybrid** business direction: monthly/yearly SaaS plans, prices set only by Nalaro owner; independent paid custom work with explicit source/modular reuse policy.
-- [x] Copied original submitted PRD and design specification with relevant updates.
-- [x] Established React/TypeScript/Vite frontend and Cloudflare Worker static + API config.
-- [x] Marketing, full responsive example fashion storefront, product detail, cart, checkout simulation, completion, custom consultation, merchant workspace prototype.
-- [x] Premium icon library in one folder (45 SVG icons) and reusable typed component.
-- [x] Embedded original Nalaro favicon assets and web metadata.
-- [x] Multi-tenant Aiven PostgreSQL foundation SQL with subscription interval and custom lead tables.
-- [x] Read-only Worker catalog/public pricing routes using Hyperdrive **when user configures account**.
-- [x] GitHub Actions build skeleton (needs dependency install in CI).
+- [x] Registration, one-use email verification, secure sessions, owner bootstrap after verified email.
+- [x] Per-store merchant authorization, hostile cross-tenant tests, audit records.
+- [x] Store/product/variant/settings editors, image uploads and stock movements.
+- [x] Real catalog, storefront and workspace; demonstrations are separate routes.
+- [x] Owner-only package/price administration.
+- [ ] Connect actual Aiven credentials to Hyperdrive, migrate the production database, verify real sender-domain mail.
 
-## Still to implement (not delivered / must not be claimed complete)
+## Phase 2: commerce
 
-### Phase 1 — Actual merchant data & authentication
+- [x] Tenant-scoped client cart; guest checkout against server inventory/prices.
+- [x] Atomic order/items/reservations, race-safe order counters, idempotency replay.
+- [x] Scheduled unpaid expiry and exactly-once stock release in transactions.
+- [x] Opaque expiring tracking links, manual payment audit and fulfillment state transitions.
+- [x] Native PostgreSQL concurrency and encrypted backup restore drill in CI.
+- [x] Browser walkthrough: create store/product → guest order → payment check → completed pickup.
+- [x] Responsive checks at 320, 390, 768 and 1440px; reduced-motion/focus/error states.
+- [ ] Actual Aiven/Hyperdrive load, account backup/restore, email delivery and go-live activation.
 
-- Merchant registration, email verification, secure HttpOnly sessions, role membership and server-side tenant checks.
-- Server endpoints for stores/products/variants and R2 uploads, SSR-aware storefront resolver for verified tenant hostname.
-- Dynamic storefront and dashboard connected to PostgreSQL (sample frontend data removed from production paths).
-- Tenant adversarial tests and audit records. Plan price/entitlement edit admin workflows with owner-only permissions.
+## Phase 3: commercialization
 
-### Phase 2 — Live commerce
+- [x] Owner-managed monthly/yearly prices, immutable invoice price snapshots.
+- [x] Manual subscription invoice verification, renewal, configurable trial/grace policy and expiry.
+- [x] Entitlements/usage: retained products, created orders per UTC month, uploaded image bytes per UTC month.
+- [x] Custom briefs, quotations, contractual source ownership, reusable modules and delivery states.
+- [x] Self-service merchant/store onboarding; verified-hostname resolver and HTTPS subdomain proof.
+- [ ] Deploy platform URL and verify actual tenant DNS/routing/TLS; path storefronts are the fallback.
+- [ ] Owner publishes actual plans/prices and confirms billing/support/privacy terms before public signup.
 
-- Persisted carts optional, guest checkout against actual inventory, transactionally created order + reserved stock, idempotent retry.
-- Scheduled reservation expiry, stock release and payment reconciliation.
-- Secure guest tracking links, merchant order processing, manual bank/QRIS verification and customer notifications.
-- Checkout go-live only after DB backup restore drill, error tests and concurrency load tests.
+## Phase 4: future work
 
-### Phase 3 — SaaS commercialization
+Merchant payment gateways/signature verification/reconciliation/refunds; carrier APIs; custom domains after billing/TLS review; Market/Local themes; richer analytics and staff interfaces; SEO/SSR metadata; independent production backups and scaling according to measured limits.
 
-- Owner-managed plans/prices (monthly and yearly), manual subscription invoices, billing cycle/suspension-grace-policy, entitlements and quota metering.
-- Custom lead pipeline → quote → delivery with contractual source-license ownership fields.
-- Merchant self-service onboarding and verified subdomains.
+## Release status
 
-### Phase 4 — Integrations & scaling
-
-- Merchant-specific payment gateways with verified signatures and settlement directly to merchant, live shipping APIs, custom domains with Cloudflare for SaaS cost review.
-- More storefront themes with distinct structure (Market, Local), analytics, RBAC staff, SSR metadata/product SEO, cache invalidation.
-- Upgrade Aiven according to storage, connection and reliability metrics; no paid resources activated without approval.
-
-## Operating principles
-
-Never hardcode prices; never mix SaaS subscription payments with customer-to-merchant payments. Never claim a mock checkout is a real order. Reuse stable modules for custom client work without destabilizing core SaaS. Do not ship emoji / third-party icon mix. Screens must work on both desktop and mobile, and anti-AI-slop editorial guidelines are mandatory.
+Implementation and test coverage do not imply production activation. The original foundation is on main; the phase 1–3 implementation is in the linked feature branch/PR. Live checkout stays disabled until the account-level gates in DEPLOYMENT.md are satisfied. No SaaS prices or real merchant products are invented.
