@@ -519,7 +519,7 @@ function Marketing() {
               <span className="mobile-access-note">Akses lewat browser HP. Aplikasi native belum tersedia.</span>
             </div>
             <div className="mobile-access-visual" role="img" aria-label="Ilustrasi model muda Indonesia tersenyum saat melihat toko dari ponsel">
-              <img src="/images/mobile-merchant.svg" alt="" loading="lazy"/>
+              <img src="/images/mobile-merchant.webp" alt="" loading="lazy"/>
               <span className="access-floating access-floating-left"><Icon name="bag" size={18}/>Pesanan di tanganmu</span>
               <span className="access-floating access-floating-right"><Icon name="chart" size={18}/>Cek perkembangan jualan</span>
             </div>
