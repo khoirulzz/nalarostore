@@ -159,7 +159,6 @@ function MarketingNav() {
           <a href="/#paket" onClick={() => setOpen(false)}>
             Harga paket
           </a>
-          <a href={CUSTOM_ORDER_URL} target="_blank" rel="noopener noreferrer">Toko custom</a>
         </nav>
         <div className="header-actions">
           <Link className="header-login" to="/login">
