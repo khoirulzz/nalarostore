@@ -100,9 +100,27 @@ export function CustomInquiry() {
 export function PublicPricing() {
   const { value, error } = useData<{ plans: Plan[] }>("/api/public/plans");
   return (
-    <section className="section-spacing shell">
-      <h2>Pilih periode untuk tokomu.</h2>
-      {error && <p>Paket belum tersedia saat ini.</p>}
+    <section
+      className="section-spacing shell"
+      id="paket"
+      aria-labelledby="pricing-title"
+    >
+      <div className="section-intro">
+        <h2 id="pricing-title">Mulai dengan paket yang pas.</h2>
+        <p>
+          Pilih langganan untuk membuka dan mengelola toko sendiri. Punya
+          kebutuhan khusus? Kita bisa membahasnya bersama.
+        </p>
+      </div>
+      {error && (
+        <p>
+          Informasi paket belum bisa dimuat.{" "}
+          <a className="underlined" href="mailto:store@nalaro.digital">
+            Hubungi kami untuk pilihan langganan
+          </a>
+          .
+        </p>
+      )}
       <div className="plan-list">
         {value?.plans.map((p) => (
           <article key={p.id}>
@@ -115,15 +133,18 @@ export function PublicPricing() {
               </p>
             ))}
             <Link to="/register" className="button button-dark">
-              Buat toko
+              Mulai buka toko
             </Link>
           </article>
         ))}
       </div>
       {value && !value.plans.length && (
         <p>
-          Harga paket akan diumumkan setelah ditetapkan.{" "}
-          <Link to="/register">Siapkan akun merchant</Link>
+          Pilihan paket sedang disiapkan. Ingin tahu mana yang cocok untuk
+          usahamu?{" "}
+          <a className="underlined" href="mailto:store@nalaro.digital">
+            Tanya lewat email
+          </a>
         </p>
       )}
     </section>
