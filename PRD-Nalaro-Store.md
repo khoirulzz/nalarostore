@@ -1,10 +1,18 @@
 # PRD — Nalaro Store
 
-**Versi:** 1.1 — Keputusan model bisnis Hybrid SaaS + Custom terkunci  
+**Versi:** 1.2 — Nalaro Store difokuskan pada SaaS  
 **Tanggal:** 14 Oktober 2026  
-**Status:** Model bisnis, periode langganan, provider inti dan sistem ikon terkunci; nominal dan hak lisensi custom ditentukan pemilik Nalaro  
+**Status:** Produk SaaS toko online mandiri; proyek custom ditangani Nalaro Dev terpisah. Harga promosi di landing belum otomatis menjadi harga billing produksi.  
 **Pemilik produk:** Nalaro Digital  
 **Domain usulan:** `store.nalaro.digital` (platform), `{slug}.store.nalaro.digital` (toko; perlu validasi wildcard DNS/routing/sertifikat)
+
+## Pembaruan strategi 15 Oktober 2026
+
+Keputusan terbaru mengesampingkan rencana hybrid dalam versi terdahulu: **Nalaro Store khusus SaaS**. Nalaro Digital adalah induk; Nalaro Dev menangani website/aplikasi e-commerce custom di formulir pusat `https://order.nalaro.digital/form/`. Endpoint dan tabel lead custom lama dapat dipertahankan sebagai arsip/kompatibilitas, tetapi tidak menjadi penawaran utama Nalaro Store.
+
+Kampanye beranda: kesempatan **Free UMKM selama enam bulan untuk peserta terpilih** (pengajuan dan seleksi; bukan aktivasi otomatis), harga pengenalan **Starter Rp69.000/bulan** (harga pembanding Rp199.000) dan **Growth Rp129.000/bulan** (harga pembanding Rp399.000). Angka ini hanya tampilan pemasaran sampai Super Admin mengonfigurasi harga, kuota, faktur, persyaratan dan dasar validitas harga pembanding. Semua alamat toko bawaan berada dalam domain Nalaro Store; penggunaan domain milik merchant belum dapat dijanjikan dan bergantung verifikasi DNS/TLS, kesesuaian paket serta aktivasi. Akses pengelolaan via browser ponsel, bukan klaim ketersediaan aplikasi native.
+
+Alur pengajuan UMKM menggunakan jalur lead publik yang ada dengan tag khusus dalam brief untuk sementara waktu. Alur pemilihan peserta dan aktivasi langganan enam bulan gratis perlu operasional dan dukungan billing tersendiri sebelum digunakan produksi. Kebijakan privasi/ketentuan publik perlu ditinjau sebelum peluncuran.
 
 ## 1. Ringkasan eksekutif
 
@@ -17,7 +25,7 @@ Nalaro Store adalah platform **e-commerce mandiri multi-tenant untuk UMKM Indone
 
 | Area | Keputusan v1 | Catatan |
 |---|---|---|
-| **Model bisnis** | **Hybrid: SaaS bulanan/tahunan + pesanan custom** | Nominal SaaS dan harga jasa ditentukan pemilik Nalaro di Super Admin, bukan hardcoded |
+| **Model bisnis** | **SaaS berlangganan bulanan/tahunan** | Custom e-commerce dialihkan ke Nalaro Dev melalui order.nalaro.digital/form/; harga paket aktif dikelola Super Admin |
 | Kategori bisnis | Produk fisik dulu | Produk digital/jasa fase berikutnya |
 | Identitas toko | Storefront independen per merchant | Bukan daftar semua toko yang dapat dicari lintas merchant |
 | Checkout | **Guest checkout** tanpa akun wajib | Akun pelanggan opsional, data terisolasi per toko |
@@ -234,7 +242,7 @@ Pembeli / Merchant / Admin
 
 ## 9. Model bisnis (keputusan terkunci)
 
-**Hybrid, dua jalur komersial yang setara:**
+**Arsip rancangan hybrid (superseded oleh pembaruan strategi 15 Oktober 2026 di atas):**
 
 1. **SaaS berlangganan**: merchant mendaftar, memilih paket yang Nalaro terbitkan, dan memilih siklus **bulanan atau tahunan**. Setiap paket menyimpan harga dua periode dalam integer IDR (tanpa hardcode harga, limit, atau diskon). Admin Nalaro menentukan nominal serta apakah paket bisa dipesan. Satu toko dapat mempunyai subscription aktif, trial yang disetujui, expired, canceled atau grace period dengan entitlement server-side. Implementasi billing otomatis menunggu provider terverifikasi; **versi awal memakai penagihan manual/aktivasi admin** agar tidak mengarang pembayaran otomatis.
 2. **Custom / Beli Toko**: calon klien meminta toko yang dikembangkan atau diserahkan khusus oleh Nalaro. Klien melengkapi brief, ruang lingkup, domain, kebutuhan integrasi, dan pilihan model kepemilikan; Nalaro melakukan penawaran harga manual. **Source/modul relevan boleh dipakai ulang secara internal** melalui package/adapter/theme engine. Penyerahan source code, lisensi penggunaan, kepemilikan IP, dukungan, hosting dan biaya lanjutan **diatur per kontrak tertulis**, tidak otomatis ikut dalam semua penjualan custom. Jangan menyatukan source custom ke repo utama tanpa review.
