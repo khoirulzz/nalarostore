@@ -1,7 +1,11 @@
-import { useState, type FormEvent } from "react";
+import { MediaImage } from "../components/MediaImage";
+import { useEffect, useState, type FormEvent } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Icon, type IconName } from "../components/Icon";
-import { RequireAuth } from "./Auth";
+import { RequireAuth, AccountSecurity } from "./Auth";
+import { authorizationHeaders, requireFirebase } from "../lib/firebase";
+import { signOut } from "firebase/auth";
+import { Customers, Analytics, ExportButton } from "./Operations";
 import {
   api,
   useData,
@@ -22,8 +26,11 @@ const menus: { key: string; label: string; icon: IconName }[] = [
   { key: "orders", label: "Pesanan", icon: "orders" },
   { key: "products", label: "Produk", icon: "box" },
   { key: "inventory", label: "Stok", icon: "chart" },
+  { key: "customers", label: "Pelanggan", icon: "users" },
+  { key: "analytics", label: "Analitik", icon: "chart" },
   { key: "settings", label: "Tampilan & pengaturan", icon: "palette" },
   { key: "billing", label: "Langganan", icon: "credit-card" },
+  { key: "account", label: "Keamanan akun", icon: "shield" },
 ];
 function Notice({ error }: { error: string }) {
   return error ? (
@@ -111,7 +118,7 @@ function Workspace() {
         <button
           className="logout"
           onClick={() =>
-            api("/api/auth/logout", "POST", {}).then(() => navigate("/login"))
+            signOut(requireFirebase()).then(() => navigate("/login"))
           }
         >
           Keluar dari akun
@@ -129,17 +136,17 @@ function Workspace() {
           <span>{store?.name || "Workspace"}</span>
           {store && (
             <Link
-              to={"/s/" + store.slug}
+              to={"/preview/" + store.id}
               target="_blank"
               className="work-view-store"
             >
-              Lihat toko <Icon name="arrow-up-right" size={16} />
+              Pratinjau toko <Icon name="arrow-up-right" size={16} />
             </Link>
           )}
         </header>
         <main className="workspace-content">
           <Notice error={error} />
-          {loading ? (
+          {loading && !value ? (
             <p aria-busy="true">Memuat toko…</p>
           ) : section === "new" || !sid ? (
             <NewStore
@@ -150,7 +157,13 @@ function Workspace() {
             />
           ) : (
             <div key={sid}>
-              {section === "products" ? (
+              {section === "account" ? (
+                <AccountSecurity />
+              ) : section === "customers" ? (
+                <Customers sid={sid} />
+              ) : section === "analytics" ? (
+                <Analytics sid={sid} />
+              ) : section === "products" ? (
                 <Products sid={sid} />
               ) : section === "orders" ? (
                 <Orders sid={sid} />
@@ -196,6 +209,28 @@ function Workspace() {
 function NewStore({ onCreated }: { onCreated: () => void }) {
   const [error, setError] = useState(""),
     [busy, setBusy] = useState(false);
+  const [name, setName] = useState(""),
+    [slug, setSlug] = useState(""),
+    [manual, setManual] = useState(false),
+    [available, setAvailable] = useState<boolean | null>(null);
+  useEffect(() => {
+    setAvailable(null);
+    if (slug.length < 3) return;
+    let active = true;
+    const timer = setTimeout(() => {
+      void api<{ available: boolean }>(
+        "/api/merchant/slug?slug=" + encodeURIComponent(slug),
+      )
+        .then((r) => {
+          if (active) setAvailable(r.available);
+        })
+        .catch(() => {});
+    }, 400);
+    return () => {
+      active = false;
+      clearTimeout(timer);
+    };
+  }, [slug]);
   async function submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const f = new FormData(e.currentTarget);
@@ -222,7 +257,26 @@ function NewStore({ onCreated }: { onCreated: () => void }) {
       <form onSubmit={submit} className="live-form">
         <label>
           Nama toko
-          <input name="name" required minLength={2} maxLength={120} />
+          <input
+            name="name"
+            required
+            minLength={2}
+            maxLength={120}
+            value={name}
+            onChange={(e) => {
+              setName(e.target.value);
+              if (!manual)
+                setSlug(
+                  e.target.value
+                    .normalize("NFD")
+                    .replace(/[\u0300-\u036f]/g, "")
+                    .toLowerCase()
+                    .replace(/[^a-z0-9]+/g, "-")
+                    .replace(/^-|-$/g, "")
+                    .slice(0, 48),
+                );
+            }}
+          />
         </label>
         <label>
           Alamat toko
@@ -230,11 +284,26 @@ function NewStore({ onCreated }: { onCreated: () => void }) {
             name="slug"
             required
             pattern="[a-z0-9][a-z0-9-]{1,46}[a-z0-9]"
+            value={slug}
+            onChange={(e) => {
+              setManual(true);
+              setSlug(e.target.value.toLowerCase());
+            }}
           />
           <small>3–48 karakter, huruf kecil, angka dan tanda hubung.</small>
+          {available !== null && (
+            <small role="status">
+              {available
+                ? "Alamat tersedia."
+                : "Alamat belum dapat digunakan. Pilih alamat lain."}
+            </small>
+          )}
         </label>
         <Notice error={error} />
-        <button className="button button-dark" disabled={busy}>
+        <button
+          className="button button-dark"
+          disabled={busy || available === false}
+        >
           {busy ? "Membuat…" : "Buat toko"}
         </button>
       </form>
@@ -339,6 +408,7 @@ function Products({ sid }: { sid: string }) {
           <h1>Produk</h1>
           <p>Katalog dan stok varian.</p>
         </div>
+        <ExportButton sid={sid} resource="products" />
         <button className="button button-dark" onClick={() => setEditing(null)}>
           Tambah produk <Icon name="plus" />
         </button>
@@ -354,7 +424,7 @@ function Products({ sid }: { sid: string }) {
           .map((p) => (
             <article key={p.id}>
               {p.primary_image_url ? (
-                <img src={p.primary_image_url} alt="" />
+                <MediaImage src={p.primary_image_url} alt="" />
               ) : (
                 <span className="media-placeholder">
                   <Icon name="box" />
@@ -410,6 +480,7 @@ function ProductEditor({
       product?.variants || [{ ...defaultVariant }],
     ),
     [image, setImage] = useState(product?.primary_image_url || ""),
+    [gallery, setGallery] = useState(product?.gallery || []),
     [error, setError] = useState(""),
     [busy, setBusy] = useState(false);
   function change(
@@ -434,6 +505,7 @@ function ProductEditor({
           price_idr: Number(f.get("price")),
           category: f.get("category"),
           primary_image_url: image || null,
+          gallery,
           status: f.get("status"),
           variants: variants.map((v) => ({
             ...v,
@@ -457,7 +529,10 @@ function ProductEditor({
     try {
       const r = await fetch(`/api/merchant/stores/${sid}/media`, {
         method: "POST",
-        headers: { "content-type": file.type },
+        headers: {
+          "content-type": file.type,
+          ...(await authorizationHeaders()),
+        },
         body: file,
       });
       const data = (await r.json()) as { error?: string; url: string };
@@ -538,8 +613,98 @@ function ProductEditor({
           <input value={image} onChange={(e) => setImage(e.target.value)} />
         </label>
         {image && (
-          <img className="editor-photo" src={image} alt="Pratinjau produk" />
+          <MediaImage
+            className="editor-photo"
+            src={image}
+            alt="Pratinjau produk"
+          />
         )}
+        <fieldset>
+          <legend>Galeri produk</legend>
+          {gallery.map((g, i) => (
+            <div className="form-two" key={i}>
+              <label>
+                URL foto {i + 1}
+                <input
+                  value={g.url}
+                  onChange={(e) =>
+                    setGallery((prev) =>
+                      prev.map((x, n) =>
+                        n === i ? { ...x, url: e.target.value } : x,
+                      ),
+                    )
+                  }
+                />
+              </label>
+              <label>
+                Deskripsi foto
+                <input
+                  value={g.alt}
+                  onChange={(e) =>
+                    setGallery((prev) =>
+                      prev.map((x, n) =>
+                        n === i ? { ...x, alt: e.target.value } : x,
+                      ),
+                    )
+                  }
+                />
+              </label>
+              <button
+                type="button"
+                onClick={() =>
+                  setGallery((prev) => prev.filter((_, n) => n !== i))
+                }
+              >
+                Hapus foto
+              </button>
+            </div>
+          ))}
+          <button
+            type="button"
+            disabled={gallery.length >= 12}
+            onClick={() =>
+              setGallery((prev) => [...prev, { url: "", alt: "" }])
+            }
+          >
+            Tambah foto galeri
+          </button>
+          <label>
+            Unggah foto galeri
+            <input
+              type="file"
+              accept="image/png,image/jpeg,image/webp"
+              disabled={busy || gallery.length >= 12}
+              onChange={async (e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+                setBusy(true);
+                try {
+                  const response = await fetch(
+                    `/api/merchant/stores/${sid}/media`,
+                    {
+                      method: "POST",
+                      headers: {
+                        "content-type": file.type,
+                        ...(await authorizationHeaders()),
+                      },
+                      body: file,
+                    },
+                  );
+                  const r = (await response.json()) as {
+                    url: string;
+                    error?: string;
+                  };
+                  if (!response.ok) throw Error(r.error);
+                  setGallery((prev) => [...prev, { url: r.url, alt: "" }]);
+                } catch (e) {
+                  setError((e as Error).message);
+                } finally {
+                  setBusy(false);
+                }
+              }}
+            />
+          </label>
+        </fieldset>
         <fieldset>
           <legend>Varian & stok</legend>
           {variants.map((v, i) => (
@@ -572,6 +737,15 @@ function ProductEditor({
                       "price_override_idr",
                       e.target.value === "" ? null : Number(e.target.value),
                     )
+                  }
+                />
+              </label>
+              <label>
+                Foto varian (URL)
+                <input
+                  value={v.image_url || ""}
+                  onChange={(e) =>
+                    change(i, "image_url", e.target.value || null)
                   }
                 />
               </label>
@@ -627,11 +801,22 @@ function ProductEditor({
 function Orders({ sid }: { sid: string }) {
   const [rev, setRev] = useState(0),
     [selected, setSelected] = useState(""),
-    [filter, setFilter] = useState("all");
-  const { value, error } = useData<{ orders: Order[] }>(
-    `/api/merchant/stores/${sid}/orders`,
-    rev,
-  );
+    [filter, setFilter] = useState("all"),
+    [q, setQ] = useState(""),
+    [page, setPage] = useState(1),
+    [from, setFrom] = useState(""),
+    [to, setTo] = useState("");
+  const query = new URLSearchParams({
+    status: filter,
+    q,
+    page: String(page),
+    ...(from ? { from } : {}),
+    ...(to ? { to } : {}),
+  });
+  const { value, error, loading } = useData<{
+    orders: Order[];
+    hasMore: boolean;
+  }>(`/api/merchant/stores/${sid}/orders?${query}`, rev);
   if (selected)
     return (
       <OrderDetail
@@ -646,48 +831,99 @@ function Orders({ sid }: { sid: string }) {
   return (
     <>
       <h1>Pesanan</h1>
+      <ExportButton sid={sid} resource="orders" />
+      <div className="live-filters">
+        <label>
+          Cari nomor atau nama
+          <input
+            value={q}
+            onChange={(e) => {
+              setQ(e.target.value);
+              setPage(1);
+            }}
+          />
+        </label>
+        <label>
+          Dari tanggal
+          <input
+            type="date"
+            value={from}
+            max={to || undefined}
+            onChange={(e) => {
+              setFrom(e.target.value);
+              setPage(1);
+            }}
+          />
+        </label>
+        <label>
+          Sampai tanggal
+          <input
+            type="date"
+            value={to}
+            min={from || undefined}
+            onChange={(e) => {
+              setTo(e.target.value);
+              setPage(1);
+            }}
+          />
+        </label>
+      </div>
       <Notice error={error} />
       <div className="work-tabbar">
         {[
           ["all", "Semua"],
           ["unpaid", "Belum dibayar"],
           ["paid", "Dibayar"],
+          ["packing", "Dikemas"],
+          ["shipped", "Dikirim"],
+          ["pickup_ready", "Siap diambil"],
           ["completed", "Selesai"],
         ].map(([key, label]) => (
           <button
             key={key}
             className={filter === key ? "active" : ""}
-            onClick={() => setFilter(key)}
+            onClick={() => {
+              setFilter(key);
+              setPage(1);
+            }}
           >
             {label}
           </button>
         ))}
       </div>
       <div className="live-order-list">
-        {value?.orders
-          .filter(
-            (o) =>
-              filter === "all" ||
-              o.payment_status === filter ||
-              o.order_status === filter,
-          )
-          .map((o) => (
-            <button
-              key={o.id}
-              className="live-order-row"
-              onClick={() => setSelected(o.id)}
-            >
-              <strong>{o.order_number}</strong>
-              <span>{o.customer_name}</span>
-              <span>{new Date(o.created_at).toLocaleDateString("id-ID")}</span>
-              <b>{rupiah(o.total_idr)}</b>
-              <span>{label(o.payment_status)}</span>
-              <span>{label(o.fulfillment_status)}</span>
-              <Icon name="arrow-right" />
-            </button>
-          ))}
+        {value?.orders.map((o) => (
+          <button
+            key={o.id}
+            className="live-order-row"
+            onClick={() => setSelected(o.id)}
+          >
+            <strong>{o.order_number}</strong>
+            <span>{o.customer_name}</span>
+            <span>{new Date(o.created_at).toLocaleDateString("id-ID")}</span>
+            <b>{rupiah(o.total_idr)}</b>
+            <span>{label(o.payment_status)}</span>
+            <span>{label(o.fulfillment_status)}</span>
+            <Icon name="arrow-right" />
+          </button>
+        ))}
       </div>
       {value && !value.orders.length && <p>Belum ada pesanan masuk.</p>}
+      <div className="live-actions">
+        <button
+          disabled={page === 1 || loading}
+          onClick={() => setPage((p) => p - 1)}
+        >
+          Sebelumnya
+        </button>
+        <span>Halaman {page}</span>
+        <button
+          disabled={!value?.hasMore || loading}
+          onClick={() => setPage((p) => p + 1)}
+        >
+          Berikutnya
+        </button>
+      </div>
     </>
   );
 }
@@ -749,6 +985,9 @@ function OrderDetail({
       {o && (
         <>
           <h1>{o.order_number}</h1>
+          <button className="button" onClick={() => window.print()}>
+            Cetak ringkasan pesanan
+          </button>
           <p>
             {label(o.order_status)} · {label(o.payment_status)} ·{" "}
             {label(o.fulfillment_status)}
@@ -763,6 +1002,9 @@ function OrderDetail({
                 </p>
               ))}
               <hr />
+              <p>
+                Subtotal <strong>{rupiah(o.subtotal_idr)}</strong>
+              </p>
               <p>
                 Pengiriman <strong>{rupiah(o.shipping_idr)}</strong>
               </p>
@@ -912,7 +1154,12 @@ function StoreSettings({
       low_stock_threshold: Number(f.get("low_stock_threshold")),
     });
     try {
+      Object.assign(c, {
+        store_name: f.get("store_name"),
+        store_description: f.get("store_description"),
+      });
       await api(`/api/merchant/stores/${sid}/settings`, "PUT", c);
+      refresh();
       setMessage("Pengaturan disimpan.");
       setRev((r) => r + 1);
     } catch (e) {
@@ -927,7 +1174,10 @@ function StoreSettings({
     try {
       const response = await fetch(`/api/merchant/stores/${sid}/media`, {
         method: "POST",
-        headers: { "content-type": file.type },
+        headers: {
+          "content-type": file.type,
+          ...(await authorizationHeaders()),
+        },
         body: file,
       });
       const result = (await response.json()) as { key: string; error?: string };
@@ -1007,8 +1257,64 @@ function StoreSettings({
         </p>
       )}
       {value && (
+        <section className="work-section">
+          <h2>Kesiapan toko</h2>
+          <ul className="readiness-list">
+            <li>
+              Produk dengan stok tersedia:{" "}
+              <Link to="/app/products">periksa produk</Link>
+            </li>
+            <li>
+              {value.settings.bank_details || value.settings.qris_media_key
+                ? "Pembayaran sudah diisi."
+                : "Isi rekening atau QRIS."}
+            </li>
+            <li>
+              {value.settings.pickup_enabled || value.settings.delivery_enabled
+                ? "Metode penerimaan barang tersedia."
+                : "Aktifkan pickup atau kurir toko."}
+            </li>
+            <li>
+              {value.settings.policies
+                ? "Kebijakan toko sudah diisi."
+                : "Lengkapi kebijakan pengiriman dan pengembalian."}
+            </li>
+            <li>
+              {value.settings.contact_phone
+                ? "Kontak toko sudah diisi."
+                : "Isi kontak yang dapat dihubungi."}
+            </li>
+          </ul>
+          <Link className="button" to={"/preview/" + sid} target="_blank">
+            Pratinjau sebelum terbit
+          </Link>
+          <Link className="button" to="/app/billing">
+            Periksa langganan atau masa pilot
+          </Link>
+        </section>
+      )}
+      {value && (
         <form className="live-form live-editor" key={rev} onSubmit={save}>
           <h2>Identitas toko</h2>
+          <label>
+            Nama toko
+            <input
+              name="store_name"
+              required
+              minLength={2}
+              maxLength={120}
+              defaultValue={store.name}
+            />
+          </label>
+          <label>
+            Deskripsi toko
+            <textarea
+              name="store_description"
+              rows={3}
+              maxLength={10000}
+              defaultValue={store.description}
+            />
+          </label>
           <label>
             Judul etalase
             <input name="hero_title" defaultValue={value.settings.hero_title} />
@@ -1103,7 +1409,7 @@ function StoreSettings({
             ? value.settings.qris_media_key
             : qrisKey) && (
             <div>
-              <img
+              <MediaImage
                 className="qris-image"
                 src={
                   "/api/media/" +

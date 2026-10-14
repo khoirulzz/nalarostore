@@ -4,11 +4,17 @@ import { beforeAll, afterAll, describe, it, expect, vi } from "vitest";
 import { startDB, newTestConnection } from "../scripts/test-db";
 import { type DB } from "../worker/lib/db";
 import { handleAPI, type RuntimeEnv } from "../worker";
-import { HttpError, hash, passwordHash, token } from "../worker/lib/security";
+import { HttpError, token } from "../worker/lib/security";
 import { expireReservations, checkout } from "../worker/lib/commerce";
-import { billingCycle } from "../worker/lib/billing";
+import { billingCycle, entitlement } from "../worker/lib/billing";
 import { imageMime } from "../worker/lib/media";
 import { verifyDomain } from "../worker/lib/domains";
+import { verifyFirebaseToken } from "../worker/lib/firebase";
+vi.mock("../worker/lib/firebase", () => ({ verifyFirebaseToken: vi.fn() }));
+const identities = new Map<
+  string,
+  { uid: string; email: string; verified: boolean }
+>();
 import { deliverOutbox } from "../worker/lib/jobs";
 let pg: Awaited<ReturnType<typeof startDB>>;
 let db: DB;
@@ -20,6 +26,8 @@ const env = {
   ENABLE_LIVE_CHECKOUT: "true",
   EMAIL_FROM: "hello@nalaro.digital",
   TOKEN_SECRET: "local-test-secret-32-bytes-long-at-least",
+  FIREBASE_PROJECT_ID: "test-project",
+  FIREBASE_API_KEY: "test-api-key",
 } as RuntimeEnv;
 let cookieA = "",
   cookieB = "",
@@ -39,7 +47,11 @@ async function request(
 ) {
   const req = new Request("http://localhost" + path, {
     method,
-    headers: { origin, cookie, "content-type": "application/json" },
+    headers: {
+      origin,
+      ...(cookie ? { authorization: "Bearer " + cookie } : {}),
+      "content-type": "application/json",
+    },
     body: data === undefined ? undefined : JSON.stringify(data),
   });
   try {
@@ -58,15 +70,12 @@ async function request(
 async function account(email: string) {
   const u = crypto.randomUUID(),
     raw = token();
+  identities.set(raw, { uid: u, email, verified: true });
   await db.query(
-    "INSERT INTO users(id,email,password_hash,email_verified_at) VALUES($1,$2,$3,now())",
-    [u, email, await passwordHash("long-test-password-123")],
+    "INSERT INTO users(id,email,firebase_uid,email_verified_at) VALUES($1,$2,$3,now())",
+    [u, email, u],
   );
-  await db.query(
-    `INSERT INTO auth_sessions(token_hash,user_id,expires_at) VALUES($1,$2,now()+interval '1 day')`,
-    [await hash(raw), u],
-  );
-  return { u, cookie: "__Host-nalaro_session=" + raw };
+  return { u, cookie: raw };
 }
 function payload(key = crypto.randomUUID(), qty = 1) {
   return {
@@ -83,6 +92,11 @@ function payload(key = crypto.randomUUID(), qty = 1) {
   };
 }
 beforeAll(async () => {
+  vi.mocked(verifyFirebaseToken).mockImplementation(async (raw) => {
+    const identity = identities.get(raw);
+    if (!identity) throw new HttpError(401, "Sesi tidak valid.");
+    return identity;
+  });
   pg = await startDB();
   db = await newTestConnection();
   const a = await account("merchant-a@test.invalid"),
@@ -134,8 +148,15 @@ beforeAll(async () => {
       pickup_address: "Jalan Toko Nomor 1",
       bank_details: "Bank Test 123456789 atas nama Toko Alfa",
       pickup_enabled: true,
+      contact_phone: "081234567890",
+      policies:
+        "Kebijakan toko fixture untuk pengujian pengiriman dan pengembalian.",
     },
     cookieA,
+  );
+  await db.query(
+    "UPDATE stores SET pilot_until=now()+interval '7 days' WHERE id=$1",
+    [storeA],
   );
   await request(
     `/api/merchant/stores/${storeA}/publish`,
@@ -149,48 +170,72 @@ afterAll(async () => {
   await pg?.stop();
 });
 describe("Phase 1 identity & tenancy", () => {
-  it("uses HttpOnly Secure host-only cookies and rejects wrong password", async () => {
-    const r = await request("/api/auth/login", "POST", {
-      email: "merchant-a@test.invalid",
-      password: "long-test-password-123",
-    });
-    expect(r.status).toBe(200);
-    expect(r.cookie).toContain("HttpOnly; Secure; SameSite=Lax");
-    expect(r.cookie).not.toContain("Domain=");
+  it("accepts Firebase identity, ignores legacy cookies, and disables password routes", async () => {
+    const me = await request("/api/auth/me", "GET", undefined, cookieA);
+    expect(me.body.user.email).toBe("merchant-a@test.invalid");
+    expect(me.cookie).toBe("");
+    expect(
+      (await request("/api/auth/me", "GET", undefined, "forged-token")).status,
+    ).toBe(401);
+    const old = await handleAPI(
+      db,
+      new Request("http://localhost/api/auth/me", {
+        headers: { cookie: "__Host-nalaro_session=" + cookieA },
+      }),
+      env,
+    );
+    expect(((await old.json()) as { user: unknown }).user).toBeNull();
     expect(
       (
         await request("/api/auth/login", "POST", {
           email: "merchant-a@test.invalid",
-          password: "wrong-password-123",
+          password: "ignored",
         })
       ).status,
-    ).toBe(401);
-  });
-  it("verifies email once and promotes only configured verified owner", async () => {
-    const r = await request("/api/auth/register", "POST", {
-      email: "new@test.invalid",
-      password: "very-strong-password",
-    });
-    expect(r.status).toBe(202);
-    const event = (
-      await db.query(
-        `SELECT payload FROM outbox_events WHERE payload->>'to'='new@test.invalid'`,
-      )
-    )[0];
-    const raw = event.payload.text.match(/token=([a-f0-9]+)/)[1];
-    expect(
-      (await request("/api/auth/verify", "POST", { token: raw })).status,
-    ).toBe(200);
-    expect(
-      (await request("/api/auth/verify", "POST", { token: raw })).status,
-    ).toBe(400);
+    ).toBe(410);
     expect(
       (
-        await db.query(
-          `SELECT email_verified_at FROM users WHERE email='new@test.invalid'`,
+        await db.query("SELECT password_hash FROM users WHERE email=$1", [
+          "merchant-a@test.invalid",
+        ])
+      )[0].password_hash,
+    ).toBeNull();
+  });
+  it("requires verified Firebase email and grants owner privileges only to exact verified owner", async () => {
+    const raw = token();
+    identities.set(raw, {
+      uid: crypto.randomUUID(),
+      email: "new@test.invalid",
+      verified: false,
+    });
+    expect(
+      (
+        await request(
+          "/api/merchant/stores",
+          "POST",
+          { name: "Unverified", slug: "unverified" },
+          raw,
         )
-      )[0].email_verified_at,
-    ).toBeTruthy();
+      ).status,
+    ).toBe(403);
+    identities.get(raw)!.verified = true;
+    expect(
+      (await request("/api/auth/me", "GET", undefined, raw)).body.user.verified,
+    ).toBe(true);
+    identities.get(cookieAdmin)!.verified = false;
+    expect(
+      (await request("/api/admin/plans", "GET", undefined, cookieAdmin)).status,
+    ).toBe(403);
+    identities.get(cookieAdmin)!.verified = true;
+    expect(
+      (await request("/api/auth/me", "GET", undefined, cookieAdmin)).body.user
+        .admin,
+    ).toBe(true);
+    identities.get(raw)!.email = "owner@test.invalid";
+    expect((await request("/api/auth/me", "GET", undefined, raw)).status).toBe(
+      409,
+    );
+    identities.get(raw)!.email = "new@test.invalid";
   });
   it("rejects anonymous, cross-origin and cross-tenant reads & writes", async () => {
     expect(
@@ -877,4 +922,113 @@ it("rejects executable/SVG/truncated image uploads and accepts a valid tiny PNG"
   const large = new Uint8Array(png);
   new DataView(large.buffer).setUint32(16, 90000);
   expect(imageMime(large)).toBeNull();
+});
+
+it("requires explicit pilot approval and preserves preparation/export after expiry", async () => {
+  await expect(entitlement(db, storeB, "orders", 1)).rejects.toMatchObject({
+    status: 423,
+  });
+  expect(
+    (
+      await request(
+        "/api/admin/stores/" + storeB + "/pilot",
+        "POST",
+        { days: 3 },
+        cookieB,
+      )
+    ).status,
+  ).toBe(403);
+  expect(
+    (
+      await request(
+        "/api/admin/stores/" + storeB + "/pilot",
+        "POST",
+        { days: 3 },
+        cookieAdmin,
+      )
+    ).status,
+  ).toBe(200);
+  await expect(entitlement(db, storeB, "orders", 1)).resolves.toBeUndefined();
+  await db.query(
+    "UPDATE stores SET pilot_until=now()-interval '1 day' WHERE id=$1",
+    [storeB],
+  );
+  await expect(entitlement(db, storeB, "storefront")).rejects.toMatchObject({
+    status: 423,
+  });
+  expect(
+    (
+      await request(
+        "/api/merchant/stores/" + storeB + "/preview",
+        "GET",
+        undefined,
+        cookieB,
+      )
+    ).status,
+  ).toBe(200);
+});
+
+it("scopes draft preview, customer summaries, analytics and exports to authorized stores", async () => {
+  for (const resource of ["preview", "customers", "analytics"]) {
+    expect(
+      (
+        await request(
+          "/api/merchant/stores/" + storeA + "/" + resource,
+          "GET",
+          undefined,
+          cookieB,
+        )
+      ).status,
+    ).toBe(404);
+    expect(
+      (
+        await request(
+          "/api/merchant/stores/" + storeA + "/" + resource,
+          "GET",
+          undefined,
+          cookieA,
+        )
+      ).status,
+    ).toBe(200);
+  }
+  const customers = await request(
+    "/api/merchant/stores/" + storeA + "/customers",
+    "GET",
+    undefined,
+    cookieA,
+  );
+  expect(
+    customers.body.customers.every(
+      (c: { contact_phone: string }) => c.contact_phone === "081234567890",
+    ),
+  ).toBe(true);
+  const analytics = await request(
+    "/api/merchant/stores/" + storeA + "/analytics",
+    "GET",
+    undefined,
+    cookieA,
+  );
+  const expected = (
+    await db.query(
+      "SELECT COALESCE(sum(total_idr) FILTER(WHERE payment_status='paid'),0) AS revenue FROM orders WHERE store_id=$1",
+      [storeA],
+    )
+  )[0];
+  expect(Number(analytics.body.summary.revenue)).toBe(Number(expected.revenue));
+  const req = new Request(
+    "http://localhost/api/merchant/stores/" +
+      storeA +
+      "/export?resource=orders",
+    { headers: { authorization: "Bearer " + cookieA } },
+  );
+  const exported = await handleAPI(db, req, env);
+  expect(exported.headers.get("content-type")).toContain("text/csv");
+  expect(await exported.text()).toContain("order_number");
+  await expect(
+    handleAPI(
+      db,
+      new Request(req.url, { headers: { authorization: "Bearer " + cookieB } }),
+      env,
+    ),
+  ).rejects.toMatchObject({ status: 404 });
 });

@@ -310,13 +310,40 @@ export async function orderRoutes(
       403,
       "Akses perubahan pesanan ditolak.",
     );
-  if (!oid && request.method === "GET")
-    return json({
-      orders: await db.query(
-        `SELECT id,order_number,customer_name,total_idr,payment_status,fulfillment_status,order_status,created_at FROM orders WHERE store_id=$1 ORDER BY created_at DESC LIMIT 200`,
-        [sid],
-      ),
-    });
+  if (!oid && request.method === "GET") {
+    const url = new URL(request.url),
+      page = Number(url.searchParams.get("page") || 1),
+      search = (url.searchParams.get("q") || "").slice(0, 120),
+      status = url.searchParams.get("status") || "all",
+      from = url.searchParams.get("from") || "1970-01-01",
+      to = url.searchParams.get("to") || "2999-12-31";
+    assert(
+      Number.isInteger(page) &&
+        page > 0 &&
+        page <= 10000 &&
+        [
+          "all",
+          "unpaid",
+          "paid",
+          "completed",
+          "shipped",
+          "packing",
+          "pickup_ready",
+        ].includes(status) &&
+        /^\d{4}-\d{2}-\d{2}$/.test(from) &&
+        /^\d{4}-\d{2}-\d{2}$/.test(to) &&
+        !Number.isNaN(Date.parse(from)) &&
+        !Number.isNaN(Date.parse(to)) &&
+        from <= to,
+      400,
+      "Filter pesanan tidak valid.",
+    );
+    const rows = await db.query(
+      `SELECT id,order_number,customer_name,total_idr,payment_status,fulfillment_status,order_status,created_at FROM orders WHERE store_id=$1 AND (order_number ILIKE $2 OR customer_name ILIKE $2) AND ($3='all' OR payment_status=$3 OR order_status=$3 OR fulfillment_status=$3) AND created_at >= $4::date AND created_at < $5::date+interval '1 day' ORDER BY created_at DESC,id DESC LIMIT 51 OFFSET $6`,
+      [sid, "%" + search + "%", status, from, to, (page - 1) * 50],
+    );
+    return json({ orders: rows.slice(0, 50), page, hasMore: rows.length > 50 });
+  }
   if (oid && !action && request.method === "GET") {
     const o = (
       await db.query("SELECT * FROM orders WHERE store_id=$1 AND id=$2", [

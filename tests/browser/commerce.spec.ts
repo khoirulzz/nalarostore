@@ -3,10 +3,11 @@ test("merchant → product → guest checkout → manual verification → comple
   page,
   context,
 }) => {
+  test.setTimeout(process.env.CI ? 60000 : 120000);
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/login");
   await page.getByLabel("Email", { exact: true }).fill("owner@local.test");
-  await page.getByLabel("Kata sandi").fill("local-dev-password-123");
+  await page.getByLabel("Kata sandi", { exact: true }).fill("LocalTest123");
   await page.getByRole("button", { name: "Masuk", exact: true }).click();
   await expect(
     page.getByRole("heading", { name: "Buat toko pertamamu." }),
@@ -17,6 +18,13 @@ test("merchant → product → guest checkout → manual verification → comple
   await expect(
     page.getByRole("heading", { name: "Ringkasan toko" }),
   ).toBeVisible();
+  await page.goto("/admin");
+  page.once("dialog", (d) => d.accept("7"));
+  const pilot = page.waitForResponse(
+    (r) => r.url().includes("/pilot") && r.request().method() === "POST",
+  );
+  await page.getByRole("button", { name: "Atur masa pilot" }).click();
+  expect((await pilot).ok()).toBe(true);
   await page.goto("/app/products");
   await page.getByRole("button", { name: "Tambah produk" }).click();
   await page.getByLabel("Nama produk").fill("Kaos Browser");
@@ -37,6 +45,12 @@ test("merchant → product → guest checkout → manual verification → comple
   await page
     .getByLabel("Rekening & instruksi transfer")
     .fill("Bank Uji 12345678 Toko Browser");
+  await page.getByLabel("Nomor WhatsApp", { exact: true }).fill("081234567890");
+  await page
+    .getByLabel("Kebijakan toko", { exact: true })
+    .fill(
+      "Kebijakan fixture pengiriman dan pengembalian untuk pengujian browser.",
+    );
   await page.getByRole("button", { name: "Simpan pengaturan" }).click();
   await expect(page.getByText("Pengaturan disimpan.")).toBeVisible();
   await page.getByRole("button", { name: "Terbitkan toko" }).click();
@@ -75,6 +89,17 @@ test("merchant → product → guest checkout → manual verification → comple
   await expect(
     buyer.getByText(/Selesai · Dibayar · Sudah diambil/),
   ).toBeVisible();
+  await page.goto("/app/settings");
+  await page.getByRole("button", { name: "Jeda toko", exact: true }).click();
+  await expect(
+    page.getByRole("button", { name: "Terbitkan toko" }),
+  ).toBeVisible();
+  await buyer.goto(track);
+  await expect(
+    buyer.getByRole("heading", { name: "Pembayaran terverifikasi." }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Terbitkan toko" }).click();
+  await expect(page.getByRole("button", { name: "Jeda toko" })).toBeVisible();
   for (const width of [320, 390, 768, 1440]) {
     await buyer.setViewportSize({ width, height: 900 });
     await buyer.goto("/s/toko-browser/catalog");
@@ -97,7 +122,7 @@ test("marketing and auth layout fit viewport", async ({ page }) => {
   for (const width of [320, 390, 768, 1440]) {
     await page.setViewportSize({ width, height: 900 });
     for (const path of ["/", "/register", "/custom"]) {
-      await page.goto(path);
+      await page.goto(path, { waitUntil: "domcontentloaded" });
       await expect(page.locator("h1")).toBeVisible();
       expect(
         await page.evaluate(
@@ -105,10 +130,90 @@ test("marketing and auth layout fit viewport", async ({ page }) => {
         ),
       ).toBe(true);
     }
-    await page.goto("/");
+    await page.goto("/", { waitUntil: "domcontentloaded" });
     await page.screenshot({
       path: `test-results/nalarostore-home-${width}.png`,
       fullPage: true,
     });
   }
+});
+test("Firebase signup, verified access, password reset and password change", async ({
+  page,
+  request,
+}) => {
+  await page.goto("/register");
+  await page.getByLabel("Email", { exact: true }).fill("merchant@local.test");
+  await page.getByLabel("Kata sandi", { exact: true }).fill("Merchant123");
+  await page.getByRole("button", { name: "Buat akun", exact: true }).click();
+  await expect(
+    page.getByRole("heading", { name: "Verifikasi alamat email." }),
+  ).toBeVisible();
+  const codes = await (
+    await request.get(
+      "http://127.0.0.1:9099/emulator/v1/projects/demo-nalarostore/oobCodes",
+    )
+  ).json();
+  const verification = codes.oobCodes.find(
+    (c: { email: string; requestType: string }) =>
+      c.email === "merchant@local.test" && c.requestType === "VERIFY_EMAIL",
+  );
+  expect(verification).toBeTruthy();
+  await page.goto(
+    "/auth/action?mode=verifyEmail&oobCode=" + verification.oobCode,
+  );
+  await page
+    .getByRole("button", { name: "Konfirmasi email", exact: true })
+    .click();
+  await expect(
+    page.getByText("Email berhasil diverifikasi. Akunmu siap digunakan."),
+  ).toBeVisible();
+  await page.goto("/app");
+  await expect(
+    page.getByRole("heading", { name: "Buat toko pertamamu." }),
+  ).toBeVisible();
+  await page.getByLabel("Nama toko").fill("Toko Auth");
+  await page.getByLabel("Alamat toko").fill("toko-auth");
+  await page.getByRole("button", { name: "Buat toko", exact: true }).click();
+  await expect(
+    page.getByRole("heading", { name: "Ringkasan toko" }),
+  ).toBeVisible();
+  await page.goto("/forgot-password");
+  await page.getByLabel("Email", { exact: true }).fill("merchant@local.test");
+  await page.getByRole("button", { name: "Kirim tautan pemulihan" }).click();
+  await expect(page.getByText(/Jika email terdaftar/)).toBeVisible();
+  const resetCodes = await (
+    await request.get(
+      "http://127.0.0.1:9099/emulator/v1/projects/demo-nalarostore/oobCodes",
+    )
+  ).json();
+  const reset = resetCodes.oobCodes.find(
+    (c: { email: string; requestType: string }) =>
+      c.email === "merchant@local.test" && c.requestType === "PASSWORD_RESET",
+  );
+  await page.goto("/auth/action?mode=resetPassword&oobCode=" + reset.oobCode);
+  await page.getByLabel("Kata sandi", { exact: true }).fill("MerchantNew123");
+  await page.getByRole("button", { name: "Simpan kata sandi baru" }).click();
+  await expect(
+    page.getByText("Kata sandi diperbarui. Masuk dengan kata sandi baru."),
+  ).toBeVisible();
+  await page.goto("/login");
+  await page.getByLabel("Email", { exact: true }).fill("merchant@local.test");
+  await page.getByLabel("Kata sandi", { exact: true }).fill("MerchantNew123");
+  await page.getByRole("button", { name: "Masuk", exact: true }).click();
+  await expect(
+    page.getByRole("heading", { name: "Ringkasan toko" }),
+  ).toBeVisible();
+  await page.goto("/app/account");
+  await page
+    .getByLabel("Kata sandi saat ini", { exact: true })
+    .fill("MerchantNew123");
+  await page
+    .getByLabel("Kata sandi baru", { exact: true })
+    .fill("MerchantFinal123");
+  await page
+    .getByRole("button", { name: "Ubah kata sandi", exact: true })
+    .click();
+  await expect(
+    page.getByRole("heading", { name: "Masuk ke akun" }),
+  ).toBeVisible();
 });

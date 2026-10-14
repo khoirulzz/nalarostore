@@ -1,22 +1,13 @@
-import { z } from "zod";
 import type { DB } from "./db";
-import {
-  assert,
-  body,
-  hash,
-  json,
-  passwordHash,
-  passwordValid,
-  token,
-  seal,
-} from "./security";
+import { assert, json, seal } from "./security";
+import { verifyFirebaseToken, type FirebaseConfig } from "./firebase";
 export type Identity = {
   id: string;
   email: string;
   verified: boolean;
   admin: boolean;
 };
-export type AuthConfig = {
+export type AuthConfig = FirebaseConfig & {
   APP_ORIGIN: string;
   APP_ENV: string;
   TOKEN_SECRET?: string;
@@ -26,23 +17,84 @@ export type AuthConfig = {
 export async function identity(
   db: DB,
   request: Request,
+  env: AuthConfig,
 ): Promise<Identity | null> {
   const raw = request.headers
-    .get("cookie")
-    ?.match(/(?:^|;\s*)__Host-nalaro_session=([^;]+)/)?.[1];
+    .get("authorization")
+    ?.match(/^Bearer (\S+)$/i)?.[1];
   if (!raw) return null;
-  const rows = await db.query(
-    `SELECT u.id,u.email,u.email_verified_at,a.user_id AS admin FROM auth_sessions s JOIN users u ON u.id=s.user_id LEFT JOIN platform_admins a ON a.user_id=u.id WHERE s.token_hash=$1 AND s.expires_at>now()`,
-    [await hash(raw)],
+  await rateLimit(
+    db,
+    "identity-ip:" + (request.headers.get("cf-connecting-ip") || "local"),
+    600,
   );
-  return rows[0]
-    ? {
-        id: rows[0].id,
-        email: rows[0].email,
-        verified: !!rows[0].email_verified_at,
-        admin: !!rows[0].admin,
+  const firebase = await verifyFirebaseToken(raw, env);
+  return db.tx(async (tx) => {
+    await tx.query("SELECT pg_advisory_xact_lock(hashtext($1))", [
+      "firebase:" + firebase.uid,
+    ]);
+    let user = (
+      await tx.query(
+        "SELECT id,email,firebase_uid FROM users WHERE firebase_uid=$1",
+        [firebase.uid],
+      )
+    )[0];
+    if (!user) {
+      const existing = (
+        await tx.query(
+          "SELECT id,firebase_uid FROM users WHERE email=$1 FOR UPDATE",
+          [firebase.email],
+        )
+      )[0];
+      assert(
+        !existing || (!existing.firebase_uid && firebase.verified),
+        409,
+        "Email sudah terhubung ke akun lain. Hubungi dukungan.",
+      );
+      if (existing) {
+        await tx.query(
+          "UPDATE users SET firebase_uid=$2,password_hash=NULL WHERE id=$1",
+          [existing.id, firebase.uid],
+        );
+        user = existing;
+      } else {
+        user = (
+          await tx.query(
+            "INSERT INTO users(id,email,firebase_uid) VALUES($1,$2,$3) RETURNING id",
+            [crypto.randomUUID(), firebase.email, firebase.uid],
+          )
+        )[0];
       }
-    : null;
+    }
+    const conflict = (
+      await tx.query("SELECT id FROM users WHERE email=$1 AND id<>$2", [
+        firebase.email,
+        user.id,
+      ])
+    )[0];
+    assert(
+      !conflict,
+      409,
+      "Email sudah terhubung ke akun lain. Hubungi dukungan.",
+    );
+    await tx.query(
+      "UPDATE users SET email=$2,email_verified_at=CASE WHEN $3 THEN COALESCE(email_verified_at,now()) ELSE NULL END WHERE id=$1",
+      [user.id, firebase.email, firebase.verified],
+    );
+    const owner =
+      firebase.verified && firebase.email === env.OWNER_EMAIL.toLowerCase();
+    if (owner)
+      await tx.query(
+        "INSERT INTO platform_admins(user_id) VALUES($1) ON CONFLICT DO NOTHING",
+        [user.id],
+      );
+    return {
+      id: user.id as string,
+      email: firebase.email,
+      verified: firebase.verified,
+      admin: owner,
+    };
+  });
 }
 export function requireUser(
   user: Identity | null,
@@ -124,159 +176,20 @@ export async function rateLimit(db: DB, key: string, limit = 30) {
     "Terlalu banyak permintaan. Coba lagi beberapa menit lagi.",
   );
 }
-const credentials = z.object({
-  email: z
-    .email()
-    .max(254)
-    .transform((s) => s.toLowerCase().trim()),
-  password: z.string().min(12).max(128),
-});
-async function verification(
-  db: DB,
-  userId: string,
-  email: string,
-  env: AuthConfig,
-) {
-  assert(env.TOKEN_SECRET, 503, "Layanan autentikasi belum dikonfigurasi.");
-  const raw = token();
-  await db.query("DELETE FROM verification_tokens WHERE user_id=$1", [userId]);
-  await db.query(
-    `INSERT INTO verification_tokens(token_hash,user_id,expires_at) VALUES($1,$2,now()+interval '24 hours')`,
-    [await hash(raw), userId],
-  );
-  const link = `${env.APP_ORIGIN}/verify?token=${raw}`;
-  await enqueue(
-    db,
-    null,
-    email,
-    "Verifikasi email Nalaro Store",
-    `Konfirmasi alamat email untuk membuka toko:\n${link}\n\nTautan berlaku 24 jam. Abaikan bila kamu tidak membuat akun.`,
-  );
-}
 export async function authRoutes(
-  db: DB,
+  _db: DB,
   request: Request,
-  env: AuthConfig,
+  _env: AuthConfig,
   user: Identity | null,
   path: string,
 ): Promise<Response | undefined> {
   if (path === "/api/auth/me" && request.method === "GET")
     return json({ user });
-  if (path === "/api/auth/register" && request.method === "POST") {
-    assert(
-      env.EMAIL || env.APP_ENV === "development",
-      503,
-      "Layanan email verifikasi belum dikonfigurasi.",
-    );
-    const c = await body(request, credentials);
-    await rateLimit(
-      db,
-      "register:" +
-        (await hash(request.headers.get("cf-connecting-ip") || "local")),
-      10,
-    );
-    await db.tx(async (tx) => {
-      const rows = await tx.query("SELECT id FROM users WHERE email=$1", [
-        c.email,
-      ]);
-      if (rows[0]) return;
-      const uid = crypto.randomUUID();
-      const inserted = await tx.query(
-        "INSERT INTO users(id,email,password_hash) VALUES($1,$2,$3) ON CONFLICT(email) DO NOTHING RETURNING id",
-        [uid, c.email, await passwordHash(c.password)],
-      );
-      if (inserted[0]) await verification(tx, uid, c.email, env);
-    });
+  if (/^\/api\/auth\/(register|login|verify|resend|logout)$/.test(path))
     return json(
-      {
-        message:
-          "Jika alamat dapat digunakan, tautan verifikasi akan dikirim. Periksa inbox dan spam.",
-      },
-      202,
+      { error: "Gunakan Firebase Authentication untuk mengelola akun." },
+      410,
     );
-  }
-  if (path === "/api/auth/login" && request.method === "POST") {
-    const c = await body(request, credentials);
-    await rateLimit(
-      db,
-      "login-ip:" +
-        (await hash(request.headers.get("cf-connecting-ip") || "local")),
-      60,
-    );
-    await rateLimit(
-      db,
-      "login:" +
-        (await hash(
-          (request.headers.get("cf-connecting-ip") || "local") + c.email,
-        )),
-      10,
-    );
-    const rows = await db.query(
-      "SELECT id,password_hash FROM users WHERE email=$1",
-      [c.email],
-    );
-    const valid = await passwordValid(
-      c.password,
-      rows[0]?.password_hash ||
-        (await passwordHash("unused-password-constant")),
-    );
-    assert(rows[0] && valid, 401, "Email atau kata sandi tidak cocok.");
-    const raw = token();
-    await db.query(
-      `INSERT INTO auth_sessions(token_hash,user_id,expires_at) VALUES($1,$2,now()+interval '7 days')`,
-      [await hash(raw), rows[0].id],
-    );
-    return json({ ok: true }, 200, {
-      "set-cookie": `__Host-nalaro_session=${raw}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=604800`,
-    });
-  }
-  if (path === "/api/auth/logout" && request.method === "POST") {
-    const raw = request.headers
-      .get("cookie")
-      ?.match(/(?:^|;\s*)__Host-nalaro_session=([^;]+)/)?.[1];
-    if (raw)
-      await db.query("DELETE FROM auth_sessions WHERE token_hash=$1", [
-        await hash(raw),
-      ]);
-    return json({ ok: true }, 200, {
-      "set-cookie":
-        "__Host-nalaro_session=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0",
-    });
-  }
-  if (path === "/api/auth/verify" && request.method === "POST") {
-    const c = await body(
-      request,
-      z.object({ token: z.string().regex(/^[a-f0-9]{64}$/) }),
-    );
-    await rateLimit(
-      db,
-      "verify:" +
-        (await hash(request.headers.get("cf-connecting-ip") || "local")),
-    );
-    await db.tx(async (tx) => {
-      const rows = await tx.query(
-        `DELETE FROM verification_tokens WHERE token_hash=$1 AND expires_at>now() RETURNING user_id`,
-        [await hash(c.token)],
-      );
-      assert(rows[0], 400, "Tautan tidak valid atau sudah kedaluwarsa.");
-      const u = await tx.query(
-        "UPDATE users SET email_verified_at=now() WHERE id=$1 RETURNING email",
-        [rows[0].user_id],
-      );
-      if (env.OWNER_EMAIL && u[0].email === env.OWNER_EMAIL.toLowerCase())
-        await tx.query(
-          "INSERT INTO platform_admins(user_id) VALUES($1) ON CONFLICT DO NOTHING",
-          [rows[0].user_id],
-        );
-    });
-    return json({ ok: true });
-  }
-  if (path === "/api/auth/resend" && request.method === "POST") {
-    requireUser(user, false);
-    await rateLimit(db, "resend:" + user.id, 3);
-    await db.tx((tx) => verification(tx, user.id, user.email, env));
-    return json({ ok: true }, 202);
-  }
 }
 export async function encryptedToken(raw: string, env: AuthConfig) {
   assert(env.TOKEN_SECRET, 503, "Layanan belum dikonfigurasi.");

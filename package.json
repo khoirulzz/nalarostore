@@ -4,7 +4,7 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "node --import tsx scripts/dev-server.ts",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "deploy": "npm run build && wrangler deploy",
@@ -15,9 +15,15 @@
     "types": "wrangler types --strict-vars=false --include-runtime=false",
     "db:migrate": "node --import tsx scripts/migrate.ts",
     "dev:full": "node --import tsx scripts/dev-server.ts",
-    "check": "npm run types && npm run db:check && npm run typecheck && npm test && npm run build"
+    "check": "npm run types && npm run db:check && npm run typecheck && npm test && npm run build",
+    "dev:ui": "vite",
+    "dev:test": "node --import tsx scripts/test-server.ts",
+    "dev:auth-test": "npx -y firebase-tools@latest emulators:start --only auth --project demo-nalarostore --config firebase.test.json",
+    "db:status": "node --import tsx scripts/db-status.ts"
   },
   "dependencies": {
+    "firebase": "^13.0.0",
+    "jose": "^6.2.12",
     "pg": "^8.23.1",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",

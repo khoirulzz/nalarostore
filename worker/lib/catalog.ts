@@ -10,6 +10,7 @@ const variantSchema = z.object({
   price_override_idr: money.nullable().default(null),
   stock_qty: z.number().int().min(0).max(100000),
   status: z.enum(["active", "inactive"]).default("active"),
+  image_url: safeURL.nullable().default(null),
 });
 const productSchema = z
   .object({
@@ -19,6 +20,10 @@ const productSchema = z
     price_idr: money,
     category: z.string().min(1).max(80).default("Produk"),
     primary_image_url: safeURL.nullable().default(null),
+    gallery: z
+      .array(z.object({ url: safeURL, alt: z.string().max(300).default("") }))
+      .max(12)
+      .default([]),
     status: z.enum(["draft", "active", "archived"]).default("draft"),
     variants: z.array(variantSchema).min(1).max(100),
   })
@@ -27,6 +32,8 @@ const productSchema = z
     "SKU harus unik.",
   );
 export const settingsSchema = z.object({
+  store_name: z.string().trim().min(2).max(120).optional(),
+  store_description: z.string().max(10000).optional(),
   contact_phone: z.string().max(30).default(""),
   pickup_address: z.string().max(2000).default(""),
   shipping_fee_idr: money.default(0),
@@ -72,7 +79,7 @@ export async function publicStore(
 }
 export async function productList(db: DB, storeId: string, published = false) {
   const rows = await db.query(
-    `SELECT p.*,COALESCE((SELECT jsonb_agg(jsonb_build_object('id',v.id,'sku',v.sku,'option_label',v.option_label,'price_override_idr',v.price_override_idr,'stock_qty',v.stock_qty,'reserved_qty',v.reserved_qty,'available_stock',v.stock_qty-v.reserved_qty,'status',v.status) ORDER BY v.option_label) FROM product_variants v WHERE v.store_id=p.store_id AND v.product_id=p.id ${published ? "AND v.status='active'" : ""}),'[]') AS variants FROM products p WHERE p.store_id=$1 ${published ? "AND p.status='active'" : ""} ORDER BY p.position,p.created_at DESC LIMIT 1000`,
+    `SELECT p.*,COALESCE((SELECT jsonb_agg(jsonb_build_object('id',v.id,'sku',v.sku,'option_label',v.option_label,'price_override_idr',v.price_override_idr,'image_url',v.image_url,'stock_qty',v.stock_qty,'reserved_qty',v.reserved_qty,'available_stock',v.stock_qty-v.reserved_qty,'status',v.status) ORDER BY v.option_label) FROM product_variants v WHERE v.store_id=p.store_id AND v.product_id=p.id ${published ? "AND v.status='active'" : ""}),'[]') AS variants FROM products p WHERE p.store_id=$1 ${published ? "AND p.status='active'" : ""} ORDER BY p.position,p.created_at DESC LIMIT 1000`,
     [storeId],
   );
   return rows;
@@ -84,6 +91,15 @@ export async function catalogRoutes(
   path: string,
   rootDomain: string,
 ): Promise<Response | undefined> {
+  if (path === "/api/merchant/slug" && request.method === "GET") {
+    requireUser(user);
+    const value = new URL(request.url).searchParams.get("slug") || "";
+    const valid = slug.safeParse(value);
+    const existing = valid.success
+      ? (await db.query("SELECT id FROM stores WHERE slug=$1", [value]))[0]
+      : null;
+    return json({ available: valid.success && !existing });
+  }
   if (path === "/api/merchant/stores" && request.method === "GET") {
     requireUser(user);
     return json({
@@ -132,12 +148,27 @@ export async function catalogRoutes(
     return json({ id: storeId }, 201);
   }
   const match = path.match(
-    /^\/api\/merchant\/stores\/([a-f0-9-]{36})(?:\/(products|settings|publish|overview|inventory)(?:\/([a-f0-9-]{36}))?)?$/,
+    /^\/api\/merchant\/stores\/([a-f0-9-]{36})(?:\/(products|settings|publish|overview|inventory|preview)(?:\/([a-f0-9-]{36}))?)?$/,
   );
   if (!match) return;
   const [, sid, resource, pid] = match;
   await storeAccess(db, user, sid, request.method !== "GET");
   requireUser(user);
+  if (resource === "preview" && request.method === "GET")
+    return json({
+      store: (
+        await db.query(
+          "SELECT id,slug,name,description,status,theme_key FROM stores WHERE id=$1",
+          [sid],
+        )
+      )[0],
+      settings: (
+        await db.query("SELECT * FROM store_settings WHERE store_id=$1", [sid])
+      )[0],
+      products: (await productList(db, sid)).filter(
+        (p) => p.status !== "archived",
+      ),
+    });
   if (!resource && request.method === "GET")
     return json({
       store: (await db.query("SELECT * FROM stores WHERE id=$1", [sid]))[0],
@@ -149,7 +180,10 @@ export async function catalogRoutes(
       )[0],
     });
   if (resource === "settings" && request.method === "PUT") {
-    const c = await body(request, settingsSchema);
+    const { store_name, store_description, ...c } = await body(
+      request,
+      settingsSchema,
+    );
     for (const value of [c.logo_url, c.hero_image_url])
       if (value?.startsWith("/api/media/"))
         assert(
@@ -164,6 +198,11 @@ export async function catalogRoutes(
         "QRIS bukan milik toko ini.",
       );
     await db.tx(async (tx) => {
+      if (store_name !== undefined || store_description !== undefined)
+        await tx.query(
+          "UPDATE stores SET name=COALESCE($2,name),description=COALESCE($3,description),updated_at=now() WHERE id=$1",
+          [sid, store_name ?? null, store_description ?? null],
+        );
       const columns = Object.keys(c);
       await tx.query(
         `UPDATE store_settings SET ${columns.map((k, i) => `${k}=$${i + 2}`).join(",")} WHERE store_id=$1`,
@@ -196,6 +235,16 @@ export async function catalogRoutes(
           settings.bank_details || settings.qris_media_key,
           409,
           "Isi rekening atau QRIS pembayaran.",
+        );
+        assert(
+          settings.contact_phone.trim().length >= 8,
+          409,
+          "Isi kontak toko agar pembeli dapat mengonfirmasi pembayaran.",
+        );
+        assert(
+          settings.policies.trim().length >= 20,
+          409,
+          "Lengkapi kebijakan pengiriman dan pengembalian toko.",
         );
         assert(
           settings.pickup_enabled || settings.delivery_enabled,
@@ -242,12 +291,17 @@ export async function catalogRoutes(
     );
     const c = await body(request, productSchema);
     const productId = pid || crypto.randomUUID();
-    if (c.primary_image_url?.startsWith("/api/media/"))
-      assert(
-        c.primary_image_url.startsWith(`/api/media/${sid}/`),
-        400,
-        "Media bukan milik toko ini.",
-      );
+    for (const url of [
+      c.primary_image_url,
+      ...c.gallery.map((g) => g.url),
+      ...c.variants.map((v) => v.image_url),
+    ])
+      if (url?.startsWith("/api/media/"))
+        assert(
+          url.startsWith(`/api/media/${sid}/`),
+          400,
+          "Media bukan milik toko ini.",
+        );
     await db.tx(async (tx) => {
       await tx.query("SELECT id FROM stores WHERE id=$1 FOR UPDATE", [sid]);
       if (pid) {
@@ -354,6 +408,15 @@ export async function catalogRoutes(
             [sid, old.id],
           );
         }
+      await tx.query(
+        "UPDATE products SET gallery=$3 WHERE store_id=$1 AND id=$2",
+        [sid, productId, JSON.stringify(c.gallery)],
+      );
+      for (const v of c.variants)
+        await tx.query(
+          "UPDATE product_variants SET image_url=$3 WHERE store_id=$1 AND sku=$2",
+          [sid, v.sku, v.image_url],
+        );
       await audit(
         tx,
         user.id,

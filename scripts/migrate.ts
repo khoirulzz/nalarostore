@@ -1,27 +1,9 @@
-import { Client } from "pg";
 import { readFile, readdir } from "node:fs/promises";
 import { createHash } from "node:crypto";
+import { databaseClient, loadLocalEnv } from "./env";
 export async function migrationClient() {
-  const raw = process.env.DATABASE_URL;
-  if (!raw) throw Error("DATABASE_URL is required (server-side only).");
-  const url = new URL(raw);
-  url.searchParams.delete("sslmode");
-  const local = ["localhost", "127.0.0.1"].includes(url.hostname);
-  const ca = process.env.PG_CA_CERT_BASE64
-    ? Buffer.from(process.env.PG_CA_CERT_BASE64, "base64").toString()
-    : process.env.PG_CA_CERT_FILE
-      ? await readFile(process.env.PG_CA_CERT_FILE, "utf8")
-      : undefined;
-  if (!local && !ca)
-    throw Error(
-      "Aiven CA certificate required via PG_CA_CERT_FILE or PG_CA_CERT_BASE64.",
-    );
-  const client = new Client({
-    connectionString: url.toString(),
-    ssl: local ? false : { ca, rejectUnauthorized: true },
-  });
-  await client.connect();
-  return client;
+  loadLocalEnv();
+  return databaseClient();
 }
 export async function migrate() {
   const db = await migrationClient();

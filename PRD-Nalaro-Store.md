@@ -201,7 +201,7 @@ Pembeli / Merchant / Admin
   Adapter eksternal opsional: payment provider | email | shipping
 ```
 
-**Target stack jangka panjang:** React/TypeScript, Workers, Aiven PostgreSQL+Hyperdrive, R2 dan design tokens; Drizzle ORM, Zod, SSR storefront dan E2E menjadi target sesudah integrasi backend disetujui. **Implementasi fase 0** menggunakan Vite+React Router, CSS native, Workers API read-only dan driver Postgres.js, npm serta SQL migration agar dapat diuji sebagai satu proyek ringan. Migrasi ke monorepo dan penambahan library wajib berdasarkan kebutuhan nyata, bukan menambah dependensi tanpa fungsi.
+**Target stack jangka panjang:** React/TypeScript, Workers, Aiven PostgreSQL+Hyperdrive, R2 dan design tokens; Drizzle ORM, Zod, SSR storefront dan E2E menjadi target sesudah integrasi backend disetujui. **Implementasi saat ini** menggunakan Vite+React Router, CSS native, Firebase Auth untuk identitas, Workers API commerce dan driver `pg`, npm serta SQL migration. Backend memverifikasi Firebase ID token; izin toko/peran tetap berada di PostgreSQL. Migrasi ke monorepo dan penambahan library wajib berdasarkan kebutuhan nyata, bukan menambah dependensi tanpa fungsi.
 
 **Struktur fase 0:** satu aplikasi ringan `src` (platform + workspace + storefront), `worker` (API), `db` (schema), `src/assets/icons` (SVG premium), `public` (favicon). **Rencana modular saat skala menuntut:** `apps/platform`, `apps/merchant`, `apps/storefront`, `apps/api`; `packages/ui`, `packages/core`, `packages/db`, `packages/tenancy`, `packages/payment-adapters`, `packages/theme-engine`, `packages/config`. Tidak perlu pecah deployment sebelum ada kebutuhan isolasi yang terbukti.
 
@@ -229,7 +229,7 @@ Pembeli / Merchant / Admin
 - Budget alert tidak menggantikan hard limit; fitur yang bisa menghasilkan biaya harus melalui approval manual.
 - Deployment CI: lint, typecheck, unit, e2e, migration check, preview, smoke test, rollback. Migrations expand-contract jika breaking.
 - Backup: versi terjadwal, enkripsi, retention, restore drill, prosedur rollback dan exit plan `pg_dump`→PostgreSQL lain.
-- Security: CSRF untuk cookie sessions, secure/HttpOnly/SameSite cookies sesuai arsitektur subdomain, CSP, input sanitization, image upload MIME/sniffing, size caps, malware policy, rate limiting, bot protection, secret rotation.
+- Security: Firebase ID token terverifikasi (signature/issuer/audience/expiry), pemeriksaan akun dinonaktifkan dan sesi dicabut, same-origin untuk mutasi, CSP, input sanitization, image upload MIME/sniffing, size caps, malware policy, rate limiting, bot protection, secret rotation.
 - Privasi/kepatuhan: dokumen kebijakan, consent yang benar-benar diperlukan, mekanisme akses/hapus data sesuai hukum Indonesia yang relevan; pembayaran via gateway berizin.
 
 ## 9. Model bisnis (keputusan terkunci)
@@ -337,3 +337,13 @@ Pembeli / Merchant / Admin
 - Database schema menyertakan tenant, inventaris, order, subscription monthly/yearly dan custom lead sebagai fondasi. Schema bukan bukti endpoint commerce live.
 - Aset favicon Nalaro asli dipakai dari berkas yang diberikan; ikon UI hanya SVG custom dari folder tunggal.
 - README menjelaskan mode demo, daftar secrets/binding yang **belum** aktif, dan langkah fase berikutnya. Tidak ada API key di Git.
+
+## 17. Penyesuaian implementasi Firebase dan audit MVP
+
+Auth merchant memakai Firebase email/password; tidak ada penyimpanan kata sandi baru di PostgreSQL. Aturan proyek saat audit: enforcement aktif, panjang 8-4096, huruf besar/kecil dan angka wajib, simbol opsional, tanpa force-upgrade saat login. SDK membaca kebijakan aktif; akun Google tidak diaktifkan oleh implementasi ini.
+
+Localhost memakai satu server UI/API dengan konfigurasi `.env.local`, pilihan PGlite sementara atau Aiven persisten dengan CA terverifikasi. Test E2E memakai proyek emulator terpisah. Data, keanggotaan/peran toko, billing dan otorisasi tetap pada backend PostgreSQL.
+
+MVP menambahkan preview draft, galeri/foto varian, persetujuan pilot berumur terbatas, kontak/kebijakan sebelum publikasi, pencarian/filter/pagination pesanan, ringkasan pelanggan, analitik pendapatan dasar, ekspor CSV, cetak ringkasan pesanan dan retry notifikasi gagal. Tracking tidak bergantung pada publikasi katalog. Metadata/canonical/structured data disiapkan di Worker; full SSR dan pengukuran field performance belum diklaim.
+
+Domain dan resource produksi, legal/support terms serta harga paket tetap memerlukan konfigurasi dan verifikasi pemilik. Penambahan ini tidak membuka checkout produksi, tidak menjalankan migrasi remote dan tidak mengaktifkan resource berbayar.

@@ -1,3 +1,4 @@
+import { MediaImage } from "../components/MediaImage";
 import { useEffect, useState, type FormEvent } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { Icon } from "../components/Icon";
@@ -5,6 +6,7 @@ import {
   api,
   useData,
   rupiah,
+  catalogPrice,
   label,
   type Store,
   type Settings,
@@ -14,26 +16,46 @@ import {
   type Item,
 } from "./api";
 type Line = { variant_id: string; quantity: number };
-export function LiveStore({ hostname = false }: { hostname?: boolean }) {
+export function LiveStore({
+  hostname = false,
+  preview = false,
+}: {
+  hostname?: boolean;
+  preview?: boolean;
+}) {
   const params = useParams(),
     location = useLocation(),
     navigate = useNavigate();
   const slug = params.slug || "";
-  const base = hostname ? "" : "/s/" + slug,
-    endpoint = hostname ? "/api/public/store" : "/api/public/stores/" + slug;
+  const base = preview
+      ? "/preview/" + params.sid
+      : hostname
+        ? ""
+        : "/s/" + slug,
+    endpoint = preview
+      ? `/api/merchant/stores/${params.sid}/preview`
+      : hostname
+        ? "/api/public/store"
+        : "/api/public/stores/" + slug;
+  const path = location.pathname.slice(base.length) || "/";
+  const isTracking = path.startsWith("/track/");
   const [revision, setRevision] = useState(0);
   const shop = useData<{ store: Store; settings: Settings }>(
-      endpoint,
+      isTracking ? null : endpoint,
       revision,
     ),
     catalog = useData<{ products: Product[] }>(
-      endpoint + "/products",
+      isTracking ? null : preview ? endpoint : endpoint + "/products",
       revision,
     ),
     capabilities = useData<{ liveCheckout: boolean }>(
       "/api/public/capabilities",
     );
-  const key = "nalaro-cart-v1:" + window.location.hostname + ":" + slug;
+  const key =
+    "nalaro-cart-v1:" +
+    window.location.hostname +
+    ":" +
+    (preview ? "preview:" + params.sid : slug);
   const [lines, setLines] = useState<Line[]>(() => {
       try {
         const saved = JSON.parse(localStorage.getItem(key) || "[]");
@@ -65,7 +87,6 @@ export function LiveStore({ hostname = false }: { hostname?: boolean }) {
       ? shop.value.store.name + " | Nalaro Store"
       : "Nalaro Store";
   }, [shop.value?.store.name]);
-  const path = location.pathname.slice(base.length) || "/";
   const all = catalog.value?.products || [];
   const found = path.startsWith("/product/")
     ? all.find((p) => p.slug === path.slice("/product/".length))
@@ -110,6 +131,25 @@ export function LiveStore({ hostname = false }: { hostname?: boolean }) {
         .filter((l) => l.quantity),
     );
   }
+  if (isTracking)
+    return (
+      <div className="storefront live-store">
+        <header className="store-header">
+          <div className="store-shell store-header-inner">
+            <Link to={base + "/"} className="store-logo">
+              Pelacakan pesanan
+            </Link>
+          </div>
+        </header>
+        <main>
+          <Tracking
+            endpoint={endpoint}
+            token={path.slice("/track/".length)}
+            base={base}
+          />
+        </main>
+      </div>
+    );
   if ((shop.loading && !shop.value) || (catalog.loading && !catalog.value))
     return (
       <main className="auth-page" aria-busy="true">
@@ -137,6 +177,12 @@ export function LiveStore({ hostname = false }: { hostname?: boolean }) {
       className="storefront live-store"
       style={{ "--store-accent": s.accent } as React.CSSProperties}
     >
+      {preview && (
+        <div className="preview-banner">
+          Pratinjau toko · Pesanan tidak dapat dibuat di sini.{" "}
+          <Link to="/app/settings">Kembali ke pengaturan</Link>
+        </div>
+      )}
       <header className="store-header">
         <div className="store-shell store-header-inner">
           <Link className="store-text-link" to={base + "/catalog"}>
@@ -144,7 +190,7 @@ export function LiveStore({ hostname = false }: { hostname?: boolean }) {
           </Link>
           <Link className="store-logo" to={base + "/"}>
             {s.logo_url ? (
-              <img src={s.logo_url} alt={store.name} />
+              <MediaImage src={s.logo_url} alt={store.name} />
             ) : (
               store.name
             )}
@@ -181,7 +227,7 @@ export function LiveStore({ hostname = false }: { hostname?: boolean }) {
             base={base}
             items={items}
             settings={s}
-            enabled={capabilities.value?.liveCheckout === true}
+            enabled={!preview && capabilities.value?.liveCheckout === true}
             invalid={items.length !== lines.length}
             onComplete={(raw) => {
               setLines([]);
@@ -214,7 +260,7 @@ export function LiveStore({ hostname = false }: { hostname?: boolean }) {
                   {items.map((i) => (
                     <div className="cart-line" key={i.variant_id}>
                       {i.product.primary_image_url && (
-                        <img
+                        <MediaImage
                           className="live-thumb"
                           src={i.product.primary_image_url}
                           alt=""
@@ -300,7 +346,7 @@ export function LiveStore({ hostname = false }: { hostname?: boolean }) {
               className={`live-store-hero ${s.hero_image_url ? "with-photo" : ""}`}
             >
               {s.hero_image_url && (
-                <img src={s.hero_image_url} alt="Koleksi toko" />
+                <MediaImage src={s.hero_image_url} alt="Koleksi toko" />
               )}
               <div>
                 <h1>{s.hero_title || store.name}</h1>
@@ -367,7 +413,7 @@ function Tile({ product: p, base }: { product: Product; base: string }) {
     <Link className="product-tile" to={base + "/product/" + p.slug}>
       <div className="product-image">
         {p.primary_image_url ? (
-          <img src={p.primary_image_url} alt={p.name} loading="lazy" />
+          <MediaImage src={p.primary_image_url} alt={p.name} loading="lazy" />
         ) : (
           <span className="media-placeholder">
             <Icon name="box" size={40} />
@@ -377,7 +423,10 @@ function Tile({ product: p, base }: { product: Product; base: string }) {
       <div className="product-meta">
         <span>{p.category}</span>
         <h3>{p.name}</h3>
-        <p>{rupiah(p.price_idr)}</p>
+        <p>
+          {p.variants.length > 1 ? "Mulai dari " : ""}
+          {rupiah(catalogPrice(p))}
+        </p>
         {!available && <small>Stok habis</small>}
       </div>
     </Link>
@@ -402,14 +451,14 @@ function LiveCatalog({
         (!category || p.category === category) &&
         p.name.toLowerCase().includes(search.toLowerCase()) &&
         (!inStock || p.variants.some((v) => Number(v.available_stock) > 0)) &&
-        (!min || Number(p.price_idr) >= Number(min)) &&
-        (!max || Number(p.price_idr) <= Number(max)),
+        (!min || catalogPrice(p) >= Number(min)) &&
+        (!max || catalogPrice(p) <= Number(max)),
     )
     .sort((a, b) =>
       sort === "low"
-        ? Number(a.price_idr) - Number(b.price_idr)
+        ? catalogPrice(a) - catalogPrice(b)
         : sort === "high"
-          ? Number(b.price_idr) - Number(a.price_idr)
+          ? catalogPrice(b) - catalogPrice(a)
           : 0,
     );
   return (
@@ -501,10 +550,13 @@ function LiveProduct({
   add: (v: Variant, q: number) => void;
   base: string;
 }) {
+  const navigate = useNavigate();
   const [vid, setVid] = useState(p.variants[0]?.id),
-    [quantity, setQuantity] = useState(1);
+    [quantity, setQuantity] = useState(1),
+    [photo, setPhoto] = useState<string | null>(null);
   const v = p.variants.find((v) => v.id === vid),
     stock = Number(v?.available_stock || 0);
+  const activePhoto = photo || v?.image_url || p.primary_image_url;
   return (
     <section className="store-shell pdp-page">
       <Link to={base + "/catalog"} className="back-link">
@@ -512,12 +564,35 @@ function LiveProduct({
       </Link>
       <div className="pdp-layout">
         <div className="pdp-gallery">
-          {p.primary_image_url ? (
-            <img src={p.primary_image_url} alt={p.name} />
+          {activePhoto ? (
+            <MediaImage
+              src={activePhoto}
+              alt={p.gallery?.find((g) => g.url === activePhoto)?.alt || p.name}
+            />
           ) : (
             <span className="media-placeholder">
               <Icon name="box" size={80} />
             </span>
+          )}
+          {!!p.gallery?.length && (
+            <div className="gallery-thumbnails">
+              {[{ url: p.primary_image_url, alt: p.name }, ...p.gallery]
+                .filter((g) => g.url)
+                .map((g, i) => (
+                  <button
+                    key={i}
+                    aria-label={`Lihat foto ${i + 1}: ${g.alt || p.name}`}
+                    aria-pressed={activePhoto === g.url}
+                    onClick={() => setPhoto(g.url!)}
+                  >
+                    <MediaImage
+                      src={g.url!}
+                      alt={g.alt || p.name}
+                      loading="lazy"
+                    />
+                  </button>
+                ))}
+            </div>
           )}
         </div>
         <div className="pdp-info">
@@ -538,6 +613,7 @@ function LiveProduct({
                   onClick={() => {
                     setVid(x.id);
                     setQuantity(1);
+                    setPhoto(null);
                   }}
                 >
                   {x.option_label}
@@ -569,6 +645,24 @@ function LiveProduct({
             onClick={() => v && add(v, quantity)}
           >
             Tambah ke keranjang <Icon name="bag" />
+          </button>
+          <button
+            className="store-outline-button live-buy-now"
+            disabled={
+              !v ||
+              !stock ||
+              !Number.isInteger(quantity) ||
+              quantity < 1 ||
+              quantity > Math.min(99, stock)
+            }
+            onClick={() => {
+              if (v) {
+                add(v, quantity);
+                navigate(base + "/checkout");
+              }
+            }}
+          >
+            Beli sekarang
           </button>
         </div>
       </div>
@@ -609,10 +703,17 @@ function LiveCheckout({
     total = subtotal + shipping;
   const storageKey = "checkout-v1:" + endpoint;
   const [idempotency] = useState(() => {
-    let key = sessionStorage.getItem(storageKey);
-    if (!key) {
-      key = crypto.randomUUID();
+    let key: string | null = null;
+    try {
+      key = sessionStorage.getItem(storageKey);
+    } catch {
+      /* memory-only checkout */
+    }
+    if (!key || !/^[a-f0-9-]{36}$/.test(key)) key = crypto.randomUUID();
+    try {
       sessionStorage.setItem(storageKey, key);
+    } catch {
+      /* same key persists in this form */
     }
     return key;
   });
@@ -641,7 +742,11 @@ function LiveCheckout({
           shipping_method: method,
         },
       );
-      sessionStorage.removeItem(storageKey);
+      try {
+        sessionStorage.removeItem(storageKey);
+      } catch {
+        /* order is already durable */
+      }
       onComplete(r.tracking_token);
     } catch (e) {
       setError((e as Error).message);
@@ -808,9 +913,11 @@ function Tracking({
   return (
     <section className="store-shell complete-page">
       <h1>
-        {o?.payment_status === "paid"
-          ? "Pembayaran terverifikasi."
-          : "Pesanan diterima."}
+        {error
+          ? "Pesanan belum tersedia."
+          : o?.payment_status === "paid"
+            ? "Pembayaran terverifikasi."
+            : "Pesanan diterima."}
       </h1>
       {loading && <p aria-busy="true">Memuat pesanan…</p>}
       {error && (
@@ -848,9 +955,9 @@ function Tracking({
                 <h2>Selesaikan pembayaran.</h2>
                 <p className="pre-line">{value.payment.bank_details}</p>
                 {value.payment.qris_media_key && (
-                  <img
+                  <MediaImage
                     className="qris-image"
-                    src={"/api/media/" + value.payment.qris_media_key}
+                    src={endpoint + "/track/" + raw + "/qris"}
                     alt="QRIS toko"
                   />
                 )}

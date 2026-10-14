@@ -15,10 +15,25 @@ export async function api<T>(
   const response = await fetch(path, {
     method,
     credentials: "same-origin",
-    headers: data ? { "content-type": "application/json" } : undefined,
+    headers: {
+      ...(data ? { "content-type": "application/json" } : {}),
+      ...(path.startsWith("/api/merchant/") ||
+      path.startsWith("/api/admin/") ||
+      path.startsWith("/api/auth/")
+        ? await (await import("../lib/firebase")).authorizationHeaders()
+        : {}),
+    },
     body: data ? JSON.stringify(data) : undefined,
   });
-  const result = (await response.json()) as T & { error?: string };
+  let result: T & { error?: string };
+  try {
+    result = await response.json();
+  } catch {
+    throw new APIError(
+      "API belum tersedia. Pastikan server aplikasi lengkap berjalan.",
+      response.status || 503,
+    );
+  }
   if (!response.ok)
     throw new APIError(
       result.error || "Layanan belum tersedia.",
@@ -26,7 +41,7 @@ export async function api<T>(
     );
   return result;
 }
-export function useData<T>(path: string, revision = 0) {
+export function useData<T>(path: string | null, revision = 0) {
   const [value, setValue] = useState<T | null>(null),
     [error, setError] = useState(""),
     [loading, setLoading] = useState(true);
@@ -34,6 +49,12 @@ export function useData<T>(path: string, revision = 0) {
     let current = true;
     setLoading(true);
     setError("");
+    if (!path) {
+      setLoading(false);
+      return () => {
+        current = false;
+      };
+    }
     api<T>(path)
       .then((v) => {
         if (current) setValue(v);
@@ -63,6 +84,7 @@ export type User = {
   admin: boolean;
 };
 export type Store = {
+  pilot_until?: string | null;
   id: string;
   slug: string;
   name: string;
@@ -79,6 +101,7 @@ export type Variant = {
   reserved_qty?: number;
   available_stock?: number;
   status: "active" | "inactive";
+  image_url?: string | null;
 };
 export type Product = {
   id: string;
@@ -88,9 +111,16 @@ export type Product = {
   price_idr: number;
   category: string;
   primary_image_url: string | null;
+  gallery?: { url: string; alt: string }[];
   status: "active" | "draft" | "archived";
   variants: Variant[];
 };
+export function catalogPrice(product: Product) {
+  const prices = product.variants
+    .filter((v) => v.status === "active")
+    .map((v) => Number(v.price_override_idr ?? product.price_idr));
+  return prices.length ? Math.min(...prices) : Number(product.price_idr);
+}
 export type Settings = {
   contact_phone: string;
   pickup_address: string;

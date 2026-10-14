@@ -9,7 +9,7 @@
 
 ## Database connection and migrations
 
-Retrieve the connection and CA certificate directly from the Aiven Console into a trusted private terminal/environment. Do not paste passwords into chat, repository files or frontend environment variables. Aiven's connector returns `[REDACTED]` for the password, so it cannot be used to create Hyperdrive or execute migrations.
+Retrieve the connection and CA certificate directly from the Aiven Console into a trusted private terminal/environment. Do not paste passwords into chat, repository files or frontend environment variables. Aiven's connector redacts the password, so it cannot supply a direct DATABASE_URL or Hyperdrive connection credentials. Its separate PG Editor tools can inspect SQL state; direct local tests and the migration CLI still require private connection credentials.
 
 Use a dedicated PostgreSQL role for the app with the necessary table/sequence permissions, separately from the migration owner. Create Hyperdrive with verified Aiven TLS, caching **disabled**, and a deliberately small origin pool. Distributed pooling is not a guaranteed global connection cap. Keep connection headroom for migrations and administration and measure `pg_stat_activity` under load.
 
@@ -26,15 +26,15 @@ npm run db:migrate
 npm run types
 ```
 
-Migrations 0001/0002/0003 add the domain schema, identity/commerce/billing support and platform billing policy. Use forward migrations; never edit an applied file.
+Migrations 0001?0005 add the domain schema, commerce/billing, Firebase UID mapping, time-bounded pilots and product galleries. Use forward migrations; never edit an applied file.
 
 ## Email, owner and secrets
 
 Enable Email Sending for the actual sender domain in Cloudflare and verify required DNS records. Add `"send_email":[{"name":"EMAIL"}]` to config only after domain onboarding. Set `EMAIL_FROM` to an address on that domain. A routing-only Email binding is not a substitute for arbitrary transactional Email Sending.
 
-Create `TOKEN_SECRET` through Cloudflare's secret interface. It encrypts recoverable guest tracking tokens; keep it through normal deployments. Changing it without a migration invalidates idempotent token replay for existing orders. Set `OWNER_EMAIL` to the exact platform owner's address and register/verify it normally.
+Create `TOKEN_SECRET` through Cloudflare's secret interface. It encrypts recoverable guest tracking tokens; keep it through normal deployments. Changing it without a migration invalidates idempotent token replay for existing orders. Set `FIREBASE_PROJECT_ID`, `FIREBASE_API_KEY` and the exact `OWNER_EMAIL`; register and verify that identity through Firebase.
 
-Registration is unavailable in production until the email binding exists; it does not falsely report that unconfigured mail was delivered. Validate real delivery, sender authentication, verification links and renewal/order notifications on controlled addresses.
+Firebase Auth handles registration, identity verification and password-reset email. The Cloudflare EMAIL binding is only for order/subscription notifications. Validate real delivery, sender authentication, verification links and renewal/order notifications on controlled addresses.
 
 ## Platform domain and store subdomains
 
@@ -75,3 +75,15 @@ npm run deploy
 ```
 
 For rollback, deploy the previous tested Worker version and keep checkout disabled as needed. Do not drop historical order/inventory tables. A release remains incomplete until account-level smoke tests pass, even when source/CI tests are green.
+
+## Firebase migration and deployment
+
+Use the same Firebase project in Vite build variables and Worker variables. API verifies Firebase RS256 ID tokens using Google public keys, then checks the current account UID/email/verification/disabled/validSince through Firebase account lookup. A Firebase Admin service-account private key is not required for this flow. If the frontend API key is restricted by HTTP referrer, use an appropriate separate server API key restricted to the necessary Identity Toolkit API.
+
+Legacy password/session tables are retained by forward migration for historical compatibility but are not used for authentication. Existing unbound users can be linked only by a verified Firebase email; already linked UIDs cannot be replaced via client-supplied email. Merchant/admin roles remain server-owned. Configure Firebase email action URL/Authorized Domains per environment; see LOCAL-DEVELOPMENT.md.
+
+Do not set FIREBASE_AUTH_EMULATOR_HOST or VITE_FIREBASE_AUTH_EMULATOR_URL in production. Build rejects emulator configuration for production, and Worker rejects emulator tokens outside development/test.
+
+At this audit the Aiven service is RUNNING and public application schema is empty, R2 is present, and Hyperdrive list is empty. These observations are not a deployment or migration result. Aiven connector redacts passwords, so filling private DATABASE_URL/CA remains necessary for a direct connection or Hyperdrive provisioning.
+
+Firebase project Authorized Domains was read during verification: localhost is already allowed; nalarostore.nalaro.digital is also allowed. The repository platform domain store.nalaro.digital is not in that list yet. Add the selected production domain before the production identity-email walkthrough. No Firebase domain configuration was changed remotely.

@@ -14,12 +14,17 @@ import { body, hash } from "./lib/security";
 import { domainProof, verifyDomain } from "./lib/domains";
 import { upload } from "./lib/media";
 import { cleanup, deliverOutbox } from "./lib/jobs";
+import { operationRoutes } from "./lib/operations";
+import { storeHTML } from "./lib/seo";
 // Deployment bindings are optional until provisioned. Generated base Env comes from wrangler types.
 export type RuntimeEnv = Env & {
   HYPERDRIVE?: Hyperdrive;
   MEDIA?: R2Bucket;
   EMAIL?: SendEmail;
   TOKEN_SECRET?: string;
+  FIREBASE_PROJECT_ID?: string;
+  FIREBASE_API_KEY?: string;
+  FIREBASE_AUTH_EMULATOR_HOST?: string;
 };
 function isPlatform(host: string, env: RuntimeEnv) {
   return (
@@ -60,7 +65,7 @@ export async function handleAPI(
     return json({ plans: await publicPlans(db) });
   if (path === "/api/public/capabilities")
     return json({
-      merchantAuth: !!env.TOKEN_SECRET,
+      merchantAuth: !!env.FIREBASE_PROJECT_ID && !!env.FIREBASE_API_KEY,
       liveCheckout: env.ENABLE_LIVE_CHECKOUT === "true",
       mediaUploads: !!env.MEDIA,
       email: !!env.EMAIL,
@@ -68,7 +73,7 @@ export async function handleAPI(
       customInquiry: true,
     });
   const m = path.match(
-    /^\/api\/public\/(?:stores\/([a-z0-9-]+)|store)(?:\/(products|checkout|track)(?:\/([a-f0-9]{64}))?)?$/,
+    /^\/api\/public\/(?:stores\/([a-z0-9-]+)|store)(?:\/(products|checkout|track)(?:\/([a-f0-9]{64})(?:\/(qris))?)?)?$/,
   );
   if (m) {
     assert(
@@ -118,7 +123,24 @@ export async function handleAPI(
           (await hash(request.headers.get("cf-connecting-ip") || "local")),
         60,
       );
-      return json(await tracking(db, store.id, m[3]));
+      const record = await tracking(db, store.id, m[3]);
+      if (m[4] === "qris") {
+        const key = record.payment.qris_media_key;
+        assert(
+          env.MEDIA && key && key.startsWith(store.id + "/"),
+          404,
+          "QRIS tidak tersedia.",
+        );
+        const image = await env.MEDIA.get(key);
+        assert(image, 404, "QRIS tidak tersedia.");
+        return new Response(image.body, {
+          headers: {
+            "content-type": image.httpMetadata?.contentType || "image/png",
+            "cache-control": "private,max-age=60",
+          },
+        });
+      }
+      return json(record);
     }
     return json({
       store: {
@@ -153,7 +175,7 @@ export async function handleAPI(
       [media[1]],
     );
     if (!visible[0]) {
-      const user = await identity(db, request);
+      const user = await identity(db, request, env);
       const access = await db.query(
         `SELECT m.user_id FROM stores s JOIN merchant_memberships m ON m.merchant_id=s.merchant_id WHERE s.id=$1 AND m.user_id=$2`,
         [media[1], user?.id || null],
@@ -172,7 +194,7 @@ export async function handleAPI(
     });
   }
   assert(platform, 404, "Halaman tidak ditemukan.");
-  const user = await identity(db, request);
+  const user = await identity(db, request, env);
   const auth = await authRoutes(db, request, env, user, path);
   if (auth) return auth;
   const domainPost = path.match(
@@ -186,6 +208,7 @@ export async function handleAPI(
   if (mediaPost && request.method === "POST")
     return upload(db, request, user, mediaPost[1], env.MEDIA);
   for (const route of [
+    () => operationRoutes(db, request, user),
     () => catalogRoutes(db, request, user, path, env.ROOT_DOMAIN),
     () => orderRoutes(db, request, user, path),
     () => billingRoutes(db, request, user, path),
@@ -199,17 +222,18 @@ const handler = {
   async fetch(
     request: Request,
     env: RuntimeEnv,
-    ctx: ExecutionContext,
+    _ctx: ExecutionContext,
   ): Promise<Response> {
     const url = new URL(request.url);
     let db: DB | undefined;
     const rid = crypto.randomUUID();
     try {
+      if (url.pathname === "/api/live") return json({ status: "ok" });
       if (!url.pathname.startsWith("/api/")) {
         if (url.pathname === "/.well-known/nalarostore-domain") {
           assert(env.HYPERDRIVE, 503, "Layanan belum tersedia.");
           db = await connect(env.HYPERDRIVE.connectionString);
-          return domainProof(db, url.hostname, env.ROOT_DOMAIN);
+          return await domainProof(db, url.hostname, env.ROOT_DOMAIN);
         }
 
         if (
@@ -220,12 +244,17 @@ const handler = {
         ) {
           assert(env.HYPERDRIVE, 503, "Toko belum tersedia.");
           db = await connect(env.HYPERDRIVE.connectionString);
-          const store = await publicStore(
-            db,
-            null,
-            url.hostname,
-            env.ROOT_DOMAIN,
-          );
+          const store = url.pathname.startsWith("/track/")
+            ? (
+                await db.query(
+                  "SELECT s.slug FROM store_domains d JOIN stores s ON s.id=d.store_id WHERE d.hostname=$1 AND d.verification_status='verified'",
+                  [url.hostname],
+                )
+              )[0]
+            : await publicStore(db, null, url.hostname, env.ROOT_DOMAIN);
+          assert(store, 404, "Toko tidak ditemukan.");
+          if (!url.pathname.startsWith("/track/"))
+            return await storeHTML(db, request, env, store);
           const response = await env.ASSETS.fetch(request);
           const headers = new Headers(response.headers);
           headers.set("x-store-slug", store.slug);
@@ -234,6 +263,21 @@ const handler = {
             status: response.status,
             headers,
           });
+        }
+        const pathStore = url.pathname.match(/^\/s\/([a-z0-9-]+)(?:\/|$)/);
+        if (
+          pathStore &&
+          env.HYPERDRIVE &&
+          !/\/(track|cart|checkout)(?:\/|$)/.test(url.pathname)
+        ) {
+          db = await connect(env.HYPERDRIVE.connectionString);
+          const store = await publicStore(
+            db,
+            pathStore[1],
+            url.hostname,
+            env.ROOT_DOMAIN,
+          );
+          return await storeHTML(db, request, env, store);
         }
         return env.ASSETS.fetch(request);
       }
@@ -251,24 +295,6 @@ const handler = {
       }
       db = await connect(env.HYPERDRIVE.connectionString);
       const response = await handleAPI(db, request, env);
-      if (
-        env.EMAIL &&
-        ["/api/auth/register", "/api/auth/resend", "/api/auth/verify"].includes(
-          url.pathname,
-        )
-      ) {
-        const connection = env.HYPERDRIVE.connectionString;
-        ctx.waitUntil(
-          (async () => {
-            const jobs = await connect(connection);
-            try {
-              await deliverOutbox(jobs, env.EMAIL, env.EMAIL_FROM);
-            } finally {
-              await jobs.client.end();
-            }
-          })(),
-        );
-      }
       return response;
     } catch (e) {
       if (e instanceof HttpError)
@@ -331,11 +357,13 @@ export default {
     if ((headers.get("content-type") || "").includes("text/html")) {
       headers.set(
         "content-security-policy",
-        "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'",
+        "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://identitytoolkit.googleapis.com https://securetoken.googleapis.com; frame-src https://nalarostore.firebaseapp.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'",
       );
       const path = new URL(request.url).pathname;
       if (
-        /^\/(app|admin|login|register|verify)(?:\/|$)/.test(path) ||
+        /^\/(app|admin|login|register|verify|forgot-password|auth|preview|demo)(?:\/|$)/.test(
+          path,
+        ) ||
         /\/(cart|checkout|track)(?:\/|$)/.test(path)
       )
         headers.set("x-robots-tag", "noindex, nofollow, noarchive");

@@ -2,12 +2,12 @@
 
 ## Phase 1: merchant identity and real data
 
-- [x] Registration, one-use email verification, secure sessions, owner bootstrap after verified email.
+- [x] Firebase Auth registration, verification, password reset/change, server-side token validation and verified owner access.
 - [x] Per-store merchant authorization, hostile cross-tenant tests, audit records.
 - [x] Store/product/variant/settings editors, image uploads and stock movements.
 - [x] Real catalog, storefront and workspace; demonstrations are separate routes.
 - [x] Owner-only package/price administration.
-- [ ] Connect actual Aiven credentials to Hyperdrive, migrate the production database, verify real sender-domain mail.
+- [ ] Connect actual Aiven credentials to Hyperdrive, migrate the production database, verify real order-email delivery; Firebase handles identity emails.
 
 ## Phase 2: commerce
 
@@ -37,3 +37,16 @@ Merchant payment gateways/signature verification/reconciliation/refunds; carrier
 ## Release status
 
 Implementation and test coverage do not imply production activation. The original foundation is on main; the phase 1–3 implementation is in the linked feature branch/PR. Live checkout stays disabled until the account-level gates in DEPLOYMENT.md are satisfied. No SaaS prices or real merchant products are invented.
+
+## Audit follow-up
+
+- [x] Firebase migration, dynamic password policy and localhost/Aiven configuration.
+- [x] Firebase emulator registration/verification/reset/password-change browser coverage.
+- [x] Tracking independent of paused/expired storefront; raw custom status preservation.
+- [x] Explicit time-bounded pilot approval; draft preview before publication.
+- [x] Product gallery/variant image editing, customer summaries, basic revenue analytics.
+- [x] Order search/date filters/pagination, tenant CSV export, printable order summary.
+- [x] Worker store/product metadata, canonical and structured data implementation.
+- [ ] Account-level Aiven migrations/Hyperdrive, notification email, DNS/TLS and measured restore/load.
+- [ ] Real Firebase identity-email delivery and production auth walkthrough.
+- [ ] Full SSR, advanced funnel, staff invitation, MFA provider review, additional themes and physical-device QA.

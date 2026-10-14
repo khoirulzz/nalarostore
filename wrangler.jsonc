@@ -17,6 +17,8 @@
     "APP_ORIGIN": "https://store.nalaro.digital",
     "ROOT_DOMAIN": "store.nalaro.digital",
     "OWNER_EMAIL": "uniquefactuhl@gmail.com",
+    "FIREBASE_PROJECT_ID": "nalarostore",
+    "FIREBASE_API_KEY": "AIzaSyAymTQU-0lwS_p7yLe0JgsFlNkZPpUo8ow",
     "ENABLE_LIVE_CHECKOUT": "false",
     "EMAIL_FROM": "hello@nalaro.digital",
   },

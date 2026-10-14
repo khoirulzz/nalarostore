@@ -1,14 +1,19 @@
-import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import React, { createContext, useContext, useEffect, useMemo, useState, lazy, Suspense } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter, Link, Navigate, Route, Routes, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { Icon, type IconName } from './components/Icon';
 import { categories, collectionImage, detailImage, editorialImage, products, rupiah, type DemoProduct } from './data/demo';
 import './styles.css';
 import './live/live.css';
-import { Auth, Verify } from './live/Auth';
-import { Merchant } from './live/Merchant';
-import { LiveStore } from './live/Storefront';
-import { Admin, CustomInquiry, PublicPricing } from './live/Admin';
+import { CustomInquiry, PublicPricing } from './live/PublicOffers';
+const Auth = lazy(() => import('./live/Auth').then(m => ({ default: m.Auth })));
+const Verify = lazy(() => import('./live/Auth').then(m => ({ default: m.Verify })));
+const ForgotPassword = lazy(() => import('./live/Auth').then(m => ({ default: m.ForgotPassword })));
+const AuthAction = lazy(() => import('./live/Auth').then(m => ({ default: m.AuthAction })));
+const RequireAuth = lazy(() => import('./live/Auth').then(m => ({ default: m.RequireAuth })));
+const Merchant = lazy(() => import('./live/Merchant').then(m => ({ default: m.Merchant })));
+const LiveStore = lazy(() => import('./live/Storefront').then(m => ({ default: m.LiveStore })));
+const Admin = lazy(() => import('./live/Admin').then(m => ({ default: m.Admin })));
 
 type CartLine = { id: string; size: string; quantity: number };
 type CartAPI = { lines: CartLine[]; count: number; add: (id:string,size:string,quantity?:number)=>void; update:(id:string,size:string,quantity:number)=>void; clear:()=>void };
@@ -55,6 +60,6 @@ function Products(){const [q,setQ]=useState('');const shown=products.filter(p=>p
 function Design(){return <MerchantLayout title="Tampilan toko" subtitle="Identitas visual yang tetap menjadi milik bisnismu."><div className="work-section theme-overview"><div><span className="work-eyebrow">TEMA YANG DIGUNAKAN</span><h2>Atelier</h2><p>Komposisi editorial untuk fashion, lifestyle, dan produk kurasi. Fokus pada fotografi koleksi dan alur belanja.</p><div className="theme-swatches"><span style={{background:'#171715'}}/><span style={{background:'#ece7dd'}}/><span style={{background:'#b1a693'}}/><span style={{background:'#fff'}}/></div><p className="work-caption">Tema Market dan Local dipersiapkan setelah commerce core stabil.</p><Link className="button button-dark" to="/demo/atelier">Lihat pratinjau <Icon name="arrow-up-right" size={18}/></Link></div><div className="theme-preview"><img src={editorialImage} alt="Contoh visual tema Atelier"/><div><b>STUDIO ATELIER</b><span>Made for your everyday.</span></div></div></div></MerchantLayout>}
 function NotFound(){return <><MarketingNav/><main className="not-found shell"><span>404</span><h1>Halaman tidak ditemukan.</h1><p>Alamat mungkin berubah atau tidak tersedia.</p><Link className="button button-dark" to="/">Kembali ke beranda <Icon name="arrow-right" size={17}/></Link></main><Footer/></>}
 function StoreRoute(){const {slug}=useParams();return <LiveStore key={slug}/>;}
-function App(){if(window.location.hostname.endsWith('.store.nalaro.digital'))return <BrowserRouter><LiveStore hostname/></BrowserRouter>;return <BrowserRouter><CartProvider><ScrollTop/><Routes><Route path="/" element={<Marketing/>}/><Route path="/custom" element={<CustomInquiry/>}/><Route path="/login" element={<Auth/>}/><Route path="/register" element={<Auth register/>}/><Route path="/verify" element={<Verify/>}/><Route path="/app/*" element={<Merchant/>}/><Route path="/admin/*" element={<Admin/>}/><Route path="/s/:slug/*" element={<StoreRoute/>}/><Route path="/demo/atelier" element={<StoreHome/>}/><Route path="/demo/atelier/catalog" element={<StoreCatalog/>}/><Route path="/demo/atelier/product/:slug" element={<ProductDetail/>}/><Route path="/demo/atelier/cart" element={<Cart/>}/><Route path="/demo/atelier/checkout" element={<Checkout/>}/><Route path="/demo/atelier/complete" element={<Complete/>}/><Route path="/demo/workspace" element={<Overview/>}/><Route path="/demo/workspace/orders" element={<Orders/>}/><Route path="/demo/workspace/products" element={<Products/>}/><Route path="/demo/workspace/design" element={<Design/>}/><Route path="/dashboard" element={<Navigate to="/demo/workspace" replace/>}/><Route path="*" element={<NotFound/>}/></Routes></CartProvider></BrowserRouter>}
+function App(){if(window.location.hostname.endsWith('.store.nalaro.digital'))return <BrowserRouter><LiveStore hostname/></BrowserRouter>;return <BrowserRouter><CartProvider><ScrollTop/><Routes><Route path="/" element={<Marketing/>}/><Route path="/custom" element={<CustomInquiry/>}/><Route path="/login" element={<Auth/>}/><Route path="/register" element={<Auth register/>}/><Route path="/verify" element={<Verify/>}/><Route path="/forgot-password" element={<ForgotPassword/>}/><Route path="/auth/action" element={<AuthAction/>}/><Route path="/app/*" element={<Merchant/>}/><Route path="/admin/*" element={<Admin/>}/><Route path="/s/:slug/*" element={<StoreRoute/>}/><Route path="/preview/:sid/*" element={<RequireAuth><LiveStore preview/></RequireAuth>}/><Route path="/demo/atelier" element={<StoreHome/>}/><Route path="/demo/atelier/catalog" element={<StoreCatalog/>}/><Route path="/demo/atelier/product/:slug" element={<ProductDetail/>}/><Route path="/demo/atelier/cart" element={<Cart/>}/><Route path="/demo/atelier/checkout" element={<Checkout/>}/><Route path="/demo/atelier/complete" element={<Complete/>}/><Route path="/demo/workspace" element={<Overview/>}/><Route path="/demo/workspace/orders" element={<Orders/>}/><Route path="/demo/workspace/products" element={<Products/>}/><Route path="/demo/workspace/design" element={<Design/>}/><Route path="/dashboard" element={<Navigate to="/demo/workspace" replace/>}/><Route path="*" element={<NotFound/>}/></Routes></CartProvider></BrowserRouter>}
 
-createRoot(document.getElementById('root')!).render(<React.StrictMode><App/></React.StrictMode>);
+createRoot(document.getElementById('root')!).render(<React.StrictMode><Suspense fallback={<main className="auth-page" aria-busy="true">Memuat halaman...</main>}><App/></Suspense></React.StrictMode>);

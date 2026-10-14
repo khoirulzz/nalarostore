@@ -35,7 +35,20 @@ export async function entitlement(
       [sid, feature],
     )
   )[0];
-  if (!sub) return;
+  if (!sub) {
+    if (feature === "storefront" || feature === "orders") {
+      const store = (
+        await db.query("SELECT pilot_until FROM stores WHERE id=$1", [sid])
+      )[0];
+      assert(
+        store?.pilot_until &&
+          new Date(store.pilot_until).getTime() > Date.now(),
+        423,
+        "Pilih paket langganan atau minta persetujuan toko pilot sebelum menerima pesanan.",
+      );
+    }
+    return;
+  }
   const end = sub.current_period_end
     ? new Date(sub.current_period_end).getTime()
     : 0;
@@ -255,6 +268,60 @@ export async function billingRoutes(
   }
   if (!path.startsWith("/api/admin/")) return;
   requireAdmin(user);
+  if (path === "/api/admin/outbox" && request.method === "GET")
+    return json({
+      events: await db.query(
+        "SELECT id,store_id,topic,status,attempts,next_attempt_at,created_at FROM outbox_events WHERE status<>'sent' ORDER BY created_at DESC LIMIT 100",
+      ),
+    });
+  const retry = path.match(/^\/api\/admin\/outbox\/([a-f0-9-]{36})\/retry$/);
+  if (retry && request.method === "POST") {
+    await db.tx(async (tx) => {
+      const event = (
+        await tx.query(
+          "SELECT id,store_id,status FROM outbox_events WHERE id=$1 FOR UPDATE",
+          [retry[1]],
+        )
+      )[0];
+      assert(event, 404, "Notifikasi tidak ditemukan.");
+      assert(
+        event.status === "failed",
+        409,
+        "Hanya notifikasi gagal yang dapat dicoba ulang.",
+      );
+      await tx.query(
+        "UPDATE outbox_events SET status='pending',attempts=0,next_attempt_at=now() WHERE id=$1",
+        [retry[1]],
+      );
+      await audit(
+        tx,
+        user.id,
+        event.store_id,
+        "email.retry",
+        "outbox",
+        event.id,
+      );
+    });
+    return json({ ok: true });
+  }
+  const pilot = path.match(/^\/api\/admin\/stores\/([a-f0-9-]{36})\/pilot$/);
+  if (pilot && request.method === "POST") {
+    const c = await body(
+      request,
+      z.object({ days: z.number().int().min(0).max(90) }),
+    );
+    await db.tx(async (tx) => {
+      const store = await tx.query(
+        "UPDATE stores SET pilot_until=CASE WHEN $2=0 THEN NULL ELSE now()+interval '1 day'*$2 END WHERE id=$1 RETURNING id",
+        [pilot[1], c.days],
+      );
+      assert(store[0], 404, "Toko tidak ditemukan.");
+      await audit(tx, user.id, pilot[1], "pilot.update", "store", pilot[1], {
+        days: c.days,
+      });
+    });
+    return json({ ok: true });
+  }
   if (path === "/api/admin/billing-settings") {
     if (request.method === "GET")
       return json({
@@ -291,7 +358,7 @@ export async function billingRoutes(
   if (path === "/api/admin/overview" && request.method === "GET")
     return json({
       stores: await db.query(
-        "SELECT id,slug,name,status FROM stores ORDER BY created_at DESC LIMIT 200",
+        "SELECT id,slug,name,status,pilot_until FROM stores ORDER BY created_at DESC LIMIT 200",
       ),
       invoices: await db.query(
         `SELECT i.*,s.store_id FROM subscription_invoices i JOIN store_subscriptions s ON s.id=i.subscription_id ORDER BY i.issued_at DESC LIMIT 200`,

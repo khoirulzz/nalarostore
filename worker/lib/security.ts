@@ -59,35 +59,6 @@ export async function hash(value: string) {
     (b) => b.toString(16).padStart(2, "0"),
   ).join("");
 }
-export async function passwordHash(password: string, salt = token()) {
-  const key = await crypto.subtle.importKey(
-    "raw",
-    new TextEncoder().encode(password),
-    "PBKDF2",
-    false,
-    ["deriveBits"],
-  );
-  const bits = await crypto.subtle.deriveBits(
-    {
-      name: "PBKDF2",
-      hash: "SHA-256",
-      salt: new TextEncoder().encode(salt),
-      iterations: 100000,
-    },
-    key,
-    256,
-  );
-  return `pbkdf2:100000:${salt}:${Array.from(new Uint8Array(bits), (b) => b.toString(16).padStart(2, "0")).join("")}`;
-}
-export async function passwordValid(value: string, saved: string) {
-  if (!saved?.startsWith("pbkdf2:100000:")) return false;
-  const computed = await passwordHash(value, saved.split(":")[2]);
-  const a = new TextEncoder().encode(computed),
-    b = new TextEncoder().encode(saved);
-  let delta = a.length ^ b.length;
-  for (let i = 0; i < a.length; i++) delta |= a[i] ^ (b[i] ?? 0);
-  return delta === 0;
-}
 export async function seal(value: string, secret: string) {
   const key = await crypto.subtle.importKey(
     "raw",

@@ -5,6 +5,9 @@ export async function deliverOutbox(
   from: string,
 ) {
   if (!email) return 0;
+  await db.query(
+    "UPDATE outbox_events SET status='failed' WHERE status='processing' AND attempts>=8 AND next_attempt_at<now()-interval '5 minutes'",
+  );
   let count = 0;
   for (let i = 0; i < 20; i++) {
     const event = await db.tx(async (tx) => {

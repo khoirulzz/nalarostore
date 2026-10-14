@@ -43,7 +43,16 @@ function AdminPanel() {
       outbox: { status: string; count: number }[];
     }>("/api/admin/overview", rev),
     plans = useData<{ plans: Plan[] }>("/api/admin/plans", rev),
-    leads = useData<{ leads: Lead[] }>("/api/admin/leads", rev);
+    leads = useData<{ leads: Lead[] }>("/api/admin/leads", rev),
+    outbox = useData<{
+      events: {
+        id: string;
+        topic: string;
+        status: string;
+        attempts: number;
+        next_attempt_at: string;
+      }[];
+    }>(tab === "outbox" ? "/api/admin/outbox" : null, rev);
   async function verify(id: string) {
     if (!window.confirm("Dana invoice langganan telah diterima dan diperiksa?"))
       return;
@@ -63,6 +72,24 @@ function AdminPanel() {
       return;
     try {
       await api(`/api/admin/stores/${sid}/domain`, "POST", { verified: true });
+      setRev((r) => r + 1);
+    } catch (e) {
+      setError((e as Error).message);
+    }
+  }
+  async function pilot(sid: string) {
+    const value = window.prompt(
+      "Lama toko pilot dalam hari (1–90). Isi 0 untuk mengakhiri akses pilot.",
+      "7",
+    );
+    if (value === null) return;
+    const days = Number(value);
+    if (!Number.isInteger(days) || days < 0 || days > 90) {
+      setError("Isi 0–90 hari.");
+      return;
+    }
+    try {
+      await api(`/api/admin/stores/${sid}/pilot`, "POST", { days });
       setRev((r) => r + 1);
     } catch (e) {
       setError((e as Error).message);
@@ -88,6 +115,7 @@ function AdminPanel() {
             ["plans", "Paket & harga"],
             ["policy", "Pengaturan billing"],
             ["leads", "Proyek custom"],
+            ["outbox", "Notifikasi"],
           ].map(([key, label]) => (
             <button
               key={key}
@@ -115,6 +143,13 @@ function AdminPanel() {
                 <strong>{s.name}</strong>
                 <span>{s.slug}</span>
                 <span>{label(s.status)}</span>
+                <button onClick={() => pilot(s.id)}>Atur masa pilot</button>
+                {s.pilot_until && (
+                  <small>
+                    Pilot sampai{" "}
+                    {new Date(s.pilot_until).toLocaleDateString("id-ID")}
+                  </small>
+                )}
                 <Link to={"/s/" + s.slug}>Lihat toko</Link>
                 <button onClick={() => domain(s.id)}>
                   Verifikasi subdomain
@@ -189,6 +224,48 @@ function AdminPanel() {
             </>
           ))}
         {tab === "policy" && <BillingPolicy />}
+        {tab === "outbox" && (
+          <>
+            <h2>Antrean notifikasi</h2>
+            <p>
+              Notifikasi gagal dapat dicoba ulang setelah konfigurasi pengiriman
+              diperiksa.
+            </p>
+            {outbox.error && (
+              <p role="alert" className="live-error">
+                {outbox.error}
+              </p>
+            )}
+            {outbox.value?.events.map((event) => (
+              <div key={event.id} className="live-order-row">
+                <span>{event.topic}</span>
+                <span>{label(event.status)}</span>
+                <span>{event.attempts} percobaan</span>
+                {event.status === "failed" && (
+                  <button
+                    onClick={async () => {
+                      try {
+                        await api(
+                          `/api/admin/outbox/${event.id}/retry`,
+                          "POST",
+                          {},
+                        );
+                        setRev((r) => r + 1);
+                      } catch (e) {
+                        setError((e as Error).message);
+                      }
+                    }}
+                  >
+                    Coba kirim ulang
+                  </button>
+                )}
+              </div>
+            ))}
+            {outbox.value && !outbox.value.events.length && (
+              <p>Tidak ada notifikasi yang menunggu.</p>
+            )}
+          </>
+        )}
         {tab === "leads" &&
           (lead ? (
             <LeadEditor
@@ -394,7 +471,7 @@ function LeadEditor({ lead: l, done }: { lead: Lead; done: () => void }) {
       <form className="live-form live-editor" onSubmit={save}>
         <label>
           Tahap proyek
-          <select name="status" defaultValue={label(l.status)}>
+          <select name="status" defaultValue={l.status}>
             {[
               "new",
               "reviewing",
@@ -443,7 +520,7 @@ function LeadEditor({ lead: l, done }: { lead: Lead; done: () => void }) {
         </label>
         <label>
           Implementasi / serah terima
-          <select name="delivery" defaultValue={label(l.delivery_status)}>
+          <select name="delivery" defaultValue={l.delivery_status}>
             {["not_started", "in_progress", "review", "delivered"].map((s) => (
               <option key={s} value={s}>
                 {label(s)}
@@ -461,134 +538,6 @@ function LeadEditor({ lead: l, done }: { lead: Lead; done: () => void }) {
     </>
   );
 }
-export function CustomInquiry() {
-  const [error, setError] = useState(""),
-    [message, setMessage] = useState(""),
-    [busy, setBusy] = useState(false);
-  async function submit(e: FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    setBusy(true);
-    const f = new FormData(e.currentTarget);
-    try {
-      const r = await api<{ message: string }>(
-        "/api/public/custom-leads",
-        "POST",
-        Object.fromEntries(f.entries()),
-      );
-      setMessage(r.message);
-    } catch (e) {
-      setError((e as Error).message);
-    } finally {
-      setBusy(false);
-    }
-  }
-  return (
-    <main className="auth-page">
-      <Link className="brand" to="/">
-        nalaro store
-      </Link>
-      <div className="auth-layout">
-        <div>
-          <h1>Toko yang dibangun untuk cara bisnismu bekerja.</h1>
-          <p>
-            Desain, alur transaksi, integrasi, hosting, dan kepemilikan source
-            ditetapkan dalam penawaran proyek.
-          </p>
-        </div>
-        <form className="live-form" onSubmit={submit}>
-          <h2>Ceritakan kebutuhan toko.</h2>
-          <label>
-            Nama bisnis
-            <input
-              required
-              name="business_name"
-              minLength={2}
-              maxLength={120}
-            />
-          </label>
-          <label>
-            Nama kontak
-            <input required name="contact_name" minLength={2} maxLength={120} />
-          </label>
-          <label>
-            Email
-            <input required type="email" name="contact_email" />
-          </label>
-          <label>
-            Nomor WhatsApp
-            <input
-              required
-              type="tel"
-              name="contact_phone"
-              minLength={8}
-              maxLength={30}
-            />
-          </label>
-          <label>
-            Kebutuhan proyek
-            <textarea
-              required
-              name="project_brief"
-              minLength={20}
-              maxLength={10000}
-              rows={6}
-            />
-          </label>
-          <label className="honeypot" aria-hidden="true">
-            Website
-            <input name="website" tabIndex={-1} autoComplete="off" />
-          </label>
-          {error && (
-            <p className="live-error" role="alert">
-              {error}
-            </p>
-          )}
-          {message && (
-            <p className="notice" role="status">
-              {message}
-            </p>
-          )}
-          <button className="button button-dark" disabled={busy || !!message}>
-            {busy ? "Mengirim…" : "Kirim brief proyek"}
-          </button>
-        </form>
-      </div>
-    </main>
-  );
-}
-export function PublicPricing() {
-  const { value, error } = useData<{ plans: Plan[] }>("/api/public/plans");
-  return (
-    <section className="section-spacing shell">
-      <h2>Pilih periode untuk tokomu.</h2>
-      {error && <p>Paket belum tersedia saat ini.</p>}
-      <div className="plan-list">
-        {value?.plans.map((p) => (
-          <article key={p.id}>
-            <h3>{p.name}</h3>
-            <p>{p.description}</p>
-            {p.prices.map((pr, i) => (
-              <p key={i}>
-                <strong>{rupiah(pr.amount_idr)}</strong> /{" "}
-                {pr.billing_interval === "monthly" ? "bulan" : "tahun"}
-              </p>
-            ))}
-            <Link to="/register" className="button button-dark">
-              Buat toko
-            </Link>
-          </article>
-        ))}
-      </div>
-      {value && !value.plans.length && (
-        <p>
-          Harga paket akan diumumkan setelah ditetapkan.{" "}
-          <Link to="/register">Siapkan akun merchant</Link>
-        </p>
-      )}
-    </section>
-  );
-}
-
 function BillingPolicy() {
   const { value, error } = useData<{
     settings: {
