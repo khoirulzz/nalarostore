@@ -632,7 +632,7 @@
 .mobile-access-visual:before{content:"";width:95%;aspect-ratio:1;position:absolute;inset:3% auto auto 4%;z-index:-1;border-radius:48% 52% 44% 56%;background:radial-gradient(circle at 37% 41%,#fff 0%,#ffd4e0 48%,#f2a7c0 100%)}
 .mobile-access-visual img{width:min(100%,520px);height:460px;object-fit:cover;object-position:center;clip-path:polygon(6% 4%,94% 4%,100% 96%,0% 96%);mix-blend-mode:multiply}
 .access-floating{position:absolute;display:inline-flex;align-items:center;gap:8px;background:#fff;padding:12px 15px;box-shadow:0 12px 35px #74344b29;border:1px solid #f7dbe4;font-size:12px;font-weight:700;border-radius:3px;max-width:220px}
-.access-floating .icon{color:#ea4381}
+.access-floating .icon{color:var(--orange)}
 .access-floating-left{left:0;top:21%}
 .access-floating-right{right:0;bottom:17%}
 .pricing-section{background:#f5f3ef}
@@ -657,7 +657,7 @@
 .pricing-card ul{padding:21px 0 20px 0;border-top:1px solid #e7e3df;list-style:none;display:flex;flex-direction:column;gap:14px;flex:1;margin:22px 0 0}
 .pricing-card-highlight ul{border-color:#ffffff40}
 .pricing-card li{position:relative;padding-left:23px;font-size:13px;line-height:1.5}
-.pricing-card li:before{content:"✓";position:absolute;left:0;color:#ff5b2e;font-weight:800}
+.pricing-card li:before{content:"✓";position:absolute;left:0;color:var(--orange);font-weight:800}
 .pricing-card .pricing-action{margin-top:auto;display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;min-height:50px}
 .pricing-action-light{background:#f1e2d8;color:#272320}
 .pricing-card small{display:block;font-size:11px;line-height:1.65;color:#868078;margin-top:19px}
