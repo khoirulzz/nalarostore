@@ -83,7 +83,7 @@ export function UmkmApplication() {
     setBusy(true);
     setError("");
     try {
-      const result = await api<{ message?: string }>("/api/public/custom-leads", "POST", {
+      await api<{ message?: string }>("/api/public/custom-leads", "POST", {
         business_name: data.get("business_name"),
         contact_name: data.get("contact_name"),
         contact_email: data.get("contact_email"),
@@ -93,7 +93,7 @@ export function UmkmApplication() {
           "Lokasi usaha: " + data.get("business_location") + "\\n" +
           "Cerita usaha: " + data.get("business_story"),
       });
-      setSuccess(result.message || "Formulir telah diterima. Tim kami akan meninjau pengajuanmu.");
+      setSuccess("Pengajuanmu berhasil terkirim. Tim Nalaro akan meninjau informasi usahamu dan menghubungi kontak yang kamu isi jika ada tindak lanjut.");
     } catch (e) {
       setError((e as Error).message || "Pengajuan belum terkirim. Coba lagi.");
     } finally {
