@@ -83,6 +83,5 @@ export function LegalPage({kind}: {kind: LegalKind}) {
     <div className="legal-content">{legal.sections.map(section => <section key={section.heading}>
       <h2>{section.heading}</h2>{section.paragraphs.map((p,i)=><p key={i}>{p}</p>)}
     </section>)}</div>
-    <p className="legal-footnote">Informasi ini merupakan dasar kebijakan layanan yang perlu diselaraskan dengan perjanjian dan peninjauan hukum sebelum menerima transaksi produksi.</p>
   </div></main>;
 }
