@@ -257,40 +257,42 @@ function HeroMockup() {
       <div className="hero-sample-note">
         Batik Nalaro <span>Koleksi untuk keseharian</span>
       </div>
-      <div className="floating-order">
-        <div className="floating-top">
-          <span className="tiny-round">
-            <Icon name="bag" size={16} />
-          </span>
-          <span>Contoh pesanan masuk</span>
-          <Icon name="arrow-up-right" size={16} />
+      <div className="hero-previews">
+        <div className="floating-order">
+          <div className="floating-top">
+            <span className="tiny-round">
+              <Icon name="bag" size={16} />
+            </span>
+            <span>Contoh pesanan masuk</span>
+            <Icon name="arrow-up-right" size={16} />
+          </div>
+          <strong>BN-00248</strong>
+          <p>2 produk · Siap dikemas</p>
+          <div className="floating-bottom">
+            <span>Hari ini, 10.24</span>
+            <b>{rupiah(products[0].price + products[3].price)}</b>
+          </div>
         </div>
-        <strong>BN-00248</strong>
-        <p>2 produk · Siap dikemas</p>
-        <div className="floating-bottom">
-          <span>Hari ini, 10.24</span>
-          <b>{rupiah(products[0].price + products[3].price)}</b>
-        </div>
+        <Link
+          to="/demo/batiknalaro/product/kemeja-batik-sagara"
+          className="floating-mobile"
+          aria-label="Lihat Kemeja Batik Sagara di toko demo"
+        >
+          <div className="floating-mobile-top">
+            BATIK NALARO <Icon name="bag" size={15} />
+          </div>
+          <div
+            className="floating-product"
+            style={{ backgroundImage: `url(${products[0].image})` }}
+          />
+          <span>Pilihan koleksi</span>
+          <b>{products[0].name}</b>
+          <p>{rupiah(products[0].price)}</p>
+          <div className="floating-cart-label">
+            Lihat produk <Icon name="arrow-right" size={13} />
+          </div>
+        </Link>
       </div>
-      <Link
-        to="/demo/batiknalaro/product/kemeja-batik-sagara"
-        className="floating-mobile"
-        aria-label="Lihat Kemeja Batik Sagara di toko demo"
-      >
-        <div className="floating-mobile-top">
-          BATIK NALARO <Icon name="bag" size={15} />
-        </div>
-        <div
-          className="floating-product"
-          style={{ backgroundImage: `url(${products[0].image})` }}
-        />
-        <span>Pilihan koleksi</span>
-        <b>{products[0].name}</b>
-        <p>{rupiah(products[0].price)}</p>
-        <div className="floating-cart-label">
-          Lihat produk <Icon name="arrow-right" size={13} />
-        </div>
-      </Link>
     </div>
   );
 }
@@ -298,7 +300,7 @@ function Marketing() {
   return (
     <>
       <MarketingNav />
-      <main>
+      <main className="marketing-main">
         <section className="marketing-hero">
           <div className="shell hero-grid">
             <div className="hero-copy">
@@ -319,15 +321,14 @@ function Marketing() {
                   Mulai buka toko <Icon name="arrow-up-right" size={19} />
                 </Link>
                 <Link to="/demo/batiknalaro" className="button button-ghost">
-                  Coba contoh toko <Icon name="arrow-right" size={18} />
+                  Lihat demo toko <Icon name="arrow-right" size={18} />
                 </Link>
               </div>
               <div className="hero-foot">
                 <span className="hero-rule" />
                 <span>
-                  Dari link di bio sampai pesanan masuk.
-                  <br />
-                  Lebih mudah untukmu dan pelangganmu.
+                  kelola tokomu sendiri lebih mudah.
+                  Hasilkan cuan lebih banyak!.
                 </span>
               </div>
             </div>

@@ -1,5 +1,5 @@
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap');
-:root{font-family:'DM Sans',Arial,sans-serif;color:#171715;background:#f5f3ef;font-synthesis:none;text-rendering:optimizeLegibility;-webkit-font-smoothing:antialiased;--orange:#ff5b2e;--ink:#151515;--subtle:#686760;--paper:#fff;--warm:#f5f3ef;--line:#e4e1da}
+:root{font-family:'DM Sans',Arial,sans-serif;color:#171715;background:#f5f3ef;font-synthesis:none;text-rendering:optimizeLegibility;-webkit-font-smoothing:antialiased;--orange:#ff154f;--ink:#151515;--subtle:#686760;--paper:#fff;--warm:#f5f3ef;--line:#e4e1da}
 *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;min-width:320px}button,input,textarea{font:inherit}button{cursor:pointer}a{color:inherit;text-decoration:none}img{display:block;max-width:100%}button:disabled{cursor:not-allowed;opacity:.42}button,a,input,textarea{outline-offset:4px}a:focus-visible,button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px solid var(--orange)}h1,h2,h3,h4,p{margin-top:0}h1,h2,h3{letter-spacing:-.05em}p{line-height:1.65}::selection{background:#ffa88f;color:#151515}.shell{width:min(100% - 96px,1392px);margin-inline:auto}.store-shell{width:min(100% - 100px,1360px);margin-inline:auto}.button{display:inline-flex;gap:22px;align-items:center;justify-content:space-between;min-height:53px;padding:0 23px;font-weight:700;font-size:14px;border:1px solid transparent;transition:background .2s ease,color .2s ease,transform .2s ease}.button:hover{transform:translateY(-2px)}.button-orange{background:var(--orange);color:#151515}.button-orange:hover{background:#ff7852}.button-dark{background:#171715;color:#fff}.button-dark:hover{background:#393832}.button-ghost{border:1px solid #c9c5bc;color:#1a1a19;background:transparent}.button-small{min-height:42px;padding:0 15px;font-size:12px;gap:12px}.text-link{display:inline-flex;align-items:center;gap:18px;font-size:15px;font-weight:700;border-bottom:1px solid #151515;padding-bottom:9px;transition:gap .2s}.text-link:hover{gap:25px}.text-link-light{border-color:#fff}.site-header{position:relative;z-index:40;background:#f5f3ef;border-bottom:1px solid #e7e4dd}.site-header-inner{height:85px;display:flex;align-items:center;justify-content:space-between;gap:26px}.brand{display:inline-flex;align-items:center;gap:10px;white-space:nowrap}.brand-mark{height:31px;width:31px;display:flex;align-items:center;justify-content:center}.brand-word{font:800 23px/1 'Manrope',sans-serif;letter-spacing:-.07em}.brand-store{font-weight:500;margin-left:3px;letter-spacing:-.065em}.site-nav{display:flex;align-items:center;gap:32px;font-size:13px;font-weight:600}.site-nav a:hover,.header-login:hover{color:#ba421d}.header-actions{display:flex;align-items:center;gap:20px}.header-login{font-size:13px;font-weight:700}.mobile-menu{display:none;border:0;background:none;padding:10px}.marketing-hero{overflow:hidden}.hero-grid{min-height:710px;display:grid;grid-template-columns:45% 55%;align-items:stretch}.hero-copy{padding:94px 18px 60px 0;display:flex;flex-direction:column;align-items:flex-start;position:relative;z-index:1}.hero-overline{font-size:12px;font-weight:700;letter-spacing:.05em;display:flex;align-items:center;gap:13px}.hero-overline .dot{width:5px;height:5px;border-radius:100%;background:var(--orange)}.hero-copy h1{font-family:'Manrope',sans-serif;font-size:clamp(50px,5.1vw,86px);line-height:1.055;letter-spacing:-.077em;font-weight:700;margin:29px 0}.hero-copy h1 em{font-family:Georgia,serif;letter-spacing:-.07em;font-weight:400}.hero-copy>p{max-width:440px;font-size:17px;color:#585851;margin:0 0 30px;line-height:1.75}.hero-ctas{display:flex;gap:12px;flex-wrap:wrap}.hero-foot{display:flex;align-items:center;gap:18px;color:#686760;font-size:12px;line-height:1.65;margin-top:auto;padding-top:50px}.hero-rule{width:36px;border-top:1px solid #afaaa2}.hero-stage{min-height:670px;position:relative;margin-right:calc((min(100vw,1488px) - 100vw)/2);background:#c7c1b6}.hero-image{position:absolute;inset:0 15% 0 0;background-size:cover;background-position:center 34%;filter:saturate(.75)}.hero-stage:before{content:"";position:absolute;inset:0 15% 0 0;background:linear-gradient(180deg,transparent 55%,rgba(0,0,0,.3));z-index:1}.hero-sample-note{position:absolute;bottom:24px;left:27px;z-index:2;color:white;display:flex;flex-direction:column;text-transform:uppercase;letter-spacing:.08em;font-size:12px;font-weight:700}.hero-sample-note span{font-size:10px;opacity:.76;margin-top:5px}.floating-order{position:absolute;top:15%;right:0;width:285px;padding:23px 23px 18px;background:#fff;z-index:3;box-shadow:0 21px 54px #0002}.floating-top{display:flex;align-items:center;gap:10px;font-size:12px;font-weight:700;margin-bottom:18px}.floating-top>.icon{margin-left:auto}.tiny-round{display:grid;place-items:center;height:32px;width:32px;background:#f7eee7;color:#bd4626}.floating-order>strong{font-family:'Manrope';font-size:26px;letter-spacing:-.06em}.floating-order>p{font-size:11px;color:#6b6b65}.floating-bottom{display:flex;justify-content:space-between;border-top:1px solid #e7e4dd;padding-top:14px;gap:10px;font-size:11px}.floating-bottom span{color:#7b7770}.floating-mobile{position:absolute;right:4%;bottom:6%;z-index:4;width:205px;background:#f6f5f2;box-shadow:0 24px 45px #0004;padding:11px 11px 13px;transform:rotate(5deg)}.floating-mobile-top{display:flex;align-items:center;justify-content:space-between;font-size:9px;letter-spacing:.08em;font-weight:800;margin-bottom:10px}.floating-product{width:100%;height:185px;background-position:center;background-size:cover}.floating-mobile>span{font-size:9px;display:block;margin-top:11px;color:#666;text-transform:uppercase}.floating-mobile>b{display:block;margin-top:3px;font:700 15px 'Manrope';letter-spacing:-.04em}.floating-mobile>p{font-size:11px;margin:5px 0}.floating-cart-label{margin-top:10px;border-top:1px solid #dad8d2;padding-top:8px;display:flex;justify-content:space-between;font-size:10px;font-weight:700}.partner-strip{background:#fff;border-bottom:1px solid #e5e2dc}.partner-inner{display:flex;align-items:center;gap:38px;justify-content:space-between;padding:29px 0}.partner-inner>span{font-size:12px;font-weight:600;color:#686760}.partner-inner>div{display:flex;align-items:center;gap:36px}.partner-inner>div>span{display:flex;align-items:center;gap:10px;font-size:12px;font-weight:700}.section-spacing{padding:118px 0}.section-number{font-size:11px;font-weight:800;letter-spacing:.08em;color:#bc4927}.section-intro h2{font-family:'Manrope';font-size:clamp(35px,4.5vw,66px);line-height:1.13;font-weight:650;max-width:790px;margin:19px 0 20px;letter-spacing:-.075em}.section-intro>p:not(.section-number){font-size:16px;color:#696861;max-width:520px}.split-heading{display:flex;align-items:end;justify-content:space-between;gap:32px;margin-bottom:52px}.small-index{color:#797770;font-size:12px;width:168px;line-height:1.7}.editorial-features{display:grid;grid-template-columns:1.12fr .88fr;grid-template-rows:minmax(360px,auto) minmax(345px,auto);gap:0;border:1px solid #e6e2da}.editorial-feature{position:relative;min-width:0}.feature-image{overflow:hidden;background:#d2d2c9}.editorial-photo{position:absolute;inset:0;background-size:cover;background-position:center}.corner-note{position:absolute;bottom:24px;left:24px;font-size:12px;line-height:1.5;color:white;font-weight:800;text-shadow:0 2px 7px #0008}.feature-content{display:flex;flex-direction:column;justify-content:center;align-items:flex-start;padding:54px 12%;background:#fff}.feature-content h3{font:700 clamp(30px,3.1vw,50px)/1.17 'Manrope';letter-spacing:-.07em;max-width:520px;margin:29px 0 16px}.feature-content p{color:#66655f;max-width:450px;font-size:15px}.feature-counter{font-size:12px;color:#a43e20;font-weight:800}.feature-content .text-link{margin-top:30px}.feature-stacked{padding:57px 9%;background:#222b27;color:#fff;display:flex;flex-direction:column;justify-content:center}.mini-order-head{display:flex;gap:14px;align-items:center;margin-bottom:35px;font-size:12px;font-weight:700;letter-spacing:.09em}.mini-order-row{padding:20px 0;display:flex;align-items:center;gap:14px;border-bottom:1px solid #ffffff35;font-size:13px}.mini-order-row strong{margin-left:auto;font-size:22px}.small-green,.small-sand,.small-orange{width:7px;height:7px;border-radius:50%;background:#9abeac}.small-sand{background:#cbb9a1}.small-orange{background:#ff8b5d}.feature-content-alt{background:#ebe7de}.dark-story{background:#181a19;color:#fff;padding:100px 0 108px}.dark-header{display:flex;justify-content:space-between;align-items:end;gap:50px}.dark-header .section-intro h2{max-width:750px}.dark-header>p{width:280px;max-width:30%;font-size:14px;color:#aaa9a3}.journey{border-top:1px solid #ffffff45;margin-top:55px;display:grid;grid-template-columns:repeat(3,1fr)}.journey>div{padding:38px 38px 0 0;position:relative;display:flex;align-items:flex-start;flex-direction:column}.journey>div+div{border-left:1px solid #ffffff30;padding-left:38px}.journey b{font-size:12px;color:#a1a2a0;margin-bottom:60px}.journey h3{font:650 28px 'Manrope';letter-spacing:-.05em;margin:26px 0 10px}.journey p{font-size:14px;color:#aaa9a3;max-width:300px}.narrative-layout{display:grid;grid-template-columns:40% 60%;align-items:center;min-height:660px}.narrative-title{padding-right:13%}.narrative-title h2{font:650 clamp(40px,4.4vw,67px)/1.13 'Manrope';letter-spacing:-.075em;margin-top:20px}.narrative-title h2 i{font-family:Georgia,serif;font-weight:400}.narrative-title p{color:#66645f;font-size:16px;margin:25px 0}.narrative-title .text-link{margin-top:20px}.narrative-picture{position:relative;min-height:575px;background-size:cover;background-position:center 35%;background-color:#aaa69c}.narrative-receipt{position:absolute;bottom:-22px;left:-55px;width:350px;background:#fff;padding:26px 28px;box-shadow:0 25px 45px #0002}.receipt-top{display:flex;justify-content:space-between;font-weight:800;font-size:20px;letter-spacing:-.045em;padding-bottom:23px}.receipt-row{display:flex;justify-content:space-between;gap:14px;font-size:12px;padding:11px 0;border-bottom:1px solid #eee}.receipt-total{display:flex;justify-content:space-between;padding:20px 0;font-size:13px}.receipt-total strong{font-size:18px}.receipt-cta{display:flex;justify-content:space-between;background:#151515;color:#fff;padding:15px;font-size:12px;font-weight:700}.service-section{background:#eae6dc;padding:112px 0}.service-top{margin-bottom:50px}.service-columns{display:grid;grid-template-columns:1fr 1fr;border-top:1px solid #bdbbb2}.service-columns article{padding:39px 8% 10px 0;min-height:360px;display:flex;align-items:flex-start;flex-direction:column}.service-columns article+article{border-left:1px solid #bdbbb2;padding-left:8%}.service-index{font-size:11px;font-weight:800;letter-spacing:.1em;color:#a34020}.service-columns h3{font:650 clamp(28px,3vw,42px)/1.18 'Manrope';letter-spacing:-.07em;margin:30px 0 18px}.service-columns p{font-size:15px;color:#605f59;max-width:465px}.service-detail{color:#8c4840;font-size:12px;margin-bottom:30px}.service-columns .text-link{margin-top:auto}.closing-section{background:#292b26;color:#fff;padding:99px 0}.closing-layout{display:flex;justify-content:space-between;align-items:end;gap:44px}.closing-layout h2{font:650 clamp(35px,4.7vw,71px)/1.15 'Manrope';letter-spacing:-.075em}.closing-layout h2 em{font:400 1em Georgia,serif;letter-spacing:-.065em}.closing-layout>div{width:260px}.closing-layout p{font-size:14px;color:#bebeb8;margin-bottom:23px}.footer{background:#151716;color:#fff;padding:56px 0 25px}.footer-top{display:flex;justify-content:space-between;gap:50px;padding-bottom:65px}.brand-light{color:#fff}.footer-top p{color:#92938e;font-size:13px;max-width:280px;margin:20px 0}.footer-links{display:grid;grid-template-columns:repeat(2,auto);gap:14px 55px;font-size:13px}.footer-links a:hover,.footer-bottom a:hover{color:#ff9a7c}.footer-bottom{border-top:1px solid #ffffff30;padding-top:25px;display:flex;justify-content:space-between;font-size:12px;color:#aaa}.footer-bottom a{display:flex;align-items:center;gap:5px}.custom-page{padding:95px 0 120px}.custom-head{max-width:950px}.custom-head h1{font:700 clamp(42px,5.7vw,85px)/1.09 'Manrope';letter-spacing:-.08em;margin:25px 0}.custom-head>p{max-width:710px;font-size:17px;color:#666}.custom-layout{display:grid;grid-template-columns:40% 60%;gap:40px;margin-top:90px}.custom-process>div{border-top:1px solid #bdbbb3;padding:26px 0 32px;max-width:370px}.custom-process>div span{font-size:13px;font-weight:800;color:#ad4726}.custom-process>div h3{font:700 26px 'Manrope';letter-spacing:-.04em;margin:12px 0}.custom-process>div p{font-size:14px;color:#666}.custom-form{padding:50px;background:#fff;align-self:start}.custom-form h2{font:700 34px 'Manrope';letter-spacing:-.06em;margin:0 0 12px}.custom-form>p{font-size:14px;color:#777;margin:0 0 29px}.custom-form label,.checkout-fields label{display:flex;flex-direction:column;gap:9px;font-size:13px;font-weight:700;margin:18px 0}.custom-form input,.custom-form textarea,.checkout-fields input:not([type=radio]),.checkout-fields textarea{width:100%;border:1px solid #d4d1ca;border-radius:0;background:#fff;padding:14px 13px;font-size:16px;resize:vertical;color:#171715}.custom-form input:focus,.custom-form textarea:focus,.checkout-fields input:focus,.checkout-fields textarea:focus{border-color:#a24827}.notice{display:flex;align-items:flex-start;gap:12px;padding:16px;background:#f4f1eb;color:#4b4b45;font-size:13px;line-height:1.6;margin:19px 0}.notice p{margin:0}.notice-success{background:#ebf6ed}.notice a{text-decoration:underline;font-weight:700;display:inline-flex;gap:4px;align-items:center}.not-found{padding:120px 0;min-height:60vh}.not-found>span{color:#e65b36}.not-found h1{font-size:54px}.not-found p{color:#777}
 /* Storefront: restrained editorial shop identity, intentionally separate from Nalaro marketing */
 .storefront{background:#fcfbf8;color:#1d1e19;font-family:'DM Sans',sans-serif}.store-shipping{background:#313831;color:#fff;text-align:center;font-size:10px;font-weight:600;letter-spacing:.045em;padding:10px 12px}.store-header{background:#fcfbf8;border-bottom:1px solid #e3e0d7;position:sticky;top:0;z-index:25}.store-header-inner{height:77px;display:grid;grid-template-columns:1fr 1fr 1fr;align-items:center}.store-links{display:flex;gap:27px;align-items:center;font-size:12px;font-weight:600}.store-links a:hover{color:#777}.store-logo{font:800 19px 'Manrope';letter-spacing:.045em;white-space:nowrap;text-align:center}.store-logo span{font-weight:400}.store-tools{display:flex;justify-content:flex-end;align-items:center;gap:24px}.store-tools>a{display:inline-flex;position:relative}.store-bag span{position:absolute;right:-11px;top:-9px;background:#282e29;color:white;border-radius:50%;height:17px;width:17px;display:grid;place-items:center;font-size:10px}.store-menu-button{display:none;border:0;background:none}.store-hero{height:min(690px,73vw);min-height:510px;position:relative;overflow:hidden;background:#b6b6a8}.store-hero-image{position:absolute;inset:0;background-position:center 36%;background-size:cover;filter:saturate(.75)}.store-hero:after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,rgba(26,29,28,.58),rgba(26,29,28,.03) 80%)}.store-hero-copy{position:absolute;top:50%;left:max(50px,calc((100vw - 1360px)/2));transform:translateY(-50%);z-index:1;color:#fff;max-width:670px}.store-hero-copy>span,.store-hero-side{font-size:11px;font-weight:700;letter-spacing:.14em}.store-hero-copy h1{font:550 clamp(54px,7.1vw,111px)/1.02 'Manrope';letter-spacing:-.09em;margin:28px 0}.store-hero-copy h1 i{font:400 .88em Georgia,serif;letter-spacing:-.045em}.store-hero-copy p{max-width:360px;font-size:14px;line-height:1.8}.store-outline-button{display:inline-flex;justify-content:space-between;align-items:center;min-width:196px;gap:20px;border:1px solid currentColor;padding:16px 18px;font-size:12px;font-weight:700;transition:background .2s}.store-outline-button:hover{background:#ffffff26}.store-hero-copy .store-outline-button{margin-top:23px}.store-hero-side{position:absolute;bottom:23px;right:4%;color:#fff;z-index:1;display:flex;gap:30px}.store-section{padding-top:95px;padding-bottom:100px}.store-section-head{display:flex;align-items:end;justify-content:space-between;gap:30px;margin-bottom:32px}.store-section-head span,.store-overline{font-size:10px;font-weight:800;letter-spacing:.13em;color:#76786f}.store-section-head h2{font:600 clamp(29px,3.4vw,47px)/1.2 'Manrope';letter-spacing:-.07em;margin:13px 0 0}.store-text-link{font-size:12px;font-weight:700;display:flex;align-items:center;gap:16px;border-bottom:1px solid #1d1e19;padding-bottom:7px}.product-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:24px}.product-tile{min-width:0}.product-image{position:relative;aspect-ratio:3/4;overflow:hidden}.product-image img{height:100%;width:100%;object-fit:cover;transition:transform .55s ease}.product-tile:hover img{transform:scale(1.045)}.product-image-action{position:absolute;bottom:15px;right:15px;background:#fff;height:37px;width:37px;display:grid;place-items:center;opacity:0;transform:translateY(8px);transition:.2s}.product-tile:hover .product-image-action,.product-tile:focus-visible .product-image-action{opacity:1;transform:none}.product-meta{padding-top:17px}.product-meta span{font-size:10px;color:#87877e}.product-meta h3{font:650 16px 'Manrope';letter-spacing:-.025em;margin:5px 0 6px}.product-meta p{font-size:13px;font-weight:600;margin:0}.store-editorial{display:grid;grid-template-columns:1.1fr .9fr;background:#eae7df;min-height:510px}.store-editorial-photo{background-size:cover;background-position:center 40%;min-height:510px}.store-editorial-copy{display:flex;flex-direction:column;align-items:flex-start;justify-content:center;padding:80px 14%}.store-editorial-copy>span{font-size:11px;letter-spacing:.11em;font-weight:700}.store-editorial-copy h2{font:600 clamp(37px,4vw,64px)/1.16 'Manrope';letter-spacing:-.075em;margin:30px 0 18px}.store-editorial-copy h2 i{font:400 1em Georgia,serif}.store-editorial-copy p{font-size:14px;color:#64655d;max-width:340px;margin-bottom:30px}.store-footer{background:#202522;color:#ddd;padding:70px 0 20px}.store-footer-grid{display:grid;grid-template-columns:2fr 1fr 1fr;gap:40px}.store-footer-grid .store-logo{text-align:left}.store-footer-grid p,.store-footer-grid span{color:#9da49a;font-size:12px}.store-footer-grid>div:not(:first-child){display:flex;flex-direction:column;gap:13px}.store-footer-grid b{color:#f1f2ec;font-size:12px;margin-bottom:12px}.store-footer-grid a{font-size:12px}.store-footer-bottom{border-top:1px solid #ffffff32;margin-top:64px;padding-top:22px;font-size:11px;display:flex;justify-content:space-between;color:#9ea49c}.store-footer-bottom a{display:flex;align-items:center;gap:4px}.catalog-head{display:flex;justify-content:space-between;align-items:end;padding-top:70px;padding-bottom:50px;border-bottom:1px solid #e6e3de}.catalog-head h1{font:600 clamp(42px,5vw,72px) 'Manrope';letter-spacing:-.08em;margin:18px 0 8px}.catalog-head p{font-size:14px;color:#72746b;margin:0}.catalog-head>span{font-size:12px;color:#777}.catalog-layout{display:grid;grid-template-columns:220px 1fr;gap:55px;padding-top:36px;padding-bottom:120px}.catalog-side{display:flex;flex-direction:column;gap:22px;align-items:stretch}.catalog-side b{font-size:13px;margin-bottom:8px}.catalog-side a{display:flex;justify-content:space-between;align-items:center;font-size:13px;color:#6a6c64}.catalog-side a.active{font-weight:800;color:#151515}.catalog-results{min-width:0}.catalog-filters{display:flex;justify-content:space-between;align-items:center;margin-bottom:25px;gap:20px}.catalog-filters>span{font-size:12px;color:#67685f}.search-box{display:flex;align-items:center;gap:11px;border:1px solid #d6d5cd;background:#fff;padding:0 15px;min-width:260px;height:43px}.search-box input{border:0;outline:0;width:100%;min-width:0;background:transparent;font-size:13px;color:#1d1e19}.catalog-mobile-cats{display:none}.catalog-results .product-grid{grid-template-columns:repeat(3,1fr);row-gap:40px}.empty-result,.cart-empty{padding:100px 20px;text-align:center;display:flex;flex-direction:column;align-items:center}.empty-result h2,.cart-empty h2{font:600 29px 'Manrope';margin:22px 0 7px}.empty-result p,.cart-empty p{font-size:14px;color:#73756f}.empty-result>a{font-size:13px;font-weight:700;border-bottom:1px solid;padding-bottom:5px;margin-top:15px}.cart-empty .button{margin-top:20px}.product-detail{display:grid;grid-template-columns:57% 43%;gap:0;padding-top:46px;padding-bottom:50px}.pdp-media{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding-right:36px}.pdp-primary{grid-column:1/-1;aspect-ratio:4/4.6;background:#e6e3df}.pdp-primary img{width:100%;height:100%;object-fit:cover}.pdp-secondary{grid-column:1/-1;background-size:cover;background-position:center;aspect-ratio:2.15/1}.pdp-info{padding:15px 15px 20px 25px;position:sticky;top:100px;align-self:start}.pdp-breadcrumb{display:flex;align-items:center;gap:9px;font-size:11px;color:#777;max-width:100%;flex-wrap:wrap}.pdp-info h1{font:650 clamp(34px,4.1vw,57px) 'Manrope';letter-spacing:-.08em;margin:34px 0 12px}.pdp-price{font-size:22px;font-weight:700}.pdp-description{font-size:14px;color:#6f7068;padding:26px 0;border-bottom:1px solid #e2dfd8;max-width:440px}.pdp-field{padding-top:18px}.pdp-label{display:flex;align-items:center;justify-content:space-between;font-size:12px;margin-bottom:13px}.pdp-label span{color:#74766d}.size-options{display:flex;flex-wrap:wrap;gap:9px}.size-options button{min-width:55px;height:48px;border:1px solid #b9b9b1;background:transparent;font-size:12px;font-weight:700}.size-options button.selected{background:#252925;border-color:#252925;color:white}.quantity-stepper{display:inline-flex;border:1px solid #cecec7;align-items:center;height:42px}.quantity-stepper button{border:0;background:transparent;width:43px;height:100%;display:grid;place-items:center}.quantity-stepper span{min-width:35px;text-align:center;font-size:13px;font-weight:700}.pdp-add{display:flex;justify-content:center;align-items:center;gap:14px;width:100%;min-height:56px;background:#252925;color:#fff;border:1px solid #252925;font-size:13px;font-weight:700;margin-top:30px;padding:14px 17px;transition:background .2s}.pdp-add>.icon:last-child{margin-left:auto}.pdp-add:hover{background:#41483f}.pdp-added{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:12px;color:#24643b;margin-top:16px}.pdp-added a{text-decoration:underline;font-weight:700}.pdp-service{border-top:1px solid #e5e2dd;margin-top:30px;padding-top:10px}.pdp-service>div{display:flex;align-items:center;gap:13px;padding:12px 0;font-size:12px;color:#6b6d65}.missing-product{padding:120px 0}.cart-page,.checkout-page{min-height:62vh;padding-top:62px;padding-bottom:110px}.cart-title h1,.checkout-top h1{font:650 clamp(37px,5vw,68px) 'Manrope';letter-spacing:-.085em;margin:16px 0 34px}.cart-title h1 span{font-size:.5em;color:#777;vertical-align:middle}.cart-layout{display:grid;grid-template-columns:1fr 370px;gap:7%}.cart-line{display:flex;align-items:flex-start;gap:22px;padding:24px 0;border-top:1px solid #e1ded7}.cart-line-image{width:125px;height:145px;flex:none;background:#eee}.cart-line-image img{width:100%;height:100%;object-fit:cover}.cart-line-body{flex:1;display:flex;flex-direction:column;justify-content:space-between;min-height:145px}.cart-line-body h2{font:650 18px 'Manrope';letter-spacing:-.05em;margin:3px 0 6px}.cart-line-body p{font-size:12px;color:#777}.cart-line-bottom{display:flex;align-items:center;gap:22px}.underlined{border:0;border-bottom:1px solid;background:none;padding:2px 0;font-size:11px}.cart-line>strong{font-size:14px;white-space:nowrap;padding-top:5px}.cart-summary{background:#eeeae3;padding:31px;align-self:start;position:sticky;top:100px}.cart-summary h2,.checkout-summary h2{font:650 20px 'Manrope';letter-spacing:-.04em;margin-bottom:28px}.cart-summary>div:not(.cart-total){display:flex;justify-content:space-between;gap:18px;margin-bottom:16px;font-size:12px}.cart-summary>div>span:first-child{color:#686961}.cart-total{display:flex;justify-content:space-between;align-items:center;border-top:1px solid #c9c7be;padding-top:22px;margin-top:22px}.cart-total strong{font:700 20px 'Manrope'}.cart-summary .pdp-add{min-height:52px}.cart-summary>p{font-size:11px;color:#73756e;margin:17px 0 0}.back-link{display:flex;gap:9px;align-items:center;font-size:12px;font-weight:700}.checkout-top{margin-top:33px}.checkout-top h1{margin-bottom:10px}.checkout-top p{font-size:13px;color:#74756e}.checkout-layout{display:grid;grid-template-columns:1fr 390px;gap:8%;margin-top:50px}.checkout-fields fieldset{border:0;border-top:1px solid #d7d7cf;padding:25px 0 20px;margin:0}.checkout-fields legend{font:700 19px 'Manrope';letter-spacing:-.04em;padding-right:25px}.checkout-fields legend span{font:700 11px 'DM Sans';color:#8e8e83;margin-right:10px}.checkout-two{display:grid;grid-template-columns:1fr 1fr;gap:18px}.checkout-fields label{margin:12px 0 22px}.option-list{display:grid;gap:9px;margin-top:21px}.delivery-option{display:flex!important;flex-direction:row!important;align-items:center;gap:15px!important;margin:0!important;border:1px solid #d6d6ce;padding:18px 14px;cursor:pointer}.delivery-option.chosen{border-color:#51564f;background:#f0f0eb}.delivery-option input{accent-color:#30352e}.delivery-option>span{display:flex;flex-direction:column;gap:5px;flex:1}.delivery-option small{font-size:11px;color:#818077;font-weight:400}.delivery-option strong{font-size:12px;white-space:nowrap}.checkout-submit{margin-top:12px}.checkout-summary{background:#f0ede6;padding:28px;align-self:start;position:sticky;top:100px}.checkout-item{display:flex;gap:12px;margin-bottom:22px;align-items:center}.checkout-item img{width:50px;height:58px;object-fit:cover}.checkout-item>div{flex:1;min-width:0}.checkout-item b{font-size:12px}.checkout-item p{font-size:11px;color:#75766d;margin:3px 0}.checkout-item>strong{font-size:11px;white-space:nowrap}.checkout-line{display:flex;justify-content:space-between;gap:15px;margin-top:14px;font-size:12px}.checkout-line span{color:#696b63}.checkout-final{display:flex;justify-content:space-between;gap:10px;padding-top:23px;margin-top:21px;border-top:1px solid #d6d2ca}.checkout-final strong{font-size:18px}.complete-page{min-height:72vh;padding:125px 0;text-align:center;display:flex;flex-direction:column;align-items:center}.complete-icon{height:64px;width:64px;background:#e3eddf;display:grid;place-items:center;color:#357446;margin-bottom:30px}.complete-page h1{font:650 clamp(37px,4.4vw,61px) 'Manrope';letter-spacing:-.08em;max-width:720px;margin:18px 0 10px}.complete-page>p{max-width:470px;font-size:14px;color:#74766b}.complete-slip{width:min(100%,440px);border:1px solid #e3e0d8;padding:20px 26px;margin:35px 0;text-align:left}.complete-slip>div{display:flex;justify-content:space-between;gap:15px;padding:10px 0;font-size:12px}.complete-slip>div>span{color:#818277}
@@ -25,3 +25,587 @@
 @media(max-width:680px){.hero-stage{min-height:500px}.floating-order{top:auto;bottom:38px;left:0;right:auto;width:180px;padding:14px 12px}.floating-order>strong{font-size:23px}.floating-top{font-size:10px;gap:7px;margin-bottom:12px}.floating-top>.icon{display:none}.floating-order>p{font-size:10px}.floating-bottom{flex-direction:column;gap:4px;font-size:10px}.floating-mobile{width:155px;right:0;bottom:-12px}.floating-product{height:143px}.floating-mobile>b{font-size:12px}.floating-mobile-top{font-size:8px}.hero-sample-note{top:18px;bottom:auto;left:18px;font-size:10px;text-shadow:0 1px 8px #0009}.hero-sample-note span{font-size:8px}}
 .store-hero-image{background-position:64% top}
 @media(max-width:680px){.floating-mobile{bottom:12px}}
+
+/* Compact landing rhythm, including the viewport reached by section links. */
+.marketing-main {
+  --section-space: 76px;
+}
+.marketing-main :is(.section-spacing, .dark-story, .service-section, .faq-section, .closing-section) {
+  padding-block: var(--section-space);
+}
+.marketing-main > section[id] {
+  scroll-margin-top: calc(44px - var(--section-space));
+}
+.marketing-main .section-intro h2 {
+  margin-block: 0 16px;
+}
+.marketing-main .section-intro > p:last-child {
+  margin-bottom: 0;
+}
+.marketing-main :is(.split-heading, .service-top) {
+  margin-bottom: 28px;
+}
+.marketing-main .hero-grid {
+  min-height: min(620px, calc(100svh - 85px));
+}
+.marketing-main .hero-copy {
+  padding-block: 48px 40px;
+}
+.marketing-main .hero-copy h1 {
+  font-size: clamp(48px, 4.6vw, 72px);
+  margin-block: 0 24px;
+}
+.marketing-main .hero-copy > p {
+  margin-bottom: 24px;
+}
+.marketing-main .hero-foot {
+  padding-top: 24px;
+}
+.marketing-main .hero-stage {
+  min-height: 0;
+}
+.hero-previews {
+  position: absolute;
+  z-index: 3;
+  inset: auto 24px 24px auto;
+  width: min(380px, calc(100% - 48px));
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+}
+.hero-previews .floating-order {
+  position: relative;
+  inset: auto;
+  grid-area: 1 / 1;
+  width: calc(100% + 14px);
+  padding: 16px 24px 16px 16px;
+}
+.hero-previews .floating-top {
+  margin-bottom: 12px;
+  font-size: 11px;
+}
+.hero-previews .floating-order > strong {
+  font-size: 24px;
+}
+.hero-previews .floating-mobile {
+  position: relative;
+  inset: auto;
+  grid-area: 1 / 2;
+  width: 100%;
+  margin-top: 90px;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  transform: rotate(2deg);
+}
+.hero-previews .floating-product {
+  height: 125px;
+  min-height: 110px;
+  max-height: 170px;
+  flex: none;
+}
+.marketing-main .problem-section {
+  padding-top: var(--section-space);
+}
+.marketing-main .problem-layout {
+  padding-bottom: var(--section-space);
+}
+.marketing-main .feature-content {
+  padding-block: 36px;
+}
+.marketing-main .feature-content .text-link {
+  margin-top: 16px;
+}
+.marketing-main .journey {
+  margin-top: 28px;
+}
+.marketing-main .journey > div {
+  padding-top: 28px;
+}
+.marketing-main .journey b {
+  margin-bottom: 24px;
+}
+.marketing-main .narrative-layout {
+  min-height: 0;
+  align-items: start;
+}
+.marketing-main .narrative-title h2 {
+  margin-top: 0;
+}
+.marketing-main .narrative-picture {
+  min-height: 460px;
+}
+.marketing-main .service-columns article {
+  min-height: 0;
+  padding-top: 28px;
+}
+.marketing-main .service-columns h3 {
+  margin-block: 0 16px;
+}
+.marketing-main .service-detail {
+  margin-bottom: 24px;
+}
+.marketing-main :is(.demo-showcase-layout, .closing-layout) {
+  align-items: start;
+}
+.marketing-main .closing-layout h2 {
+  margin-block: 0;
+}
+
+@media (max-width: 900px) {
+  .marketing-main {
+    --section-space: 48px;
+  }
+  .marketing-main .hero-grid {
+    min-height: 0;
+  }
+  .marketing-main .hero-copy {
+    padding-block: 40px 32px;
+  }
+  .marketing-main .hero-copy h1 {
+    font-size: clamp(48px, 8vw, 72px);
+  }
+  .marketing-main .hero-stage {
+    min-height: 480px;
+  }
+  .hero-previews .floating-mobile {
+    margin-top: 60px;
+  }
+  .hero-previews .floating-product {
+    height: 125px;
+    flex: none;
+  }
+  .marketing-main .editorial-features {
+    grid-template-rows: repeat(2, minmax(310px, auto));
+  }
+}
+
+@media (max-width: 680px) {
+  .marketing-main {
+    --section-space: 32px;
+    --mobile-heading: clamp(27px, 7.3vw, 32px);
+    font-size: 13px;
+  }
+  .marketing-main :is(.section-intro h2, .problem-layout h2, .narrative-title h2, .demo-showcase h2, .faq-layout > h2, .closing-layout h2) {
+    font-size: var(--mobile-heading);
+    line-height: 1.18;
+    letter-spacing: -.06em;
+  }
+  .marketing-main :is(.feature-content h3, .service-columns h3) {
+    font-size: 23px;
+    line-height: 1.25;
+    margin-bottom: 12px;
+  }
+  .marketing-main :is(.hero-copy > p, .section-intro > p:not(.section-number), .problem-layout p, .feature-content p, .dark-header > p, .journey p, .narrative-title p, .service-columns p, .demo-showcase-copy > p, .faq-list details p, .closing-layout p, #paket > p, .plan-list p) {
+    font-size: 13px;
+    line-height: 1.65;
+    margin-bottom: 14px;
+  }
+  .marketing-main .section-intro h2 {
+    margin-bottom: 12px;
+  }
+  .marketing-main .section-intro > p:last-child {
+    margin-bottom: 0;
+  }
+  .marketing-main .button {
+    min-height: 44px;
+    padding-inline: 16px;
+    font-size: 12px;
+    gap: 12px;
+  }
+  .marketing-main .text-link {
+    min-height: 44px;
+    padding-bottom: 6px;
+    font-size: 12px;
+    line-height: 1.4;
+    gap: 12px;
+  }
+  .marketing-main :is(.button, .text-link, .partner-inner, .receipt-top, .receipt-cta, .closing-chat) > .icon {
+    /* Icon supplies inline dimensions; mobile sizing takes precedence. */
+    width: 16px !important;
+    height: 16px !important;
+    flex-shrink: 0;
+  }
+  .marketing-main .hero-copy {
+    padding-block: 28px;
+  }
+  .marketing-main .hero-copy h1 {
+    font-size: clamp(34px, 10vw, 44px);
+    margin-bottom: 18px;
+  }
+  .marketing-main .hero-copy > p {
+    margin-bottom: 20px;
+  }
+  .marketing-main .hero-foot {
+    font-size: 11px;
+    line-height: 1.55;
+    padding-top: 20px;
+    gap: 12px;
+  }
+  .marketing-main .hero-rule {
+    width: 28px;
+    flex-shrink: 0;
+  }
+  .marketing-main .hero-stage {
+    min-height: clamp(320px, 95vw, 380px);
+  }
+  .hero-previews {
+    inset: auto 18px 16px;
+    width: min(292px, calc(100% - 36px));
+    margin-inline: auto;
+  }
+  .hero-previews .floating-order {
+    width: calc(100% + 8px);
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 10px 18px 10px 10px;
+  }
+  .hero-previews .floating-top {
+    gap: 6px;
+    margin-bottom: 10px;
+    font-size: 9px;
+    line-height: 1.4;
+  }
+  .hero-previews .tiny-round {
+    width: 22px;
+    height: 22px;
+    flex-shrink: 0;
+  }
+  .hero-previews :is(.floating-top, .floating-mobile-top, .floating-cart-label) .icon {
+    width: 12px !important;
+    height: 12px !important;
+    flex-shrink: 0;
+  }
+  .hero-previews .floating-order > strong {
+    font-size: 20px;
+    line-height: 1.2;
+  }
+  .hero-previews .floating-order > p {
+    font-size: 9px;
+    line-height: 1.45;
+    margin-block: 6px 10px;
+  }
+  .hero-previews .floating-bottom {
+    width: 100%;
+    margin-top: auto;
+    padding-top: 8px;
+    font-size: 9px;
+    line-height: 1.4;
+    gap: 4px;
+  }
+  .hero-previews .floating-mobile {
+    padding: 8px;
+    margin-top: 32px;
+  }
+  .hero-previews .floating-mobile-top {
+    margin-bottom: 8px;
+    font-size: 8px;
+    line-height: 1.3;
+  }
+  .hero-previews .floating-product {
+    height: clamp(64px, 20vw, 88px);
+    min-height: 0;
+  }
+  .hero-previews .floating-mobile > span {
+    margin-top: 8px;
+    font-size: 8px;
+    line-height: 1.4;
+  }
+  .hero-previews .floating-mobile > b {
+    font-size: 11px;
+    line-height: 1.35;
+  }
+  .hero-previews .floating-mobile > p {
+    font-size: 10px;
+    line-height: 1.4;
+    margin-block: 6px 0;
+  }
+  .hero-previews .floating-cart-label {
+    margin-top: 8px;
+    padding-top: 8px;
+    font-size: 9px;
+    line-height: 1.4;
+  }
+  .marketing-main .hero-sample-note {
+    top: 14px;
+    left: 14px;
+    font-size: 9px;
+    line-height: 1.4;
+    letter-spacing: .06em;
+  }
+  .marketing-main .hero-sample-note span {
+    margin-top: 3px;
+    font-size: 7px;
+  }
+  .marketing-main .partner-inner {
+    padding-block: 18px;
+    gap: 14px;
+  }
+  .marketing-main .partner-inner > span {
+    font-size: 11px;
+  }
+  .marketing-main .partner-inner > div {
+    gap: 12px;
+  }
+  .marketing-main .partner-inner > div > span {
+    gap: 7px;
+    line-height: 1.4;
+  }
+  .marketing-main .partner-inner .icon {
+    width: 16px !important;
+    height: 16px !important;
+    flex-shrink: 0;
+  }
+  .marketing-main .problem-layout {
+    gap: 20px;
+  }
+  .marketing-main .problem-layout .text-link {
+    margin-top: 4px;
+  }
+  .marketing-main :is(.split-heading, .service-top) {
+    margin-bottom: 20px;
+  }
+  .marketing-main .editorial-features {
+    grid-template-rows: clamp(200px, 58vw, 240px) auto auto auto;
+  }
+  .marketing-main .feature-content {
+    padding: 24px 20px;
+  }
+  .marketing-main .feature-content h3 {
+    margin-top: 0;
+  }
+  .marketing-main .feature-content .text-link {
+    margin-top: 8px;
+  }
+  .marketing-main .corner-note {
+    bottom: 16px;
+    left: 16px;
+    font-size: 10px;
+    line-height: 1.5;
+  }
+  .marketing-main .feature-stacked {
+    padding: 24px 20px;
+  }
+  .marketing-main .mini-order-head {
+    margin-bottom: 16px;
+    gap: 10px;
+    font-size: 10px;
+    letter-spacing: .05em;
+    line-height: 1.5;
+  }
+  .marketing-main .mini-order-head .icon {
+    width: 18px !important;
+    height: 18px !important;
+    flex-shrink: 0;
+  }
+  .marketing-main .mini-order-row {
+    padding-block: 12px;
+    font-size: 12px;
+    gap: 10px;
+  }
+  .marketing-main .mini-order-row strong {
+    font-size: 18px;
+  }
+  .marketing-main .dark-header > p {
+    margin-top: 12px;
+  }
+  .marketing-main .journey {
+    margin-top: 20px;
+  }
+  .marketing-main .journey > div {
+    padding-block: 18px;
+  }
+  .marketing-main .journey b {
+    font-size: 10px;
+    margin-bottom: 10px;
+  }
+  .marketing-main .journey > div > .icon {
+    width: 20px !important;
+    height: 20px !important;
+  }
+  .marketing-main .journey h3 {
+    font-size: 20px;
+    line-height: 1.3;
+    margin-block: 12px 8px;
+  }
+  .marketing-main .journey p {
+    margin-bottom: 0;
+    max-width: none;
+  }
+  .marketing-main .narrative-layout {
+    gap: 24px;
+  }
+  .marketing-main .narrative-title p {
+    margin-top: 16px;
+  }
+  .marketing-main .narrative-title .text-link {
+    margin-top: 4px;
+  }
+  .marketing-main .narrative-picture {
+    min-height: clamp(280px, 78vw, 340px);
+    margin-bottom: 32px;
+  }
+  .marketing-main .narrative-receipt {
+    width: min(86%, 280px);
+    left: 7%;
+    bottom: -32px;
+    padding: 14px;
+  }
+  .marketing-main .receipt-top {
+    font-size: 16px;
+    padding-bottom: 12px;
+  }
+  .marketing-main .receipt-row {
+    padding-block: 8px;
+    font-size: 10px;
+    line-height: 1.5;
+    gap: 8px;
+  }
+  .marketing-main .receipt-row b {
+    white-space: nowrap;
+  }
+  .marketing-main .receipt-total {
+    padding-block: 12px;
+    font-size: 11px;
+  }
+  .marketing-main .receipt-total strong {
+    font-size: 14px;
+  }
+  .marketing-main .receipt-cta {
+    padding: 11px;
+    font-size: 10px;
+  }
+  .marketing-main .service-columns article {
+    padding-block: 20px;
+  }
+  .marketing-main .service-columns article:last-child {
+    padding-bottom: 0;
+  }
+  .marketing-main .service-detail {
+    font-size: 10px;
+    line-height: 1.6;
+    margin-bottom: 12px;
+  }
+  .marketing-main .service-columns .text-link {
+    margin-top: 0;
+  }
+  .marketing-main :is(.faq-layout, .demo-showcase-layout) {
+    gap: 20px;
+  }
+  .marketing-main .plan-list {
+    gap: 24px;
+    padding-block: 20px 0;
+  }
+  .marketing-main .plan-list article {
+    padding-top: 16px;
+  }
+  .marketing-main .plan-list h3 {
+    font-size: 18px;
+    line-height: 1.3;
+    margin-block: 0 12px;
+  }
+  .marketing-main .plan-list .button {
+    margin: 4px 0 0;
+  }
+  .marketing-main .demo-showcase-copy > p {
+    margin-top: 16px;
+  }
+  .marketing-main .demo-showcase-copy .demo-caption {
+    font-size: 11px;
+    margin-top: 12px;
+  }
+  .marketing-main .demo-showcase-copy .text-link {
+    margin-top: 4px;
+  }
+  .marketing-main .demo-showcase-image img {
+    aspect-ratio: 3 / 2;
+    max-height: 280px;
+    object-position: center top;
+  }
+  .marketing-main .demo-showcase-image > span {
+    padding: 36px 16px 16px;
+    font-size: 18px;
+    line-height: 1.3;
+  }
+  .marketing-main .demo-showcase-image > span .icon {
+    width: 18px !important;
+    height: 18px !important;
+  }
+  .marketing-main .faq-list summary {
+    min-height: 48px;
+    padding: 16px 28px 16px 0;
+    font-size: 13px;
+    line-height: 1.5;
+  }
+  .marketing-main .faq-list summary::after {
+    top: 14px;
+    font-size: 20px;
+  }
+  .marketing-main .faq-list details p {
+    margin-block: 0 16px;
+  }
+  .marketing-main .closing-layout h2 {
+    margin-bottom: 20px;
+  }
+  .marketing-main .closing-chat {
+    min-height: 40px;
+    margin-top: 12px;
+    font-size: 12px;
+  }
+  .site-header:has(+ .marketing-main) .site-header-inner {
+    height: 60px;
+  }
+  .site-header:has(+ .marketing-main) .site-nav {
+    top: 60px;
+    padding: 20px;
+    gap: 18px;
+    font-size: 12px;
+  }
+  .site-header:has(+ .marketing-main) .mobile-menu {
+    min-width: 44px;
+    min-height: 44px;
+  }
+  .site-header:has(+ .marketing-main) .mobile-menu > .icon {
+    width: 20px !important;
+    height: 20px !important;
+  }
+  :is(.site-header:has(+ .marketing-main), .marketing-main + .footer) .brand-word {
+    font-size: 19px;
+  }
+  :is(.site-header:has(+ .marketing-main), .marketing-main + .footer) .brand-mark {
+    width: 26px;
+    height: 26px;
+  }
+  :is(.site-header:has(+ .marketing-main), .marketing-main + .footer) .brand-mark img {
+    width: 24px;
+    height: 24px;
+  }
+  .marketing-main + .footer {
+    padding: 36px 0 20px;
+  }
+  .marketing-main + .footer .footer-top {
+    padding-bottom: 28px;
+  }
+  .marketing-main + .footer .footer-top.footer-expanded {
+    gap: 24px;
+  }
+  .marketing-main + .footer .footer-top p {
+    font-size: 12px;
+    margin-block: 14px;
+  }
+  .marketing-main + .footer :is(.footer-email, .footer-column > a, .footer-column h3) {
+    font-size: 12px;
+  }
+  .marketing-main + .footer .footer-column {
+    gap: 10px;
+  }
+  .marketing-main + .footer .icon {
+    width: 14px !important;
+    height: 14px !important;
+  }
+  .marketing-main + .footer .footer-bottom {
+    font-size: 11px;
+    padding-top: 18px;
+  }
+}
