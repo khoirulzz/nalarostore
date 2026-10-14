@@ -106,15 +106,14 @@ function AdminPanel() {
       <main className="shell">
         <h1>Pengelolaan platform</h1>
         <p>
-          Paket, tagihan SaaS, dan pekerjaan custom dikelola terpisah dari
-          pesanan pelanggan toko.
+          Atur langganan SaaS, tagihan, toko, dan pengajuan program UMKM dari satu tempat.
         </p>
         <div className="work-tabbar">
           {[
             ["overview", "Toko & invoice"],
             ["plans", "Paket & harga"],
             ["policy", "Pengaturan billing"],
-            ["leads", "Proyek custom"],
+            ["leads", "Pengajuan masuk"],
             ["outbox", "Notifikasi"],
           ].map(([key, label]) => (
             <button
@@ -285,8 +284,8 @@ function AdminPanel() {
                 >
                   <strong>{l.business_name}</strong>
                   <span>{l.contact_name}</span>
+                  <span>{l.project_brief.startsWith("[PENGAJUAN PROGRAM UMKM") ? "Program UMKM" : "Arsip prospek custom"}</span>
                   <span>{label(l.status)}</span>
-                  <span>{label(l.delivery_status)}</span>
                 </button>
               ))}
             </div>
@@ -461,7 +460,7 @@ function LeadEditor({ lead: l, done }: { lead: Lead; done: () => void }) {
   return (
     <>
       <button className="back-link" onClick={done}>
-        ← Kembali ke proyek
+        ← Kembali ke pengajuan
       </button>
       <h2>{l.business_name}</h2>
       <p>
