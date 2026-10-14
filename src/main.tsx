@@ -341,7 +341,7 @@ function Marketing() {
             <h2>
               Sudah saatnya
               <br />
-              <em>go digital.</em>
+              <em className="hero-store-line">go digital.</em>
             </h2>
             <div>
               <p>

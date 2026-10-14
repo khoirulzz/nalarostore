@@ -7,7 +7,8 @@ dist/
 *.log
 .DS_Store
 coverage/
-
+ca.pem
+docs/AIVEN-CONNECTION-AUDIT-2026-10-15.md
 test-results/
 playwright-report/
 *.tsbuildinfo

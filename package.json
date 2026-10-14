@@ -22,7 +22,8 @@
     "dev:ui": "vite",
     "dev:test": "node --import tsx scripts/test-server.ts",
     "dev:auth-test": "npx -y firebase-tools@latest emulators:start --only auth --project demo-nalarostore --config firebase.test.json",
-    "db:status": "node --import tsx scripts/db-status.ts"
+    "db:status": "node --import tsx scripts/db-status.ts",
+    "db:diagnose": "node scripts/aiven-diagnostics.mjs"
   },
   "dependencies": {
     "firebase": "^13.0.0",

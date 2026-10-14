@@ -68,6 +68,24 @@ write and a controlled guest order before enabling live checkout.
 
 ## Database connection and migrations
 
+Test the database independently before provisioning Hyperdrive:
+
+```powershell
+npm.cmd run db:diagnose
+```
+
+The standalone `scripts/aiven-diagnostics.mjs` reads `DATABASE_URL` from
+`.env.local` and the certificate from root `ca.pem`. It checks configuration,
+CA validity, system/direct DNS, hostname/IP TCP connectivity, an HTTPS TCP
+control, PostgreSQL SSL negotiation, verified TLS, login and read-only queries.
+TLS and login are skipped when TCP fails. It never migrates or writes application
+data and never logs credentials or raw server error messages. Results are saved
+to ignored `test-results/aiven-diagnostics.json`; exit code 1 means a check failed.
+Use `npm.cmd run db:diagnose -- --timeout-ms 20000` for slower networks. Paths can
+be overridden with `--env-file`, `--ca`, and `--report`. Node 20.12+ and installed
+project dependencies are required. A successful terminal test does not verify
+the Worker/Hyperdrive connection. Keep `.env.local` and `ca.pem` ignored.
+
 Retrieve the connection and CA certificate directly from the Aiven Console into a trusted private terminal/environment. Do not paste passwords into chat, repository files or frontend environment variables. Aiven's connector redacts the password, so it cannot supply a direct DATABASE_URL or Hyperdrive connection credentials. Its separate PG Editor tools can inspect SQL state; direct local tests and the migration CLI still require private connection credentials.
 
 Use a dedicated PostgreSQL role for the app with the necessary table/sequence permissions, separately from the migration owner. Create Hyperdrive with verified Aiven TLS, caching **disabled**, and a deliberately small origin pool. Distributed pooling is not a guaranteed global connection cap. Keep connection headroom for migrations and administration and measure `pg_stat_activity` under load.
