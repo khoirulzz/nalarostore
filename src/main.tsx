@@ -30,7 +30,8 @@ import {
 } from "./data/demo";
 import "./styles.css";
 import "./live/live.css";
-import { CustomInquiry, PublicPricing } from "./live/PublicOffers";
+import { PublicPricing, UmkmApplication } from "./live/PublicOffers";
+import { LegalPage } from "./live/LegalPages";
 const Auth = lazy(() =>
   import("./live/Auth").then((m) => ({ default: m.Auth })),
 );
@@ -155,10 +156,10 @@ function MarketingNav() {
           <a href="/#cara-kerja" onClick={() => setOpen(false)}>
             Cara kerja
           </a>
-          <a href="/#pilihan" onClick={() => setOpen(false)}>
-            Pilihan layanan
+          <a href="/#paket" onClick={() => setOpen(false)}>
+            Harga paket
           </a>
-          <Link to="/custom">Pesan custom</Link>
+          <a href={CUSTOM_ORDER_URL} target="_blank" rel="noopener noreferrer">Toko custom</a>
         </nav>
         <div className="header-actions">
           <Link className="header-login" to="/login">
@@ -184,7 +185,7 @@ function MarketingNav() {
   );
 }
 const subscriptionWhatsApp = `https://wa.me/6285771298582?text=${encodeURIComponent("Halo Nalaro, saya ingin berlangganan Nalaro Store. Boleh dibantu info paket dan cara memulai toko online? Nama usaha saya: ")}`;
-const customWhatsApp = `https://wa.me/6285771298582?text=${encodeURIComponent("Halo Nalaro, saya ingin pesan toko online custom. Boleh konsultasi kebutuhan, estimasi biaya, dan waktu pengerjaannya? Nama usaha saya: ")}`;
+const CUSTOM_ORDER_URL = "https://order.nalaro.digital/form/";
 function Footer() {
   return (
     <footer className="footer">
@@ -192,51 +193,33 @@ function Footer() {
         <div className="footer-top footer-expanded">
           <div className="footer-brand">
             <Logo light />
-            <p>
-              Produkmu sudah siap.
-              <br />
-              Sekarang, beri pelanggan tempat untuk belanja.
-            </p>
-            <a className="footer-email" href="mailto:store@nalaro.digital">
-              store@nalaro.digital <Icon name="arrow-up-right" size={16} />
-            </a>
+            <p>Tokomu sendiri, jualan lebih mudah. Nalaro yang bantu urusan teknisnya.</p>
+            <div className="footer-contacts">
+              <a href="mailto:store@nalaro.digital"><Icon name="mail" size={17}/>store@nalaro.digital</a>
+              <a href={subscriptionWhatsApp} target="_blank" rel="noopener noreferrer"><Icon name="phone" size={17}/>0857 7129 8582</a>
+              <a href="https://order.nalaro.digital/form/" target="_blank" rel="noopener noreferrer"><Icon name="file" size={17}/>Form order Nalaro</a>
+            </div>
           </div>
           <div className="footer-column">
-            <h3>Mulai dari sini</h3>
-            <a href="/#fitur">Solusi untuk jualanmu</a>
-            <Link to="/demo/batiknalaro">Coba toko Batik Nalaro</Link>
-            <a href="/#paket">Pilihan langganan</a>
+            <h3>Jelajahi Nalaro Store</h3>
+            <a href="/#fitur">Fitur toko</a>
+            <Link to="/demo/batiknalaro">Coba demo toko</Link>
+            <a href="/#paket">Harga & paket</a>
             <a href="/#pertanyaan">Pertanyaan umum</a>
+            <Link to="/program-umkm">Program UMKM</Link>
           </div>
           <div className="footer-column">
-            <h3>Kita bantu wujudkan</h3>
-            <a
-              href={subscriptionWhatsApp}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Tanya langganan <Icon name="arrow-up-right" size={15} />
-            </a>
-            <a href={customWhatsApp} target="_blank" rel="noopener noreferrer">
-              Konsultasi toko custom <Icon name="arrow-up-right" size={15} />
-            </a>
-            <a
-              href={subscriptionWhatsApp}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              WhatsApp · 0857 7129 8582
-            </a>
-            <Link to="/custom">Kirim kebutuhan toko</Link>
+            <h3>Bantuan & legal</h3>
+            <a href={subscriptionWhatsApp} target="_blank" rel="noopener noreferrer">Hubungi tim Nalaro</a>
+            <a href={CUSTOM_ORDER_URL} target="_blank" rel="noopener noreferrer">Jasa toko custom · Nalaro Dev</a>
+            <Link to="/legal/privasi">Kebijakan privasi</Link>
+            <Link to="/legal/ketentuan">Syarat & ketentuan</Link>
+            <Link to="/legal/program-umkm">Ketentuan program UMKM</Link>
           </div>
         </div>
         <div className="footer-bottom">
           <span>© {new Date().getFullYear()} Nalaro Digital.</span>
-          <a
-            href="https://nalaro.digital"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
+          <a href="https://nalaro.digital" target="_blank" rel="noopener noreferrer">
             Bagian dari Nalaro Digital <Icon name="arrow-up-right" size={15} />
           </a>
         </div>
@@ -304,17 +287,18 @@ function Marketing() {
         <section className="marketing-hero">
           <div className="shell hero-grid">
             <div className="hero-copy">
+              <span className="hero-decor" aria-hidden="true" />
               <h1>
                 Saatnya punya
                 <br />
-                <em>toko online</em>
+                <em className="hero-store-line">toko online mu</em>
                 <br />
                 sendiri.
               </h1>
               <p>
-                Masih kirim foto, jawab harga, dan cek stok satu per satu di
-                chat? Beri pelanggan satu link untuk memilih produk dan memesan.
-                Kamu tinggal menyiapkan pesanannya.
+                Tokomu sendiri, stok kamu atur, pesanan terkumpul rapi.
+                Bagikan satu link ke pelanggan dan fokus pada jualanmu,
+                tanpa potongan transaksi dari Nalaro.
               </p>
               <div className="hero-ctas">
                 <Link to="/register" className="button button-orange">
@@ -327,8 +311,7 @@ function Marketing() {
               <div className="hero-foot">
                 <span className="hero-rule" />
                 <span>
-                  kelola tokomu sendiri lebih mudah.
-                  Hasilkan cuan lebih banyak!.
+                  Punya toko sendiri. Jualan lebih tenang.
                 </span>
               </div>
             </div>
@@ -357,25 +340,22 @@ function Marketing() {
         <section className="problem-section">
           <div className="shell problem-layout">
             <h2>
-              Chat ramai.
+              Sudah saatnya
               <br />
-              Pesanan jangan
-              <br />
-              <em>ikut terselip.</em>
+              <em>go digital.</em>
             </h2>
             <div>
               <p>
-                Promosi di media sosial, pertanyaan di WhatsApp, catatan pesanan
-                di tempat lain. Saat pembeli datang bersamaan, hal kecil mudah
-                terlewat.
+                Jualan lewat chat boleh tetap jalan. Tapi saat pelanggan ingin
+                langsung memilih barang, biarkan toko onlinemu yang membantu.
               </p>
               <p>
-                Dengan Nalaro Store, arahkan mereka ke toko sendiri. Informasi
-                produk bisa dilihat langsung, pesanan tercatat, dan kamu tahu
-                mana yang perlu ditangani.
+                Ini tokomu sendiri: produk bisa kamu susun, stok kamu atur,
+                dan pesanan tercatat di satu tempat. Nalaro tidak mengambil
+                potongan dari setiap transaksi penjualanmu.
               </p>
               <a className="text-link" href="#fitur">
-                Lihat cara merapikannya <Icon name="arrow-right" size={18} />
+                Kenali fitur tokomu <Icon name="arrow-right" size={18} />
               </a>
             </div>
           </div>
@@ -384,8 +364,8 @@ function Marketing() {
           <div className="shell">
             <div className="split-heading">
               <SectionIntro
-                title="Kurangi bolak-balik chat. Beri ruang untuk jualan."
-                desc="Pelanggan bisa mencari pilihannya sendiri. Kamu tetap bisa membantu saat mereka membutuhkan."
+                title="Yang kamu butuhkan untuk mulai jualan, ada di sini."
+                desc="Etalase yang mudah dijelajahi, pesanan yang rapi, dan stok yang bisa kamu cek kapan saja."
               />
             </div>
             <div className="editorial-features">
@@ -527,55 +507,52 @@ function Marketing() {
             </div>
           </div>
         </section>
+        <section className="mobile-access-section section-spacing" id="akses">
+          <div className="shell mobile-access-layout">
+            <div className="mobile-access-copy">
+              <h2>Jualan terus jalan, meski kamu sedang di luar toko.</h2>
+              <p>
+                Buka dashboard lewat browser ponsel untuk mengecek pesanan,
+                memperbarui produk, dan mengatur stok. Tak perlu selalu duduk
+                di depan laptop.
+              </p>
+              <a className="text-link" href="/app">Buka dashboard toko <Icon name="arrow-up-right" size={18}/></a>
+              <span className="mobile-access-note">Akses lewat browser HP. Aplikasi native belum tersedia.</span>
+            </div>
+            <div className="mobile-access-visual" role="img" aria-label="Ilustrasi model muda Indonesia tersenyum saat melihat toko dari ponsel">
+              <img src="/images/mobile-merchant.jpg" alt="" loading="lazy"/>
+              <span className="access-floating access-floating-left"><Icon name="bag" size={18}/>Pesanan di tanganmu</span>
+              <span className="access-floating access-floating-right"><Icon name="chart" size={18}/>Cek perkembangan jualan</span>
+            </div>
+          </div>
+        </section>
         <section className="service-section" id="pilihan">
           <div className="shell">
             <div className="service-top">
               <SectionIntro
-                title="Buka sendiri, atau kita bantu bangunkan."
-                desc="Ada yang ingin langsung mulai. Ada yang punya kebutuhan khusus. Pilih cara yang paling pas untuk usahamu."
+                title="Kamu urus jualan. Urusan teknis, biar Nalaro."
+                desc="Tidak harus paham coding atau menyiapkan server sendiri untuk punya toko online yang bisa dikelola setiap hari."
               />
             </div>
             <div className="service-columns">
               <article>
-                <h3>Ingin mulai jualan lebih praktis?</h3>
+                <h3>Buat toko tanpa harus belajar bikin website.</h3>
                 <p>
-                  Gunakan Nalaro Store untuk menata katalog, menerima pesanan,
-                  dan mengurus toko sendiri. Cocok untuk usaha yang ingin punya
-                  tempat belanja tanpa membangun website dari awal.
+                  Beri nama toko, isi produk dan harga, tentukan cara pembayaran,
+                  lalu bagikan alamat tokomu. Semuanya lewat dashboard yang mudah dipakai.
                 </p>
-                <div className="service-detail">
-                  Etalase produk · Pilihan ukuran & warna · Checkout · Kelola
-                  pesanan
-                </div>
-                <a
-                  className="text-link"
-                  href={subscriptionWhatsApp}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  Tanya paket langganan <Icon name="arrow-up-right" size={19} />
-                </a>
+                <div className="service-detail">Tambah produk · Atur stok · Kelola pesanan · Lihat penjualan</div>
+                <Link className="text-link" to="/register">Mulai buat tokomu <Icon name="arrow-up-right" size={19}/></Link>
               </article>
               <article>
-                <h3>Punya rencana toko yang lebih khusus?</h3>
+                <h3>Tak perlu repot urus kode dan maintenance.</h3>
                 <p>
-                  Ceritakan tampilan dan cara kerja yang kamu butuhkan. Kita
-                  diskusikan desain, fitur, dan integrasinya, lalu siapkan
-                  penawaran sesuai kebutuhan tokomu.
+                  Infrastruktur, pembaruan sistem, dan pengembangan fitur inti
+                  platform ditangani Nalaro. Kamu bisa lebih fokus melayani
+                  pelanggan dan mengembangkan usahamu.
                 </p>
-                <div className="service-detail">
-                  Desain sesuai brand · Alur bisnis khusus · Integrasi sesuai
-                  kebutuhan
-                </div>
-                <a
-                  className="text-link"
-                  href={customWhatsApp}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  Ceritakan rencana tokomu{" "}
-                  <Icon name="arrow-up-right" size={19} />
-                </a>
+                <div className="service-detail">Sistem siap pakai · Update platform · Akses dari ponsel</div>
+                <a className="text-link" href="#paket">Lihat paket berlangganan <Icon name="arrow-up-right" size={19}/></a>
               </article>
             </div>
           </div>
@@ -657,12 +634,19 @@ function Marketing() {
                 </p>
               </details>
               <details>
-                <summary>Apa bedanya langganan dan toko custom?</summary>
+                <summary>Kalau butuh website dengan fitur khusus?</summary>
                 <p>
-                  Langganan menggunakan fitur yang tersedia di Nalaro Store.
-                  Toko custom cocok jika kamu membutuhkan desain, modul, atau
-                  integrasi khusus. Lingkup pekerjaan dan biayanya dibicarakan
-                  sebelum pengerjaan.
+                  Nalaro Store khusus untuk toko berlangganan. Untuk website atau
+                  aplikasi e-commerce dengan fitur khusus, tim Nalaro Dev bisa
+                  membantu lewat <a href={CUSTOM_ORDER_URL} target="_blank" rel="noopener noreferrer">form order Nalaro</a>.
+                </p>
+              </details>
+              <details>
+                <summary>Apakah saya mendapat domain toko sendiri?</summary>
+                <p>
+                  Setiap toko memiliki alamat dalam domain Nalaro Store. Penggunaan
+                  domain milik sendiri memerlukan paket yang memenuhi syarat,
+                  verifikasi teknis, dan aktivasi; fitur ini belum tersedia untuk semua toko.
                 </p>
               </details>
               <details>
@@ -1581,6 +1565,16 @@ function LegacyDemoRedirect() {
       : nextPath;
   return <Navigate to={destination + search} replace />;
 }
+function CustomRedirect() {
+  useEffect(() => { window.location.replace(CUSTOM_ORDER_URL); }, []);
+  return <main className="auth-page"><h1>Pesan toko khusus bersama Nalaro Dev</h1><p>Kamu akan diarahkan ke formulir Nalaro Digital.</p><a className="button button-dark" href={CUSTOM_ORDER_URL}>Buka formulir Nalaro <Icon name="arrow-up-right" size={18}/></a></main>;
+}
+function LegalRoute() {
+  const { document } = useParams();
+  const kind = document === "privasi" || document === "ketentuan" || document === "program-umkm" ? document : null;
+  if (!kind) return <NotFound/>;
+  return <><MarketingNav/><LegalPage kind={kind}/><Footer/></>;
+}
 function App() {
   if (window.location.hostname.endsWith(".store.nalaro.digital"))
     return (
@@ -1594,7 +1588,9 @@ function App() {
         <ScrollTop />
         <Routes>
           <Route path="/" element={<Marketing />} />
-          <Route path="/custom" element={<CustomInquiry />} />
+          <Route path="/custom" element={<CustomRedirect />} />
+          <Route path="/program-umkm" element={<UmkmApplication />} />
+          <Route path="/legal/:document" element={<LegalRoute />} />
           <Route path="/login" element={<Auth />} />
           <Route path="/register" element={<Auth register />} />
           <Route path="/verify" element={<Verify />} />
