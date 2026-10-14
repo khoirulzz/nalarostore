@@ -1,6 +1,6 @@
 # Nalaro Store
 
-Commerce SaaS for Nalaro Digital: independent merchant stores, manual customer payments, owner-managed monthly/yearly subscriptions, and separately contracted custom projects. React/TypeScript/Vite on Cloudflare Pages + separate Workers/R2 backend + Aiven PostgreSQL through Hyperdrive.
+Commerce SaaS for Nalaro Digital: independent merchant stores, manual customer payments, and owner-managed monthly/yearly subscriptions. Custom e-commerce development is offered by Nalaro Dev through https://order.nalaro.digital/form/, not sold as a Nalaro Store product. React/TypeScript/Vite on Cloudflare Pages + separate Workers/R2 backend + Aiven PostgreSQL through Hyperdrive.
 
 **Release state:** phases 1–3 are implemented and under verification. Aiven `nalarostore-pg` Free in Singapore and R2 `nalarostore-media` have been created. The production database has not been migrated or connected to Hyperdrive. Email Sending and tenant DNS/TLS still need account-level configuration. **Real checkout remains disabled.** Demo data is confined to `/demo/atelier` and `/demo/workspace`.
 
@@ -10,9 +10,17 @@ Commerce SaaS for Nalaro Digital: independent merchant stores, manual customer p
 | ----- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 1     | Firebase email/password registration, verification/reset/change-password, verified Firebase ID tokens and account revocation checks, merchant membership checks, store creation, product/variant editors, stock changes, R2 image validation/uploads, tenant-specific catalog and workspace                                                |
 | 2     | Guest checkout with server price/stock validation, atomic order/item/reservation writes, idempotent retries, order counters, opaque expiring tracking links, audited payment checks, fulfillment transitions, cancellation/expiry and retryable transactional email outbox |
-| 3     | Owner-only package/price/policy administration, monthly/yearly subscription invoices with price snapshots, verification/renewal/grace/expiry, quota enforcement, self-service onboarding/HTTPS subdomain proof, custom lead→quote→delivery with ownership/license fields   |
+| 3     | Owner-only package/price/policy administration, monthly/yearly subscription invoices with price snapshots, verification/renewal/grace/expiry, quota enforcement, self-service onboarding/HTTPS subdomain proof, a legacy custom-lead workflow retained for historical records; new custom orders are directed to Nalaro Dev   |
 
 Storefront/cart/checkout never consume production demo products. Customer payments settle to each merchant's bank/QRIS; subscription invoices are separately verified by Nalaro admins. No gateway, automatic settlement or refund processing is included.
+
+## SaaS-only marketing update (15 October 2026)
+
+- Nalaro Store offers self-service commerce subscriptions, not independent custom development. Old `/custom` links forward to Nalaro Digital's centralized order form.
+- The landing advertises an **application-based** six-month Free UMKM program, plus illustrative introductory monthly offers: Starter Rp69,000 (crossed-out comparison Rp199,000) and Growth Rp129,000 (comparison Rp399,000). These are marketing copy, **not** automatically published backend plans or subscription entitlements. The owner must verify genuine reference prices and activate matching billing packages and terms before launch.
+- `/program-umkm` collects program applications with existing abuse-protected public lead submission; the internal intake is tagged `[PENGAJUAN PROGRAM UMKM ...]` to distinguish it from archived custom requests. Selecting a participant and granting a full six-month free entitlement remain operator actions, not auto-activation.
+- `/legal/privasi`, `/legal/ketentuan` and `/legal/program-umkm` provide baseline policy text. They need owner/legal review before going live.
+- Each store's platform-hosted address is distinct. Custom domains require verified infrastructure, package eligibility and activation; the feature is **not** generally available. Mobile merchant access is through a browser, not a downloadable native app.
 
 ## Local development
 
