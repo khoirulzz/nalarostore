@@ -35,7 +35,7 @@ jobs:
         env:
           TEST_PG_CONTAINER: ${{ job.services.postgres.id }}
       - run: npm run build
-      - run: npx wrangler deploy --dry-run --outdir /tmp/nalarostore-worker
+      - run: npm run check:worker
   browser:
     runs-on: ubuntu-latest
     steps:

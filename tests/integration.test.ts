@@ -892,6 +892,14 @@ it("verifies tenant subdomain through real HTTPS proof, rejecting spoofed respon
     await expect(
       verifyDomain(db, storeA, user, "store.nalaro.digital"),
     ).rejects.toMatchObject({ status: 409 });
+    expect(mock.mock.calls.at(-1)?.[1]?.redirect).toBe("manual");
+    mock.mockResolvedValueOnce(new Response(null, {
+      status: 308,
+      headers: { location: "https://foreign.test/.well-known/nalarostore-domain" },
+    }));
+    await expect(
+      verifyDomain(db, storeA, user, "store.nalaro.digital"),
+    ).rejects.toMatchObject({ status: 409 });
     mock.mockResolvedValueOnce(
       Response.json({
         store_id: storeA,

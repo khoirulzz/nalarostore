@@ -1,6 +1,6 @@
 # Nalaro Store
 
-Commerce SaaS for Nalaro Digital: independent merchant stores, manual customer payments, owner-managed monthly/yearly subscriptions, and separately contracted custom projects. React/TypeScript/Vite + Cloudflare Workers/R2 + Aiven PostgreSQL through Hyperdrive.
+Commerce SaaS for Nalaro Digital: independent merchant stores, manual customer payments, owner-managed monthly/yearly subscriptions, and separately contracted custom projects. React/TypeScript/Vite on Cloudflare Pages + separate Workers/R2 backend + Aiven PostgreSQL through Hyperdrive.
 
 **Release state:** phases 1–3 are implemented and under verification. Aiven `nalarostore-pg` Free in Singapore and R2 `nalarostore-media` have been created. The production database has not been migrated or connected to Hyperdrive. Email Sending and tenant DNS/TLS still need account-level configuration. **Real checkout remains disabled.** Demo data is confined to `/demo/atelier` and `/demo/workspace`.
 
@@ -43,12 +43,20 @@ The browser tests create a store/product, guest order, payment verification and 
 
 Follow [DEPLOYMENT.md](DEPLOYMENT.md). Required bindings/configuration:
 
+Frontend and backend deploy independently. `wrangler.jsonc` configures Pages
+(`npm run build`, output `dist`); `wrangler.worker.jsonc` configures the API Worker,
+without bundled frontend assets. Pages serves `store.nalaro.digital`; Worker routes
+handle `/api/*` and storefront HTML metadata under `/s/*` on that same hostname.
+The Worker fetches storefront HTML from `PAGES_ORIGIN=https://nalarostore.pages.dev`.
+Deploy with `npm run deploy:pages` and `npm run deploy:worker` separately.
+
 - `HYPERDRIVE`: Aiven PostgreSQL, **query caching disabled**; validate TLS and actual connection usage.
 - `MEDIA`: the dedicated R2 media bucket; no private customer documents are accepted.
 - `EMAIL`: Cloudflare Email Sending binding, with an onboarded sender domain.
 - `FIREBASE_PROJECT_ID`, `FIREBASE_API_KEY`: the trusted Auth project and an API key usable by server-side account lookup.
 - `TOKEN_SECRET`: 32+ random bytes as a Cloudflare secret for guest tracking replay; never a `VITE_` variable.
 - `APP_ORIGIN`, `ROOT_DOMAIN`, `OWNER_EMAIL`: verified platform URL/domain/owner address.
+- `PAGES_ORIGIN`: the direct Pages origin, different from the public custom domain to avoid routing loops.
 - `ENABLE_LIVE_CHECKOUT`: stays `false` until release gates pass.
 
 Owner privileges are granted only after the exact configured owner email is verified. No public admin bootstrap endpoint exists. Firebase supplies short-lived bearer ID tokens; legacy password/session endpoints no longer authenticate users. The backend checks signature, issuer, audience, expiry and current account state. All state-changing API requests require same-origin requests. Catalog and upload writes recheck the user's store membership in the backend.

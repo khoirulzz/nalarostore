@@ -1,0 +1,30 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "nalarostore",
+  "account_id": "fa9e4b5cc90250f132b17fb7c067490b",
+  "main": "worker/index.ts",
+  "compatibility_date": "2026-10-13",
+  "compatibility_flags": ["nodejs_compat"],
+  // Pages owns the frontend. These routes share its public origin.
+  "routes": [
+    { "pattern": "store.nalaro.digital/api/*", "zone_name": "nalaro.digital" },
+    { "pattern": "store.nalaro.digital/s/*", "zone_name": "nalaro.digital" },
+  ],
+  "r2_buckets": [{ "binding": "MEDIA", "bucket_name": "nalarostore-media" }],
+  "vars": {
+    "APP_ENV": "production",
+    "APP_ORIGIN": "https://store.nalaro.digital",
+    "PAGES_ORIGIN": "https://nalarostore.pages.dev",
+    "ROOT_DOMAIN": "store.nalaro.digital",
+    "OWNER_EMAIL": "uniquefactuhl@gmail.com",
+    "FIREBASE_PROJECT_ID": "nalarostore",
+    "FIREBASE_API_KEY": "AIzaSyAymTQU-0lwS_p7yLe0JgsFlNkZPpUo8ow",
+    "ENABLE_LIVE_CHECKOUT": "false",
+    "EMAIL_FROM": "hello@nalaro.digital",
+  },
+  "secrets": { "required": ["TOKEN_SECRET"] },
+  "triggers": { "crons": ["*/10 * * * *"] },
+  "observability": { "enabled": true, "head_sampling_rate": 0.1 },
+  // Add the real HYPERDRIVE id (caching disabled) and EMAIL after provisioning.
+  // Optional tenant route *.store.nalaro.digital/* requires ready DNS and TLS.
+}

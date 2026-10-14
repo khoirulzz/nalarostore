@@ -1,0 +1,29 @@
+/*
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: no-referrer
+  Permissions-Policy: camera=(), microphone=(), geolocation=()
+  Strict-Transport-Security: max-age=31536000
+  Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://identitytoolkit.googleapis.com https://securetoken.googleapis.com; frame-src https://nalarostore.firebaseapp.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'
+
+/app
+  X-Robots-Tag: noindex, nofollow, noarchive
+/app/*
+  X-Robots-Tag: noindex, nofollow, noarchive
+/admin
+  X-Robots-Tag: noindex, nofollow, noarchive
+/admin/*
+  X-Robots-Tag: noindex, nofollow, noarchive
+/login
+  X-Robots-Tag: noindex, nofollow, noarchive
+/register
+  X-Robots-Tag: noindex, nofollow, noarchive
+/verify
+  X-Robots-Tag: noindex, nofollow, noarchive
+/forgot-password
+  X-Robots-Tag: noindex, nofollow, noarchive
+/auth/*
+  X-Robots-Tag: noindex, nofollow, noarchive
+/preview/*
+  X-Robots-Tag: noindex, nofollow, noarchive
+/demo/*
+  X-Robots-Tag: noindex, nofollow, noarchive

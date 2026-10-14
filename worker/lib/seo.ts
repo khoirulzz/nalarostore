@@ -1,5 +1,6 @@
 import type { DB } from "./db";
 import type { RuntimeEnv } from "../index";
+import { pagesResponse } from "./pages";
 
 export async function storeHTML(
   db: DB,
@@ -87,7 +88,7 @@ export async function storeHTML(
     '<script type="application/ld+json">' +
     JSON.stringify(graph).replaceAll("<", "\\u003c") +
     "</script>";
-  const response = await env.ASSETS.fetch(request);
+  const response = await pagesResponse(request, env, true);
   const transformed = new HTMLRewriter()
     .on("title", {
       element(e) {

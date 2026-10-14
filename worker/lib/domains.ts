@@ -36,7 +36,7 @@ export async function verifyDomain(
   try {
     const response = await fetch(
       `https://${hostname}/.well-known/nalarostore-domain`,
-      { redirect: "error", signal: AbortSignal.timeout(5000) },
+      { redirect: "manual", signal: AbortSignal.timeout(5000) },
     );
     assert(response.ok, 409, "Subdomain belum terhubung.");
     const reader = response.body?.getReader();

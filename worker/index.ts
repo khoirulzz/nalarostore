@@ -16,6 +16,7 @@ import { upload } from "./lib/media";
 import { cleanup, deliverOutbox } from "./lib/jobs";
 import { operationRoutes } from "./lib/operations";
 import { storeHTML } from "./lib/seo";
+import { pagesResponse } from "./lib/pages";
 // Deployment bindings are optional until provisioned. Generated base Env comes from wrangler types.
 export type RuntimeEnv = Env & {
   HYPERDRIVE?: Hyperdrive;
@@ -238,7 +239,7 @@ const handler = {
 
         if (
           !isPlatform(url.hostname, env) &&
-          !/^\/(?:assets|favicon|android|apple|site\.webmanifest)/.test(
+          !/^\/(?:assets\/|images\/|favicon|android|apple|site\.webmanifest)/.test(
             url.pathname,
           )
         ) {
@@ -255,7 +256,7 @@ const handler = {
           assert(store, 404, "Toko tidak ditemukan.");
           if (!url.pathname.startsWith("/track/"))
             return await storeHTML(db, request, env, store);
-          const response = await env.ASSETS.fetch(request);
+          const response = await pagesResponse(request, env, true);
           const headers = new Headers(response.headers);
           headers.set("x-store-slug", store.slug);
           headers.set("cache-control", "no-store");
@@ -279,7 +280,7 @@ const handler = {
           );
           return await storeHTML(db, request, env, store);
         }
-        return env.ASSETS.fetch(request);
+        return await pagesResponse(request, env, !!pathStore);
       }
       if (!env.HYPERDRIVE) {
         if (url.pathname === "/api/health")

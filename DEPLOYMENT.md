@@ -7,13 +7,72 @@
 - Aiven project: `uniquefactuhl-7887`; PostgreSQL `nalarostore-pg`, `free-1-1gb`, `do-sgp`, PostgreSQL 17, termination protection enabled.
 - R2: `nalarostore-media`, APAC, Standard. Existing account R2 was already enabled; no paid service plan was activated.
 
+## Separate Pages and Worker deployment
+
+| Setting | Pages frontend | Worker backend |
+| --- | --- | --- |
+| Config | `wrangler.jsonc` | `wrangler.worker.jsonc` |
+| Project/Worker name | `nalarostore` | `nalarostore` |
+| Build command | `npm run build` | `npm run typecheck` |
+| Output directory | `dist` | No static asset directory |
+| Deploy command | `npm run deploy:pages` | `npm run deploy:worker` |
+| Public hostname | `store.nalaro.digital` custom domain | Routes on that same hostname |
+| Variables | Public `VITE_FIREBASE_*` in build settings | Backend vars and `TOKEN_SECRET` secret |
+
+For Git-connected Pages, set build command `npm run build`, output `dist`, and
+repository root as the root directory. Pages auto-detects the root Wrangler config.
+For Git-connected Worker Builds, use `npm run typecheck` as the build command and
+`npm run deploy:worker` as the deploy command; its explicit config flag selects
+the backend config. The legacy `npm run deploy` command also targets only the Worker.
+
+Worker values are:
+
+```env
+APP_ORIGIN=https://store.nalaro.digital
+ROOT_DOMAIN=store.nalaro.digital
+PAGES_ORIGIN=https://nalarostore.pages.dev
+```
+
+`TOKEN_SECRET` belongs only on the Worker. Preserve its current value for the same
+database/orders. No database password, backup key, or tracking secret belongs in
+Pages frontend build variables. `HYPERDRIVE`, `MEDIA`, and `EMAIL` are Worker bindings.
+Add the actual Hyperdrive id and configured Email binding to the backend config;
+`--keep-vars` preserves dashboard text variables, not missing resource bindings.
+
+Frontend requests keep using relative `/api/...` URLs. No API base URL or cross-origin
+CORS change is needed. Route activation happens when the Worker is deployed; these
+local edits do not attach the Pages custom domain or modify Cloudflare resources.
+
+`PAGES_ORIGIN` must keep serving Pages directly, without redirecting to
+`store.nalaro.digital`. The Worker uses it for streaming storefront HTML and optional
+tenant assets without forwarding cookies, Firebase tokens, or tracking query strings.
+Pages handles SPA deep links by its default fallback; do not add a top-level `404.html`.
+The `public/_headers` file preserves frontend security and indexing headers.
+
+The `nalarostore.pages.dev` URL and Pages preview URLs serve frontend previews.
+Backend flows require the configured public hostname, or an explicitly configured
+preview backend; production Worker routes do not run on arbitrary Pages preview URLs.
+
+Before deploying, validate both artifacts:
+
+```bash
+npm run check
+npm run check:worker
+```
+
+After both deployments and Pages domain attachment, check the public root,
+`/login`, `/demo/batiknalaro`, `/api/live`, `/api/health`, and an actual published
+`/s/{slug}` product deep link. An `ok` result from `/api/live` proves Worker routing;
+`/api/health` must also confirm the database is connected. Test a signed-in merchant
+write and a controlled guest order before enabling live checkout.
+
 ## Database connection and migrations
 
 Retrieve the connection and CA certificate directly from the Aiven Console into a trusted private terminal/environment. Do not paste passwords into chat, repository files or frontend environment variables. Aiven's connector redacts the password, so it cannot supply a direct DATABASE_URL or Hyperdrive connection credentials. Its separate PG Editor tools can inspect SQL state; direct local tests and the migration CLI still require private connection credentials.
 
 Use a dedicated PostgreSQL role for the app with the necessary table/sequence permissions, separately from the migration owner. Create Hyperdrive with verified Aiven TLS, caching **disabled**, and a deliberately small origin pool. Distributed pooling is not a guaranteed global connection cap. Keep connection headroom for migrations and administration and measure `pg_stat_activity` under load.
 
-Add the real Hyperdrive id to `wrangler.jsonc`:
+Add the real Hyperdrive id to `wrangler.worker.jsonc`:
 
 ```json
 "hyperdrive": [{"binding":"HYPERDRIVE","id":"<actual-id>"}]
@@ -38,7 +97,11 @@ Firebase Auth handles registration, identity verification and password-reset ema
 
 ## Platform domain and store subdomains
 
-Attach `store.nalaro.digital` to the Worker and verify HTTPS. For `{slug}.store.nalaro.digital`, verify DNS, Worker routing, and a certificate covering that exact depth before enabling a hostname. A wildcard DNS record alone does not guarantee TLS coverage. Review any certificate-product cost before activating it; no paid certificate product has been enabled here.
+Attach `store.nalaro.digital` as a **Pages custom domain**, with proxied DNS and HTTPS.
+The Worker uses **Routes**, not a Worker Custom Domain for the entire hostname:
+`store.nalaro.digital/api/*` serves the API; `store.nalaro.digital/s/*` preserves
+store/product metadata while loading its HTML from Pages.
+For `{slug}.store.nalaro.digital`, verify DNS, Worker routing, and a certificate covering that exact depth before enabling a hostname. Then add the optional `*.store.nalaro.digital/*` Worker route. A wildcard DNS record alone does not guarantee TLS coverage. Review any certificate-product cost before activating it; no paid certificate product has been enabled here.
 
 The app's `/.well-known/nalarostore-domain` proof exposes only an existing store id/hostname. Merchant subdomain activation fetches the exact expected HTTPS hostname with redirects disallowed and compares all proof fields. Pending domains cannot serve tenant storefronts. The admin's manual verification action is for an operator who has independently validated DNS/TLS/routing.
 
@@ -71,7 +134,8 @@ Before switching `ENABLE_LIVE_CHECKOUT` to `true`:
 ```bash
 npm run check
 npm run test:e2e
-npm run deploy
+npm run deploy:pages
+npm run deploy:worker
 ```
 
 For rollback, deploy the previous tested Worker version and keep checkout disabled as needed. Do not drop historical order/inventory tables. A release remains incomplete until account-level smoke tests pass, even when source/CI tests are green.
