@@ -45,6 +45,7 @@ export type IconName =
   | "sliders"
   | "copy"
   | "mail"
+  | "phone"
   | "heart"
   | "refresh";
 
