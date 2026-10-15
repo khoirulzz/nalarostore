@@ -217,3 +217,23 @@ test("Firebase signup, verified access, password reset and password change", asy
     page.getByRole("heading", { name: "Masuk ke akun" }),
   ).toBeVisible();
 });
+
+test("owner activates and ends the six-month UMKM access", async ({ page }) => {
+  await page.goto("/login");
+  await page.getByLabel("Email", { exact: true }).fill("owner@local.test");
+  await page.getByLabel("Kata sandi", { exact: true }).fill("LocalTest123");
+  await page.getByRole("button", { name: "Masuk", exact: true }).click();
+  await expect(page.getByRole("heading", {name: "Ringkasan toko"})).toBeVisible();
+  await page.goto("/admin");
+  const row = page.locator(".live-order-row").filter({hasText: "toko-browser"});
+  page.once("dialog", d => d.accept());
+  const activation = page.waitForResponse(r => r.url().endsWith("/pilot") && r.request().method() === "POST");
+  await row.getByRole("button", {name: "Aktifkan UMKM 6 bulan"}).click();
+  expect((await activation).ok()).toBe(true);
+  await expect(row.getByText(/Pilot sampai/)).toBeVisible();
+  page.once("dialog", d => d.accept("0"));
+  const ending = page.waitForResponse(r => r.url().endsWith("/pilot") && r.request().method() === "POST");
+  await row.getByRole("button", {name: "Atur masa pilot"}).click();
+  expect((await ending).ok()).toBe(true);
+  await expect(row.getByText(/Pilot sampai/)).toHaveCount(0);
+});

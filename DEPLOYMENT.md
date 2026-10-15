@@ -2,9 +2,9 @@
 
 ## Provisioned resources
 
-- GitHub: `khoirulzz/nalarostore`, branch `feat/nalarostore-phases-1-3`.
+- GitHub: `khoirulzz/nalarostore`, production branch `main`.
 - Cloudflare Primary account: `fa9e4b5cc90250f132b17fb7c067490b`.
-- Aiven project: `uniquefactuhl-7887`; PostgreSQL `nalarostore-pg`, `free-1-1gb`, `do-sgp`, PostgreSQL 17, termination protection enabled.
+- Aiven project: `uniquefactuhl-7887`; PostgreSQL `nalarostore-pg`, `free-1-1gb`, `do-sgp`, PostgreSQL 17. Termination protection was disabled when inspected on 2026-10-15; this audit did not change that setting.
 - R2: `nalarostore-media`, APAC, Standard. Existing account R2 was already enabled; no paid service plan was activated.
 
 ## Separate Pages and Worker deployment
@@ -103,7 +103,7 @@ npm run db:migrate
 npm run types
 ```
 
-Migrations 0001?0005 add the domain schema, commerce/billing, Firebase UID mapping, time-bounded pilots and product galleries. Use forward migrations; never edit an applied file.
+Migrations 0001–0005 add the domain schema, commerce/billing, Firebase UID mapping, time-bounded pilots and product galleries. Use forward migrations; never edit an applied file.
 
 ## Email, owner and secrets
 
@@ -169,3 +169,26 @@ Do not set FIREBASE_AUTH_EMULATOR_HOST or VITE_FIREBASE_AUTH_EMULATOR_URL in pro
 At this audit the Aiven service is RUNNING and public application schema is empty, R2 is present, and Hyperdrive list is empty. These observations are not a deployment or migration result. Aiven connector redacts passwords, so filling private DATABASE_URL/CA remains necessary for a direct connection or Hyperdrive provisioning.
 
 Firebase project Authorized Domains was read during verification: localhost is already allowed; nalarostore.nalaro.digital is also allowed. The repository platform domain store.nalaro.digital is not in that list yet. Add the selected production domain before the production identity-email walkthrough. No Firebase domain configuration was changed remotely.
+
+## Readiness audit, 15 October 2026
+
+The production Pages deployment uses main commit `09554dd` and has succeeded. The
+`nalarostore` Worker exists with `/api/*` and `/s/*` routes, R2 and TOKEN_SECRET.
+Aiven is running, but its public schema is still empty; Hyperdrive and the EMAIL
+binding are absent. These are the remaining connection and notification setup
+requirements, not missing React screens. Production checkout is still disabled.
+
+`/api/live` is a process liveness probe. `/api/health` returns HTTP 503 when the
+Hyperdrive binding is missing or the application schema cannot be queried; only
+successful schema queries yield HTTP 200. Do not use liveness as release readiness.
+
+The admin can approve a selected store for six **calendar months** of UMKM access
+using `Aktifkan UMKM 6 bulan`. The existing 0–90 day pilot control remains available
+for shorter pilots and revocation (0). Approval remains manual and records the
+requested duration and resulting expiry in the audit log. Form submission alone
+does not grant this access. This does not publish a draft store or configure billing.
+
+This audit did not migrate Aiven, provision Hyperdrive, enable checkout, change
+plans, or activate paid infrastructure. The Aiven connector can inspect SQL but
+redacts connection credentials. Use a private terminal for the existing migration
+and Hyperdrive provisioning workflow above; do not send passwords in chat.

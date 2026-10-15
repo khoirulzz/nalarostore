@@ -1,6 +1,16 @@
 import { z } from "zod";
 import type { DB } from "./db";
-import { assert, body, hash, id, json, money, token, unseal } from "./security";
+import {
+  assert,
+  body,
+  calendarDate,
+  hash,
+  id,
+  json,
+  money,
+  token,
+  unseal,
+} from "./security";
 import {
   audit,
   encryptedToken,
@@ -330,10 +340,8 @@ export async function orderRoutes(
           "packing",
           "pickup_ready",
         ].includes(status) &&
-        /^\d{4}-\d{2}-\d{2}$/.test(from) &&
-        /^\d{4}-\d{2}-\d{2}$/.test(to) &&
-        !Number.isNaN(Date.parse(from)) &&
-        !Number.isNaN(Date.parse(to)) &&
+        calendarDate.safeParse(from).success &&
+        calendarDate.safeParse(to).success &&
         from <= to,
       400,
       "Filter pesanan tidak valid.",

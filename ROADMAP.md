@@ -36,7 +36,7 @@ Merchant payment gateways/signature verification/reconciliation/refunds; carrier
 
 ## Release status
 
-Implementation and test coverage do not imply production activation. The original foundation is on main; the phase 1–3 implementation is in the linked feature branch/PR. Live checkout stays disabled until the account-level gates in DEPLOYMENT.md are satisfied. No SaaS prices or real merchant products are invented.
+Implementation and test coverage do not imply production activation. The phase 1–3 implementation is now on main. Live checkout stays disabled until the account-level gates in DEPLOYMENT.md are satisfied. No SaaS prices or real merchant products are invented.
 
 ## Audit follow-up
 
@@ -50,3 +50,12 @@ Implementation and test coverage do not imply production activation. The origina
 - [ ] Account-level Aiven migrations/Hyperdrive, notification email, DNS/TLS and measured restore/load.
 - [ ] Real Firebase identity-email delivery and production auth walkthrough.
 - [ ] Full SSR, advanced funnel, staff invitation, MFA provider review, additional themes and physical-device QA.
+
+## Readiness audit, 15 October 2026
+
+- [x] Readiness probe queries application schema and returns 503 for missing database setup.
+- [x] Six-calendar-month UMKM approval with owner authorization, expiry audit and revocation.
+- [x] Reject duplicate variant IDs, impossible order dates and malformed media URLs.
+- [x] Remove internal campaign instructions from pricing and fix UMKM brief line breaks.
+- [ ] Aiven public schema is empty; Hyperdrive and transactional EMAIL binding still absent.
+- [ ] Verify browser flow, notification delivery, restore/load and checkout on the actual production backend.

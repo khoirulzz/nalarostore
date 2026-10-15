@@ -95,6 +95,20 @@ function AdminPanel() {
       setError((e as Error).message);
     }
   }
+  async function approveUmkm(sid: string) {
+    if (
+      !window.confirm(
+        "Peserta ini sudah ditinjau dan disetujui untuk program UMKM? Akses gratis akan berlaku enam bulan sejak hari ini.",
+      )
+    )
+      return;
+    try {
+      await api(`/api/admin/stores/${sid}/pilot`, "POST", { months: 6 });
+      setRev((r) => r + 1);
+    } catch (e) {
+      setError((e as Error).message);
+    }
+  }
   return (
     <div className="admin-page">
       <header className="live-admin-head">
@@ -106,7 +120,8 @@ function AdminPanel() {
       <main className="shell">
         <h1>Pengelolaan platform</h1>
         <p>
-          Atur langganan SaaS, tagihan, toko, dan pengajuan program UMKM dari satu tempat.
+          Atur langganan SaaS, tagihan, toko, dan pengajuan program UMKM dari
+          satu tempat.
         </p>
         <div className="work-tabbar">
           {[
@@ -143,6 +158,9 @@ function AdminPanel() {
                 <span>{s.slug}</span>
                 <span>{label(s.status)}</span>
                 <button onClick={() => pilot(s.id)}>Atur masa pilot</button>
+                <button onClick={() => approveUmkm(s.id)}>
+                  Aktifkan UMKM 6 bulan
+                </button>
                 {s.pilot_until && (
                   <small>
                     Pilot sampai{" "}
@@ -284,7 +302,11 @@ function AdminPanel() {
                 >
                   <strong>{l.business_name}</strong>
                   <span>{l.contact_name}</span>
-                  <span>{l.project_brief.startsWith("[PENGAJUAN PROGRAM UMKM") ? "Program UMKM" : "Arsip prospek custom"}</span>
+                  <span>
+                    {l.project_brief.startsWith("[PENGAJUAN PROGRAM UMKM")
+                      ? "Program UMKM"
+                      : "Arsip prospek custom"}
+                  </span>
                   <span>{label(l.status)}</span>
                 </button>
               ))}

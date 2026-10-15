@@ -893,10 +893,14 @@ it("verifies tenant subdomain through real HTTPS proof, rejecting spoofed respon
       verifyDomain(db, storeA, user, "store.nalaro.digital"),
     ).rejects.toMatchObject({ status: 409 });
     expect(mock.mock.calls.at(-1)?.[1]?.redirect).toBe("manual");
-    mock.mockResolvedValueOnce(new Response(null, {
-      status: 308,
-      headers: { location: "https://foreign.test/.well-known/nalarostore-domain" },
-    }));
+    mock.mockResolvedValueOnce(
+      new Response(null, {
+        status: 308,
+        headers: {
+          location: "https://foreign.test/.well-known/nalarostore-domain",
+        },
+      }),
+    );
     await expect(
       verifyDomain(db, storeA, user, "store.nalaro.digital"),
     ).rejects.toMatchObject({ status: 409 });
@@ -1039,4 +1043,108 @@ it("scopes draft preview, customer summaries, analytics and exports to authorize
       env,
     ),
   ).rejects.toMatchObject({ status: 404 });
+});
+
+it("rejects duplicate variant IDs without altering inventory or stock history", async () => {
+  const before = (
+    await db.query("SELECT * FROM product_variants WHERE id=$1", [variant])
+  )[0];
+  const [history] = await db.query(
+    "SELECT count(*)::int AS n FROM inventory_movements WHERE variant_id=$1",
+    [variant],
+  );
+  const result = await request(
+    `/api/merchant/stores/${storeA}/products/${product}`,
+    "PUT",
+    {
+      slug: "kaos-alfa",
+      name: "Kaos Alfa",
+      price_idr: 120000,
+      status: "active",
+      variants: [
+        { id: variant, sku: "ALFA-M", option_label: "M", stock_qty: 100 },
+        { id: variant, sku: "ALFA-L", option_label: "L", stock_qty: 200 },
+      ],
+    },
+    cookieA,
+  );
+  expect(result.status).toBe(400);
+  expect(
+    (
+      await db.query("SELECT * FROM product_variants WHERE id=$1", [variant])
+    )[0],
+  ).toEqual(before);
+  expect(
+    (
+      await db.query(
+        "SELECT count(*)::int AS n FROM inventory_movements WHERE variant_id=$1",
+        [variant],
+      )
+    )[0],
+  ).toEqual(history);
+});
+
+it("rejects impossible order dates before querying PostgreSQL date casts", async () => {
+  for (const date of ["2026-02-31", "2026-04-31", "2026-13-01", "2025-02-29"]) {
+    const result = await request(
+      `/api/merchant/stores/${storeA}/orders?from=${date}&to=2027-01-01`,
+      "GET",
+      undefined,
+      cookieA,
+    );
+    expect(result.status).toBe(400);
+  }
+  expect(
+    (
+      await request(
+        `/api/merchant/stores/${storeA}/orders?from=2024-02-29&to=2027-01-01`,
+        "GET",
+        undefined,
+        cookieA,
+      )
+    ).status,
+  ).toBe(200);
+});
+
+it("grants six calendar months only through explicit owner approval and records the expiry", async () => {
+  const path = `/api/admin/stores/${storeB}/pilot`;
+  const [before] = await db.query(
+    "SELECT pilot_until FROM stores WHERE id=$1",
+    [storeB],
+  );
+  for (const cookie of ["", cookieB]) {
+    expect((await request(path, "POST", { months: 6 }, cookie)).status).toBe(
+      cookie ? 403 : 401,
+    );
+  }
+  expect(
+    (await db.query("SELECT pilot_until FROM stores WHERE id=$1", [storeB]))[0],
+  ).toEqual(before);
+  for (const payload of [{ months: 12 }, { months: 6, days: 90 }, { days: 91 }])
+    expect((await request(path, "POST", payload, cookieAdmin)).status).toBe(
+      400,
+    );
+  expect((await request(path, "POST", { months: 6 }, cookieAdmin)).status).toBe(
+    200,
+  );
+  const [store] = await db.query(
+    "SELECT pilot_until,abs(extract(epoch FROM (pilot_until-(now()+interval '6 months')))) AS difference FROM stores WHERE id=$1",
+    [storeB],
+  );
+  expect(Number(store.difference)).toBeLessThan(5);
+  const [audit] = await db.query(
+    "SELECT metadata FROM audit_logs WHERE store_id=$1 AND action='pilot.update' ORDER BY created_at DESC LIMIT 1",
+    [storeB],
+  );
+  expect(audit.metadata.months).toBe(6);
+  expect(new Date(audit.metadata.pilot_until).getTime()).toBe(
+    new Date(store.pilot_until).getTime(),
+  );
+  await expect(entitlement(db, storeB, "storefront")).resolves.toBeUndefined();
+  expect((await request(path, "POST", { days: 0 }, cookieAdmin)).status).toBe(
+    200,
+  );
+  await expect(entitlement(db, storeB, "storefront")).rejects.toMatchObject({
+    status: 423,
+  });
 });

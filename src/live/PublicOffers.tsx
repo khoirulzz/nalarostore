@@ -67,7 +67,7 @@ export function PublicPricing() {
             <small>*Domain custom memerlukan verifikasi DNS/TLS, paket yang memenuhi syarat, dan aktivasi saat fitur tersedia.</small>
           </article>
         </div>
-        <p className="pricing-disclaimer">Harga coret merupakan harga pembanding promosi yang diminta untuk kampanye; pastikan ada dasar harga normal sebelum dipublikasikan. Harga dan hak penggunaan final mengikuti paket aktif pada saat aktivasi. Nalaro tidak mengenakan potongan per transaksi pembeli; biaya bank/penyedia pembayaran di luar Nalaro mungkin berlaku. Domain toko bawaan termasuk; domain milik sendiri belum aktif untuk semua pelanggan.</p>
+        <p className="pricing-disclaimer">Harga dan hak penggunaan final mengikuti paket aktif pada saat aktivasi. Nalaro tidak mengenakan potongan per transaksi pembeli; biaya bank/penyedia pembayaran di luar Nalaro mungkin berlaku. Domain toko bawaan termasuk; domain milik sendiri belum aktif untuk semua pelanggan.</p>
       </div>
     </section>
   );
@@ -88,9 +88,9 @@ export function UmkmApplication() {
         contact_name: data.get("contact_name"),
         contact_email: data.get("contact_email"),
         contact_phone: data.get("contact_phone"),
-        project_brief: "[PENGAJUAN PROGRAM UMKM NALARO STORE - 6 BULAN]\\n" +
-          "Bidang usaha: " + data.get("business_category") + "\\n" +
-          "Lokasi usaha: " + data.get("business_location") + "\\n" +
+        project_brief: "[PENGAJUAN PROGRAM UMKM NALARO STORE - 6 BULAN]\n" +
+          "Bidang usaha: " + data.get("business_category") + "\n" +
+          "Lokasi usaha: " + data.get("business_location") + "\n" +
           "Cerita usaha: " + data.get("business_story"),
       });
       setSuccess("Pengajuanmu berhasil terkirim. Tim Nalaro akan meninjau informasi usahamu dan menghubungi kontak yang kamu isi jika ada tindak lanjut.");

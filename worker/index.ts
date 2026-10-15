@@ -55,13 +55,18 @@ export async function handleAPI(
       "Permintaan lintas situs ditolak.",
     );
   }
-  if (path === "/api/health")
+  if (path === "/api/health") {
+    await db.query("SELECT firebase_uid FROM users LIMIT 0");
+    await db.query("SELECT gallery FROM products LIMIT 0");
+    await db.query("SELECT pilot_until FROM stores LIMIT 0");
+    await db.query("SELECT id FROM platform_settings WHERE id=true");
     return json({
       status: "ok",
       phase: "1-3",
       database: "connected",
       liveCheckout: env.ENABLE_LIVE_CHECKOUT === "true",
     });
+  }
   if (path === "/api/public/plans" && request.method === "GET")
     return json({ plans: await publicPlans(db) });
   if (path === "/api/public/capabilities")
@@ -284,11 +289,14 @@ const handler = {
       }
       if (!env.HYPERDRIVE) {
         if (url.pathname === "/api/health")
-          return json({
-            status: "setup-required",
-            database: "not-configured",
-            liveCheckout: false,
-          });
+          return json(
+            {
+              status: "setup-required",
+              database: "not-configured",
+              liveCheckout: false,
+            },
+            503,
+          );
         throw new HttpError(
           503,
           "Layanan sedang disiapkan. Coba lagi setelah konfigurasi selesai.",

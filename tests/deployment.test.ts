@@ -244,3 +244,69 @@ describe("deployment artifacts", () => {
     expect(read("public/_headers")).toContain("Content-Security-Policy:");
   });
 });
+
+describe("database readiness", () => {
+  it("reports an unconfigured database as unavailable to readiness probes", async () => {
+    const response = await worker.fetch(
+      new Request(env.APP_ORIGIN + "/api/health"),
+      env,
+      ctx,
+    );
+    expect(response.status).toBe(503);
+    expect(await response.json()).toMatchObject({
+      status: "setup-required",
+      database: "not-configured",
+    });
+    expect(connect).not.toHaveBeenCalled();
+  });
+
+  it("checks the application schema and closes connections on schema failure", async () => {
+    const client = {
+      query: vi
+        .fn()
+        .mockRejectedValue(
+          Object.assign(new Error("missing column"), { code: "42703" }),
+        ),
+      end: vi.fn(),
+    };
+    vi.mocked(connect).mockResolvedValue(new DB(client));
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    const response = await worker.fetch(
+      new Request(env.APP_ORIGIN + "/api/health"),
+      {
+        ...env,
+        HYPERDRIVE: { connectionString: "postgresql://test" },
+      } as RuntimeEnv,
+      ctx,
+    );
+    expect(response.status).toBe(503);
+    expect(client.query).toHaveBeenCalled();
+    expect(client.end).toHaveBeenCalledOnce();
+    expect(JSON.stringify(await response.json())).not.toContain(
+      "missing column",
+    );
+  });
+
+  it("reports readiness only after application schema queries succeed", async () => {
+    const client = {
+      query: vi.fn().mockResolvedValue({ rows: [] }),
+      end: vi.fn(),
+    };
+    vi.mocked(connect).mockResolvedValue(new DB(client));
+    const response = await worker.fetch(
+      new Request(env.APP_ORIGIN + "/api/health"),
+      {
+        ...env,
+        HYPERDRIVE: { connectionString: "postgresql://test" },
+      } as RuntimeEnv,
+      ctx,
+    );
+    expect(response.status).toBe(200);
+    expect(await response.json()).toMatchObject({
+      database: "connected",
+      liveCheckout: false,
+    });
+    expect(client.query).toHaveBeenCalledTimes(4);
+    expect(client.end).toHaveBeenCalledOnce();
+  });
+});

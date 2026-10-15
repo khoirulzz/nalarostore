@@ -308,16 +308,20 @@ export async function billingRoutes(
   if (pilot && request.method === "POST") {
     const c = await body(
       request,
-      z.object({ days: z.number().int().min(0).max(90) }),
+      z.union([
+        z.object({ days: z.number().int().min(0).max(90) }).strict(),
+        z.object({ months: z.literal(6) }).strict(),
+      ]),
     );
     await db.tx(async (tx) => {
       const store = await tx.query(
-        "UPDATE stores SET pilot_until=CASE WHEN $2=0 THEN NULL ELSE now()+interval '1 day'*$2 END WHERE id=$1 RETURNING id",
-        [pilot[1], c.days],
+        "UPDATE stores SET pilot_until=CASE WHEN $2=0 AND $3=0 THEN NULL ELSE now()+interval '1 day'*$2+interval '1 month'*$3 END WHERE id=$1 RETURNING id,pilot_until",
+        [pilot[1], "days" in c ? c.days : 0, "months" in c ? c.months : 0],
       );
       assert(store[0], 404, "Toko tidak ditemukan.");
       await audit(tx, user.id, pilot[1], "pilot.update", "store", pilot[1], {
-        days: c.days,
+        ...c,
+        pilot_until: store[0].pilot_until,
       });
     });
     return json({ ok: true });

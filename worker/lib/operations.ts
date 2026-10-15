@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { DB } from "./db";
-import { assert, json, HttpError } from "./security";
+import { assert, json, HttpError, calendarDate } from "./security";
 import { audit, storeAccess, type Identity } from "./auth";
 
 export function csv(rows: Record<string, unknown>[], columns: string[]) {
@@ -24,23 +24,13 @@ export function csv(rows: Record<string, unknown>[], columns: string[]) {
     ].join("\r\n")
   );
 }
-const date = z
-  .string()
-  .regex(/^\d{4}-\d{2}-\d{2}$/)
-  .refine(
-    (s) =>
-      !Number.isNaN(Date.parse(s)) &&
-      new Date(s).toISOString().slice(0, 10) === s,
-  );
 export function dateRange(url: URL) {
   const today = new Date().toISOString().slice(0, 10),
     from = new Date(Date.now() - 29 * 86400000).toISOString().slice(0, 10);
-  const parsed = z
-    .object({ from: date, to: date })
-    .safeParse({
-      from: url.searchParams.get("from") || from,
-      to: url.searchParams.get("to") || today,
-    });
+  const parsed = z.object({ from: calendarDate, to: calendarDate }).safeParse({
+    from: url.searchParams.get("from") || from,
+    to: url.searchParams.get("to") || today,
+  });
   assert(
     parsed.success &&
       parsed.data.from <= parsed.data.to &&

@@ -30,7 +30,11 @@ const productSchema = z
   .refine(
     (p) => new Set(p.variants.map((v) => v.sku)).size === p.variants.length,
     "SKU harus unik.",
-  );
+  )
+  .refine((p) => {
+    const ids = p.variants.flatMap((v) => (v.id ? [v.id] : []));
+    return new Set(ids).size === ids.length;
+  }, "Setiap varian harus memiliki ID yang berbeda.");
 export const settingsSchema = z.object({
   store_name: z.string().trim().min(2).max(120).optional(),
   store_description: z.string().max(10000).optional(),

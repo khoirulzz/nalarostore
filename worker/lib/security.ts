@@ -44,9 +44,17 @@ export const safeURL = z
     (s) =>
       s === "" ||
       s.startsWith("/api/media/") ||
-      (/^https:\/\//.test(s) && !new URL(s).username),
+      (() => {
+        try {
+          const url = new URL(s);
+          return url.protocol === "https:" && !url.username && !url.password;
+        } catch {
+          return false;
+        }
+      })(),
     "Gunakan URL HTTPS atau media toko.",
   );
+export const calendarDate = z.iso.date();
 export const token = () =>
   Array.from(crypto.getRandomValues(new Uint8Array(32)), (b) =>
     b.toString(16).padStart(2, "0"),
