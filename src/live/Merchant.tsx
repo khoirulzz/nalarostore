@@ -898,9 +898,10 @@ function ProductEditor({
                   }
                 />
               </label>
-              <label className="seller-variant-image-label">
-                Link foto khusus varian (opsional)
+              <div className="seller-variant-image-field">
+                <label htmlFor={`variant-image-${i}`}>Link foto khusus varian (opsional)</label>
                 <input
+                  id={`variant-image-${i}`}
                   value={v.image_url || ""}
                   placeholder="https://..."
                   onChange={(e) => change(i, "image_url", e.target.value || null)}
@@ -922,7 +923,7 @@ function ProductEditor({
                     />
                   </label>
                 </span>
-              </label>
+              </div>
               <label>
                 Stok total
                 <input
