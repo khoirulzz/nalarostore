@@ -186,12 +186,22 @@ function Workspace() {
       </div>
       <nav className="workspace-bottom-nav" aria-label="Navigasi mobile">
         {menus.slice(0, 3).map((m) => (
-          <Link key={m.key} to={"/app" + (m.key ? "/" + m.key : "")}>
+          <Link
+            key={m.key}
+            to={"/app" + (m.key ? "/" + m.key : "")}
+            className={section === m.key ? "active" : ""}
+            aria-current={section === m.key ? "page" : undefined}
+          >
             <Icon name={m.icon} />
             <span>{m.label}</span>
           </Link>
         ))}
-        <button onClick={() => setDrawer(!drawer)}>
+        <button
+          className={drawer || !menus.slice(0, 3).some((m) => m.key === section) ? "active" : ""}
+          aria-expanded={drawer}
+          aria-label="Buka navigasi lainnya"
+          onClick={() => setDrawer(!drawer)}
+        >
           <Icon name="menu" />
           <span>Lainnya</span>
         </button>
