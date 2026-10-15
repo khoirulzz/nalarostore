@@ -3,6 +3,8 @@
   "name": "nalarostore",
   "pages_build_output_dir": "./dist",
   "compatibility_date": "2026-10-13",
-  // Frontend only. VITE_FIREBASE_* are Pages build environment variables.
+  // Frontend only. Public Firebase Web SDK config has a checked-in .env.production
+  // fallback so Vite builds do not silently ship an unusable login page.
+  // Never put API server secrets or database credentials into VITE_*.
   // Backend bindings and secrets belong in wrangler.worker.jsonc / the Worker.
 }
