@@ -65,7 +65,21 @@ function Workspace() {
   const store = value?.stores.find((s) => s.id === sid);
   const section =
     location.pathname.slice("/app".length).split("/").filter(Boolean)[0] || "";
+  useEffect(() => {
+    if (!drawer) return;
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setDrawer(false);
+    };
+    window.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.body.style.overflow = previous;
+      window.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [drawer]);
   function select(id: string) {
+    setDrawer(false);
     setSelected(id);
     localStorage.setItem("nalaro-selected-store", id);
     navigate("/app");
@@ -74,9 +88,20 @@ function Workspace() {
     <div className="workspace">
       <aside className={`workspace-sidebar ${drawer ? "workspace-open" : ""}`}>
         <div className="workspace-sidebar-top">
-          <Link to="/" className="brand">
-            nalaro store
-          </Link>
+          <div className="seller-drawer-header">
+            <Link to="/" className="brand">
+              <img src="/favicon-32x32.png" width={28} height={28} alt="" />
+              nalaro store
+            </Link>
+            <button
+              className="seller-drawer-close"
+              type="button"
+              onClick={() => setDrawer(false)}
+              aria-label="Tutup menu"
+            >
+              <Icon name="close" size={20} />
+            </button>
+          </div>
           <label className="store-select">
             Toko aktif
             <select
@@ -109,7 +134,7 @@ function Workspace() {
             Buat toko
           </Link>
           {account.value?.user.admin && (
-            <Link to="/admin">
+            <Link to="/admin" onClick={() => setDrawer(false)}>
               <Icon name="shield" />
               Admin platform
             </Link>
@@ -121,7 +146,8 @@ function Workspace() {
             signOut(requireFirebase()).then(() => navigate("/login"))
           }
         >
-          Keluar dari akun
+          <Icon name="logout" size={18} />
+          <span>Keluar dari akun</span>
         </button>
       </aside>
       <div className="workspace-main">
@@ -133,7 +159,9 @@ function Workspace() {
           >
             <Icon name="menu" />
           </button>
-          <span>{store?.name || "Workspace"}</span>
+          <span className="workspace-current-store" title={store?.name || "Workspace"}>
+            {store?.name || "Workspace"}
+          </span>
           {store && (
             <Link
               to={"/preview/" + store.id}
@@ -1288,36 +1316,50 @@ function StoreSettings({
     }
   }
   return (
-    <>
+    <div className="merchant-settings-page">
       <div className="workspace-heading">
         <div>
           <h1>Tampilan & pengaturan</h1>
-          <p>Status: {label(store.status)}</p>
+          <p className="seller-status-line">
+            <Icon name="info" size={15} /> Status toko: <strong>{label(store.status)}</strong>
+          </p>
         </div>
         <button
           className="button button-dark"
           disabled={busy}
           onClick={publish}
         >
+          <Icon name={store.status === "published" ? "close" : "check"} size={17} />
           {store.status === "published" ? "Jeda toko" : "Terbitkan toko"}
         </button>
       </div>
-      <section className="work-section">
-        <h2>Alamat toko</h2>
-        <p>
-          <Link to={"/s/" + store.slug} target="_blank">
-            Buka toko di platform ↗
+      <section className="work-section seller-settings-card seller-link-card">
+        <div className="seller-card-title">
+          <Icon name="globe" size={20} />
+          <div>
+            <h2>Link toko</h2>
+            <p>Bagikan link ini agar pelanggan bisa melihat katalogmu.</p>
+          </div>
+        </div>
+        <div className="seller-link-primary">
+          <span>Link toko utama</span>
+          <strong>store.nalaro.digital/s/{store.slug}</strong>
+          <Link to={"/s/" + store.slug} target="_blank" rel="noopener noreferrer">
+            <Icon name="external" size={16} /> Lihat toko
           </Link>
-        </p>
-        <p>{store.slug}.store.nalaro.digital</p>
-        <button
-          type="button"
-          className="button button-dark"
-          disabled={busy}
-          onClick={activateDomain}
-        >
-          Periksa & aktifkan subdomain
-        </button>
+        </div>
+        <details className="seller-domain-option">
+          <summary>Gunakan alamat toko yang lebih singkat</summary>
+          <p>Alamat alternatif: <strong>{store.slug}.store.nalaro.digital</strong></p>
+          <button
+            type="button"
+            className="seller-inline-button"
+            disabled={busy}
+            onClick={activateDomain}
+          >
+            <Icon name="globe" size={16} /> Periksa ketersediaan alamat
+          </button>
+        </details>
       </section>
       <Notice error={loadError || error} />
       {message && (
@@ -1326,45 +1368,58 @@ function StoreSettings({
         </p>
       )}
       {value && (
-        <section className="work-section">
-          <h2>Kesiapan toko</h2>
-          <ul className="readiness-list">
-            <li>
-              Produk dengan stok tersedia:{" "}
-              <Link to="/app/products">periksa produk</Link>
-            </li>
-            <li>
-              {value.settings.bank_details || value.settings.qris_media_key
-                ? "Pembayaran sudah diisi."
-                : "Isi rekening atau QRIS."}
-            </li>
-            <li>
-              {value.settings.pickup_enabled || value.settings.delivery_enabled
-                ? "Metode penerimaan barang tersedia."
-                : "Aktifkan pickup atau kurir toko."}
-            </li>
-            <li>
-              {value.settings.policies
-                ? "Kebijakan toko sudah diisi."
-                : "Lengkapi kebijakan pengiriman dan pengembalian."}
-            </li>
-            <li>
-              {value.settings.contact_phone
-                ? "Kontak toko sudah diisi."
-                : "Isi kontak yang dapat dihubungi."}
-            </li>
-          </ul>
-          <Link className="button" to={"/preview/" + sid} target="_blank">
-            Pratinjau sebelum terbit
-          </Link>
-          <Link className="button" to="/app/billing">
-            Periksa langganan atau masa pilot
-          </Link>
+        <section className="work-section seller-settings-card seller-readiness-card">
+          <div className="seller-card-title">
+            <Icon name="check" size={20} />
+            <div>
+              <h2>Siapkan tokomu</h2>
+              <p>Lengkapi beberapa hal sebelum mulai menerima pesanan.</p>
+            </div>
+          </div>
+          <div className="seller-readiness-list">
+            <Link to="/app/products" className="seller-readiness-item">
+              <Icon name="box" size={19} />
+              <span>Tambahkan produk dan stok</span>
+              <Icon name="chevron-right" size={17} />
+            </Link>
+            <div className="seller-readiness-item">
+              <Icon name={value.settings.bank_details || value.settings.qris_media_key ? "check" : "credit-card"} size={19} />
+              <span>{value.settings.bank_details || value.settings.qris_media_key
+                ? "Informasi pembayaran sudah diisi"
+                : "Lengkapi metode pembayaran"}</span>
+            </div>
+            <div className="seller-readiness-item">
+              <Icon name={value.settings.pickup_enabled || value.settings.delivery_enabled ? "check" : "truck"} size={19} />
+              <span>{value.settings.pickup_enabled || value.settings.delivery_enabled
+                ? "Metode pengiriman sudah dipilih"
+                : "Pilih metode pengiriman atau pengambilan"}</span>
+            </div>
+            <div className="seller-readiness-item">
+              <Icon name={value.settings.policies ? "check" : "file"} size={19} />
+              <span>{value.settings.policies
+                ? "Kebijakan toko sudah diisi"
+                : "Lengkapi kebijakan toko"}</span>
+            </div>
+            <div className="seller-readiness-item">
+              <Icon name={value.settings.contact_phone ? "check" : "phone"} size={19} />
+              <span>{value.settings.contact_phone
+                ? "Kontak toko sudah diisi"
+                : "Tambahkan nomor kontak toko"}</span>
+            </div>
+          </div>
+          <div className="seller-card-actions">
+            <Link className="seller-inline-button" to={"/preview/" + sid} target="_blank" rel="noopener noreferrer">
+              <Icon name="eye" size={17} /> Pratinjau toko
+            </Link>
+            <Link className="seller-inline-button" to="/app/billing">
+              <Icon name="credit-card" size={17} /> Lihat langganan
+            </Link>
+          </div>
         </section>
       )}
       {value && (
-        <form className="live-form live-editor" key={rev} onSubmit={save}>
-          <h2>Identitas toko</h2>
+        <form className="live-form live-editor seller-settings-form" key={rev} onSubmit={save}>
+          <h2><Icon name="box" size={20} /> Identitas toko</h2>
           <label>
             Nama toko
             <input
@@ -1397,14 +1452,14 @@ function StoreSettings({
             />
           </label>
           <label>
-            Foto etalase HTTPS
+            Link foto etalase
             <input
               name="hero_image_url"
               defaultValue={value.settings.hero_image_url || ""}
             />
           </label>
           <label>
-            Logo HTTPS
+            Link gambar logo
             <input
               name="logo_url"
               defaultValue={value.settings.logo_url || ""}
@@ -1424,7 +1479,7 @@ function StoreSettings({
               defaultValue={value.settings.opening_hours}
             />
           </label>
-          <h2>Pengiriman</h2>
+          <h2><Icon name="truck" size={20} /> Pengiriman</h2>
           <label className="check-label">
             <input
               name="pickup_enabled"
@@ -1457,7 +1512,7 @@ function StoreSettings({
               defaultValue={value.settings.shipping_fee_idr}
             />
           </label>
-          <h2>Pembayaran manual</h2>
+          <h2><Icon name="credit-card" size={20} /> Pembayaran</h2>
           <label>
             Rekening & instruksi transfer
             <textarea
@@ -1488,8 +1543,8 @@ function StoreSettings({
                 }
                 alt="QRIS toko"
               />
-              <button type="button" onClick={() => setQrisKey(null)}>
-                Hapus QRIS
+              <button type="button" className="seller-inline-button" onClick={() => setQrisKey(null)}>
+                <Icon name="close" size={16} /> Hapus QRIS
               </button>
             </div>
           )}
@@ -1510,12 +1565,12 @@ function StoreSettings({
               defaultValue={value.settings.low_stock_threshold}
             />
           </label>
-          <button className="button button-dark" disabled={busy}>
-            Simpan pengaturan
+          <button className="button button-dark seller-save-settings" disabled={busy}>
+            <Icon name="check" size={18} /> Simpan pengaturan
           </button>
         </form>
       )}
-    </>
+    </div>
   );
 }
 function Inventory({ sid }: { sid: string }) {
