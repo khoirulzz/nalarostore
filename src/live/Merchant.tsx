@@ -567,7 +567,7 @@ function Products({ sid }: { sid: string }) {
             <button className="seller-text-action" onClick={() => setQ("")}>Hapus pencarian</button>
           ) : (
             <button className="seller-inline-button" onClick={() => setEditing(null)}>
-              <Icon name="plus" size={16} /> Tambah produk
+              <Icon name="plus" size={16} /> Isi katalog pertama
             </button>
           )}
         </div>
