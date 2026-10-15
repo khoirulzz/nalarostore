@@ -1628,62 +1628,135 @@ function Billing({ sid }: { sid: string }) {
     }
   }
   return (
-    <>
-      <h1>Langganan toko</h1>
-      <p>
-        Tagihan Nalaro Store terpisah dari pembayaran pelanggan tokomu. Invoice
-        diperiksa admin setelah pembayaran.
-      </p>
-      <Notice error={error || data.error || plans.error} />
-      {data.value?.subscriptions.map((s) => (
-        <section className="work-section" key={s.id}>
-          <h2>{s.name}</h2>
-          <p>
-            {label(s.status)} · {label(s.billing_interval)} · berakhir{" "}
-            {new Date(s.current_period_end).toLocaleDateString("id-ID")}
-          </p>
-        </section>
-      ))}
-      <div className="plan-list">
-        {plans.value?.plans.map((p) => (
-          <article key={p.id}>
-            <h2>{p.name}</h2>
-            <p>{p.description}</p>
-            {p.prices.map((pr) => (
-              <button
-                key={pr.id}
-                className="button button-dark"
-                onClick={() => choose(pr.id!)}
-              >
-                {rupiah(pr.amount_idr)} /{" "}
-                {pr.billing_interval === "monthly" ? "bulan" : "tahun"}
-              </button>
-            ))}
-          </article>
-        ))}
+    <div className="seller-billing-page">
+      <div className="seller-page-intro">
+        <h1>Langganan toko</h1>
+        <p>Pilih paket untuk mengelola tokomu. Semua biaya layanan terlihat di sini.</p>
       </div>
-      {plans.value && !plans.value.plans.length && (
-        <p>Paket belum dipublikasikan. Toko pilot tetap dapat disiapkan.</p>
-      )}
-      <h2>Invoice langganan</h2>
-      <p className="pre-line">
-        {data.value?.paymentInstructions ||
-          "Instruksi pembayaran belum ditetapkan admin."}
-      </p>
-      {data.value?.invoices.map((i) => (
-        <div className="live-order-row" key={i.id}>
-          <strong>{i.invoice_number}</strong>
-          <b>{rupiah(i.amount_idr)}</b>
-          <span>{label(i.status)}</span>
-          <span>{new Date(i.period_start).toLocaleDateString("id-ID")}</span>
+      <Notice error={error || data.error || plans.error} />
+      <section className="seller-billing-panel">
+        <div className="seller-card-title">
+          <Icon name="credit-card" size={21} />
+          <div>
+            <h2>Langganan aktif</h2>
+            <p>Informasi paket yang terhubung dengan tokomu.</p>
+          </div>
         </div>
-      ))}
-      <h2>Penggunaan kuota</h2>
-      {data.value?.usage.map((u, i) => (
-        <p key={i}>
-          {u.feature_code} · {u.period_key}: {u.value}
-        </p>
-      ))}
-    </>
+        {data.value?.subscriptions.length ? (
+          <div className="seller-subscription-list">
+            {data.value.subscriptions.map((subscription) => (
+              <div key={subscription.id} className="seller-subscription-row">
+                <div>
+                  <strong>{subscription.name}</strong>
+                  <span>Berlaku hingga {new Date(subscription.current_period_end).toLocaleDateString("id-ID")}</span>
+                </div>
+                <span className="seller-subscription-state">{label(subscription.status)}</span>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="seller-inline-empty">
+            <Icon name="info" size={20} />
+            <span>Belum ada paket langganan aktif.</span>
+          </div>
+        )}
+      </section>
+      <section className="seller-billing-panel">
+        <div className="seller-card-title">
+          <Icon name="box" size={21} />
+          <div>
+            <h2>Pilih paket</h2>
+            <p>Sesuaikan dengan kebutuhan dan perkembangan tokomu.</p>
+          </div>
+        </div>
+        {plans.value?.plans.length ? (
+          <div className="seller-plans">
+            {plans.value.plans.map((plan) => (
+              <article key={plan.id} className="seller-plan">
+                <h3>{plan.name}</h3>
+                <p>{plan.description}</p>
+                <div className="seller-plan-actions">
+                  {plan.prices.map((price) => (
+                    <button
+                      key={price.id}
+                      className="seller-plan-button"
+                      onClick={() => choose(price.id!)}
+                    >
+                      {rupiah(price.amount_idr)} / {price.billing_interval === "monthly" ? "bulan" : "tahun"}
+                      <Icon name="arrow-right" size={16} />
+                    </button>
+                  ))}
+                </div>
+              </article>
+            ))}
+          </div>
+        ) : plans.value ? (
+          <div className="seller-inline-empty">
+            <Icon name="clock" size={20} />
+            <span>Paket langganan belum tersedia. Kamu tetap bisa menyiapkan tokomu.</span>
+          </div>
+        ) : <p className="seller-loading" aria-busy="true">Memuat pilihan paket…</p>}
+      </section>
+      <section className="seller-billing-panel">
+        <div className="seller-card-title">
+          <Icon name="file" size={21} />
+          <div>
+            <h2>Tagihan</h2>
+            <p>Riwayat dan status pembayaran langganan.</p>
+          </div>
+        </div>
+        {data.value?.invoices.length ? (
+          <div className="seller-invoice-list">
+            {data.value.invoices.map((invoice) => (
+              <div className="seller-invoice-row" key={invoice.id}>
+                <div>
+                  <strong>{invoice.invoice_number}</strong>
+                  <span>{new Date(invoice.period_start).toLocaleDateString("id-ID")}</span>
+                </div>
+                <div className="seller-invoice-meta">
+                  <strong>{rupiah(invoice.amount_idr)}</strong>
+                  <span>{label(invoice.status)}</span>
+                </div>
+              </div>
+            ))}
+            {data.value.paymentInstructions && (
+              <div className="seller-payment-details">
+                <strong>Informasi pembayaran</strong>
+                <p className="pre-line">{data.value.paymentInstructions}</p>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="seller-inline-empty">
+            <Icon name="check" size={20} />
+            <span>Belum ada tagihan untuk toko ini.</span>
+          </div>
+        )}
+      </section>
+      <section className="seller-billing-panel">
+        <div className="seller-card-title">
+          <Icon name="chart" size={21} />
+          <div>
+            <h2>Penggunaan fitur</h2>
+            <p>Ringkasan pemakaian yang tercatat pada paketmu.</p>
+          </div>
+        </div>
+        {data.value?.usage.length ? (
+          <div className="seller-usage-list">
+            {data.value.usage.map((usage, index) => (
+              <div className="seller-usage-row" key={index}>
+                <span>{label(usage.feature_code)}</span>
+                <strong>{usage.value}</strong>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="seller-inline-empty">
+            <Icon name="chart" size={20} />
+            <span>Belum ada penggunaan fitur yang tercatat.</span>
+          </div>
+        )}
+      </section>
+    </div>
   );
 }
