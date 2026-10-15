@@ -480,6 +480,9 @@ function Products({ sid }: { sid: string }) {
     `/api/merchant/stores/${sid}/products`,
     rev,
   );
+  const filteredProducts = value?.products.filter((p) =>
+    p.name.toLowerCase().includes(q.toLowerCase().trim()),
+  ) || [];
   if (editing !== false)
     return (
       <ProductEditor
@@ -498,20 +501,29 @@ function Products({ sid }: { sid: string }) {
           <h1>Produk</h1>
           <p>Katalog dan stok varian.</p>
         </div>
-        <ExportButton sid={sid} resource="products" />
-        <button className="button button-dark" onClick={() => setEditing(null)}>
-          Tambah produk <Icon name="plus" />
-        </button>
+        <div className="seller-heading-actions">
+          <ExportButton sid={sid} resource="products" />
+          <button className="button button-dark" onClick={() => setEditing(null)}>
+            <Icon name="plus" size={17} /> Tambah produk
+          </button>
+        </div>
       </div>
       <Notice error={error} />
-      <label className="live-search">
-        Cari produk
-        <input value={q} onChange={(e) => setQ(e.target.value)} />
+      <label className="seller-search">
+        <span>Cari produk</span>
+        <span className="seller-search-control">
+          <Icon name="search" size={19} />
+          <input
+            type="search"
+            aria-label="Cari produk"
+            placeholder="Cari nama produk..."
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+          />
+        </span>
       </label>
-      <div className="work-product-list">
-        {value?.products
-          .filter((p) => p.name.toLowerCase().includes(q.toLowerCase()))
-          .map((p) => (
+      <div className="work-product-list seller-product-list">
+        {filteredProducts.map((p) => (
             <article key={p.id}>
               {p.primary_image_url ? (
                 <MediaImage src={p.primary_image_url} alt="" />
@@ -544,14 +556,20 @@ function Products({ sid }: { sid: string }) {
             </article>
           ))}
       </div>
-      {value && !value.products.length && (
-        <div className="seller-product-empty">
-          <Icon name="box" size={29} />
-          <strong>Belum ada produk di katalog.</strong>
-          <p>Unggah produk pertama, lengkapi harga dan stok, lalu siapkan etalase tokomu.</p>
-          <button className="button button-dark" onClick={() => setEditing(null)}>
-            Mulai isi katalog <Icon name="arrow-right" size={16} />
-          </button>
+      {value && !filteredProducts.length && (
+        <div className="seller-empty" role="status">
+          <span className="seller-empty-icon"><Icon name="box" size={25} /></span>
+          <h2>{q ? "Produk tidak ditemukan" : "Katalog masih kosong"}</h2>
+          <p>{q
+            ? "Coba kata pencarian lain."
+            : "Tambahkan produk pertama agar pelanggan bisa mulai mengenal tokomu."}</p>
+          {q ? (
+            <button className="seller-text-action" onClick={() => setQ("")}>Hapus pencarian</button>
+          ) : (
+            <button className="seller-inline-button" onClick={() => setEditing(null)}>
+              <Icon name="plus" size={16} /> Tambah produk
+            </button>
+          )}
         </div>
       )}
     </>
@@ -659,13 +677,16 @@ function ProductEditor({
             />
           </label>
           <label>
-            Alamat produk
+            Link produk
             <input
               required
               name="slug"
               defaultValue={product?.slug}
+              placeholder="misal: batik-kawung"
               pattern="[a-z0-9][a-z0-9-]{1,46}[a-z0-9]"
+              onChange={(event) => { event.currentTarget.value = storeSlug(event.currentTarget.value); }}
             />
+            <small>Bagian dari alamat web produkmu. Spasi otomatis menjadi tanda hubung.</small>
           </label>
         </div>
         <label>
@@ -706,8 +727,9 @@ function ProductEditor({
           />
         </label>
         <label>
-          URL foto HTTPS atau media toko
-          <input value={image} onChange={(e) => setImage(e.target.value)} />
+          Link foto produk (opsional)
+          <input value={image} onChange={(e) => setImage(e.target.value)} placeholder="https://..." />
+          <small>Unggah foto dari perangkat atau gunakan link gambar.</small>
         </label>
         {image && (
           <MediaImage
@@ -927,18 +949,29 @@ function Orders({ sid }: { sid: string }) {
     );
   return (
     <>
-      <h1>Pesanan</h1>
-      <ExportButton sid={sid} resource="orders" />
-      <div className="live-filters">
-        <label>
-          Cari nomor atau nama
-          <input
+      <div className="workspace-heading seller-orders-heading">
+        <div>
+          <h1>Pesanan</h1>
+          <p>Kelola pembayaran dan pengiriman dari satu tempat.</p>
+        </div>
+        <ExportButton sid={sid} resource="orders" />
+      </div>
+      <div className="live-filters seller-order-filters">
+        <label className="seller-order-search">
+          Cari pesanan
+          <span className="seller-search-control">
+            <Icon name="search" size={18} />
+            <input
+            type="search"
+            aria-label="Cari nomor atau nama"
+            placeholder="Nomor pesanan atau nama..."
             value={q}
             onChange={(e) => {
               setQ(e.target.value);
               setPage(1);
             }}
-          />
+            />
+          </span>
         </label>
         <label>
           Dari tanggal
@@ -966,7 +999,7 @@ function Orders({ sid }: { sid: string }) {
         </label>
       </div>
       <Notice error={error} />
-      <div className="work-tabbar">
+      <div className="work-tabbar seller-order-tabs" aria-label="Filter pesanan">
         {[
           ["all", "Semua"],
           ["unpaid", "Belum dibayar"],
@@ -979,6 +1012,7 @@ function Orders({ sid }: { sid: string }) {
           <button
             key={key}
             className={filter === key ? "active" : ""}
+            aria-pressed={filter === key}
             onClick={() => {
               setFilter(key);
               setPage(1);
@@ -988,39 +1022,52 @@ function Orders({ sid }: { sid: string }) {
           </button>
         ))}
       </div>
-      <div className="live-order-list">
-        {value?.orders.map((o) => (
+      <div className="live-order-list seller-order-list">
+        {value?.orders.map((order) => (
           <button
-            key={o.id}
-            className="live-order-row"
-            onClick={() => setSelected(o.id)}
+            key={order.id}
+            className="seller-order-card"
+            onClick={() => setSelected(order.id)}
           >
-            <strong>{o.order_number}</strong>
-            <span>{o.customer_name}</span>
-            <span>{new Date(o.created_at).toLocaleDateString("id-ID")}</span>
-            <b>{rupiah(o.total_idr)}</b>
-            <span>{label(o.payment_status)}</span>
-            <span>{label(o.fulfillment_status)}</span>
-            <Icon name="arrow-right" />
+            <span className="seller-order-card-top">
+              <strong>{order.order_number}</strong>
+              <small>{new Date(order.created_at).toLocaleDateString("id-ID")}</small>
+            </span>
+            <span className="seller-order-card-body">
+              <span>
+                <span className="seller-order-customer">{order.customer_name}</span>
+                <span className="seller-order-status">{label(order.payment_status)} · {label(order.fulfillment_status)}</span>
+              </span>
+              <span className="seller-order-total">{rupiah(order.total_idr)} <Icon name="chevron-right" size={16} /></span>
+            </span>
           </button>
         ))}
       </div>
-      {value && !value.orders.length && <p>Belum ada pesanan masuk.</p>}
-      <div className="live-actions">
-        <button
-          disabled={page === 1 || loading}
-          onClick={() => setPage((p) => p - 1)}
-        >
-          Sebelumnya
-        </button>
-        <span>Halaman {page}</span>
-        <button
-          disabled={!value?.hasMore || loading}
-          onClick={() => setPage((p) => p + 1)}
-        >
-          Berikutnya
-        </button>
-      </div>
+      {value && !loading && !value.orders.length && (
+        <div className="seller-empty" role="status">
+          <span className="seller-empty-icon"><Icon name="orders" size={25} /></span>
+          <h2>{q || filter !== "all" || from || to ? "Pesanan tidak ditemukan" : "Belum ada pesanan"}</h2>
+          <p>{q || filter !== "all" || from || to
+            ? "Coba ubah pencarian atau filter pesanan."
+            : "Pesanan pelanggan akan muncul di sini saat tokomu mulai berjualan."}</p>
+          {(q || filter !== "all" || from || to) && (
+            <button className="seller-text-action" onClick={() => { setQ(""); setFilter("all"); setFrom(""); setTo(""); setPage(1); }}>
+              Hapus filter
+            </button>
+          )}
+        </div>
+      )}
+      {(page > 1 || !!value?.hasMore) && (
+        <nav className="seller-pagination" aria-label="Halaman pesanan">
+          <button disabled={page === 1 || loading} onClick={() => setPage((p) => p - 1)}>
+            <Icon name="chevron-left" size={17} /> Sebelumnya
+          </button>
+          <span>Halaman {page}</span>
+          <button disabled={!value?.hasMore || loading} onClick={() => setPage((p) => p + 1)}>
+            Berikutnya <Icon name="chevron-right" size={17} />
+          </button>
+        </nav>
+      )
     </>
   );
 }
