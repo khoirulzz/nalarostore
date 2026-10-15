@@ -45,7 +45,7 @@ test("merchant → product → guest checkout → manual verification → comple
   await page.goto("/app/products");
   await page.getByRole("button", { name: "Tambah produk" }).click();
   await page.getByLabel("Nama produk").fill("Kaos Browser");
-  await page.getByLabel("Alamat produk").fill("kaos-browser");
+  await page.getByLabel("Link produk").fill("kaos-browser");
   await page.getByLabel("Harga (Rp)", { exact: true }).fill("120000");
   await page.getByLabel("SKU", { exact: true }).fill("BROWSER-M");
   await page.getByLabel("Pilihan", { exact: true }).fill("Ukuran M");
