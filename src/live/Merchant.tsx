@@ -680,7 +680,11 @@ function ProductEditor({
         <p>Lengkapi informasi, foto, dan stok agar produk siap ditampilkan di tokomu.</p>
       </div>
       <form className="live-form live-editor seller-editor-form" onSubmit={save}>
-        <div className="form-two">
+        <section className="seller-editor-section seller-editor-basics">
+          <header className="seller-editor-section-head">
+            <div><Icon name="file" size={19} /><h2>Informasi produk</h2></div>
+          </header>
+          <div className="form-two">
           <label>
             Nama produk
             <input
@@ -732,6 +736,12 @@ function ProductEditor({
             />
           </label>
         </div>
+        </section>
+        <section className="seller-editor-section seller-main-photo-section">
+          <header className="seller-editor-section-head">
+            <div><Icon name="upload" size={19} /><h2>Foto utama</h2></div>
+          </header>
+          <p className="seller-editor-section-help">Pilih foto terbaik untuk tampilan pertama produkmu.</p>
         <label className="seller-file-picker">
           <Icon name="upload" size={19} />
           <span className="seller-picker-copy">
@@ -763,8 +773,12 @@ function ProductEditor({
             alt="Pratinjau produk"
           />
         )}
-        <fieldset className="seller-editor-section seller-gallery-section">
-          <legend><Icon name="grid" size={19} /> Galeri produk <span>{gallery.length}/12</span></legend>
+        </section>
+        <section className="seller-editor-section seller-gallery-section">
+          <header className="seller-editor-section-head">
+            <div><Icon name="grid" size={19} /><h2>Galeri produk</h2></div>
+            <span>{gallery.length}/12</span>
+          </header>
           <p className="seller-editor-section-help">Tampilkan sisi lain produkmu. Kamu bisa mengunggah foto atau memasukkan link gambar.</p>
           {gallery.length === 0 && (
             <div className="seller-gallery-empty">
@@ -857,9 +871,12 @@ function ProductEditor({
               <Icon name="plus" size={18} /> Tambah foto dari link
             </button>
           </div>
-        </fieldset>
-        <fieldset className="seller-editor-section seller-variants-section">
-          <legend><Icon name="box" size={19} /> Varian & stok <span>{variants.length} pilihan</span></legend>
+        </section>
+        <section className="seller-editor-section seller-variants-section">
+          <header className="seller-editor-section-head">
+            <div><Icon name="box" size={19} /><h2>Varian & stok</h2></div>
+            <span>{variants.length} pilihan</span>
+          </header>
           <p className="seller-editor-section-help">Atur SKU, ukuran atau warna, serta jumlah stok setiap pilihan produk.</p>
           {variants.map((v, i) => (
             <div className="variant-row seller-variant-card" key={v.id || i}>
@@ -957,7 +974,11 @@ function ProductEditor({
           >
             <Icon name="plus" size={18} /> Tambah varian
           </button>
-        </fieldset>
+        </section>
+        <section className="seller-editor-section seller-product-visibility">
+          <header className="seller-editor-section-head">
+            <div><Icon name="eye" size={19} /><h2>Publikasi</h2></div>
+          </header>
         <label>
           Status produk
           <select name="status" defaultValue={product?.status || "draft"}>
@@ -965,7 +986,9 @@ function ProductEditor({
             <option value="active">Terbitkan</option>
             <option value="archived">Arsipkan</option>
           </select>
+          <small>Produk draft tidak akan ditampilkan kepada pelanggan.</small>
         </label>
+        </section>
         <Notice error={error} />
         <div className="seller-editor-footer">
           <button className="button button-dark" disabled={busy}>
