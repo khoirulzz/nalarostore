@@ -15,7 +15,10 @@ test("merchant → product → guest checkout → manual verification → comple
     page.getByRole("heading", { name: "Buat toko pertamamu." }),
   ).toBeVisible();
   await page.getByLabel("Nama toko").fill("Toko Browser");
-  await page.getByLabel("Alamat toko").fill("toko-browser");
+  await page.getByLabel("Link toko").fill("toko browser");
+  await expect(page.getByLabel("Link toko")).toHaveValue("toko-browser");
+  await expect(page.getByText("store.nalaro.digital/s/toko-browser")).toBeVisible();
+  await expect(page.getByText(/Invalid string: must match pattern/)).toHaveCount(0);
   await page.getByRole("button", { name: "Buat toko", exact: true }).click();
   await expect(
     page.getByRole("heading", { name: "Ringkasan toko" }),
@@ -188,7 +191,7 @@ test("Firebase signup, verified access, password reset and password change", asy
     page.getByRole("heading", { name: "Buat toko pertamamu." }),
   ).toBeVisible();
   await page.getByLabel("Nama toko").fill("Toko Auth");
-  await page.getByLabel("Alamat toko").fill("toko-auth");
+  await page.getByLabel("Link toko").fill("toko-auth");
   await page.getByRole("button", { name: "Buat toko", exact: true }).click();
   await expect(
     page.getByRole("heading", { name: "Ringkasan toko" }),
