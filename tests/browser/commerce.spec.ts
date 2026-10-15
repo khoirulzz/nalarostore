@@ -121,7 +121,7 @@ test("merchant → product → guest checkout → manual verification → comple
 test("marketing and auth layout fit viewport", async ({ page }) => {
   for (const width of [320, 390, 768, 1440]) {
     await page.setViewportSize({ width, height: 900 });
-    for (const path of ["/", "/register", "/custom"]) {
+    for (const path of ["/", "/register"]) {
       await page.goto(path, { waitUntil: "domcontentloaded" });
       await expect(page.locator("h1")).toBeVisible();
       expect(
@@ -137,6 +137,19 @@ test("marketing and auth layout fit viewport", async ({ page }) => {
     });
   }
 });
+test("custom service redirects to the Nalaro order form", async ({ page }) => {
+  const destination = "https://order.nalaro.digital/form/";
+  await page.route(destination, (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "text/html",
+      body: "<!doctype html><title>Order form destination</title>",
+    }),
+  );
+  await page.goto("/custom");
+  await expect(page).toHaveURL(destination);
+});
+
 test("Firebase signup, verified access, password reset and password change", async ({
   page,
   request,

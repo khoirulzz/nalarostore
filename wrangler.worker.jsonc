@@ -11,6 +11,9 @@
     { "pattern": "store.nalaro.digital/s/*", "zone_name": "nalaro.digital" },
   ],
   "r2_buckets": [{ "binding": "MEDIA", "bucket_name": "nalarostore-media" }],
+  "hyperdrive": [
+    { "binding": "HYPERDRIVE", "id": "5445c942b1a647a9a01b5c9d7eb6e99f" },
+  ],
   "vars": {
     "APP_ENV": "production",
     "APP_ORIGIN": "https://store.nalaro.digital",
@@ -25,6 +28,7 @@
   "secrets": { "required": ["TOKEN_SECRET"] },
   "triggers": { "crons": ["*/10 * * * *"] },
   "observability": { "enabled": true, "head_sampling_rate": 0.1 },
-  // Add the real HYPERDRIVE id (caching disabled) and EMAIL after provisioning.
+  // HYPERDRIVE uses caching disabled and verified Aiven TLS.
+  // Add EMAIL only after Email Sending is activated.
   // Optional tenant route *.store.nalaro.digital/* requires ready DNS and TLS.
 }

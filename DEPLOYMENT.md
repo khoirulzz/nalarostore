@@ -6,6 +6,13 @@
 - Cloudflare Primary account: `fa9e4b5cc90250f132b17fb7c067490b`.
 - Aiven project: `uniquefactuhl-7887`; PostgreSQL `nalarostore-pg`, `free-1-1gb`, `do-sgp`, PostgreSQL 17. Termination protection was disabled when inspected on 2026-10-15; this audit did not change that setting.
 - R2: `nalarostore-media`, APAC, Standard. Existing account R2 was already enabled; no paid service plan was activated.
+- Hyperdrive: `nalarostore-db`, id `5445c942b1a647a9a01b5c9d7eb6e99f`, bound as `HYPERDRIVE` in `wrangler.worker.jsonc`. Query caching is disabled; origin TLS uses `verify-full` with the uploaded Aiven CA.
+
+The Hyperdrive binding is deployed. On 15 October 2026, all five migrations were
+applied to Aiven and their recorded checksums matched the source files. There
+are 30 public tables. Production health, plans and capabilities endpoints return
+200; the plans list is empty until owner configuration. Email Sending remains
+pending and live checkout stays disabled. See the readiness audit below.
 
 ## Separate Pages and Worker deployment
 
@@ -166,17 +173,58 @@ Legacy password/session tables are retained by forward migration for historical 
 
 Do not set FIREBASE_AUTH_EMULATOR_HOST or VITE_FIREBASE_AUTH_EMULATOR_URL in production. Build rejects emulator configuration for production, and Worker rejects emulator tokens outside development/test.
 
-At this audit the Aiven service is RUNNING and public application schema is empty, R2 is present, and Hyperdrive list is empty. These observations are not a deployment or migration result. Aiven connector redacts passwords, so filling private DATABASE_URL/CA remains necessary for a direct connection or Hyperdrive provisioning.
+The earlier audit found an empty Aiven schema and no Hyperdrive configuration.
+The 15 October migration and binding verification supersede those observations.
+Aiven connector redacts passwords; use private DATABASE_URL/CA values for direct
+connections and migrations.
 
 Firebase project Authorized Domains was read during verification: localhost is already allowed; nalarostore.nalaro.digital is also allowed. The repository platform domain store.nalaro.digital is not in that list yet. Add the selected production domain before the production identity-email walkthrough. No Firebase domain configuration was changed remotely.
 
 ## Readiness audit, 15 October 2026
 
-The production Pages deployment uses main commit `09554dd` and has succeeded. The
-`nalarostore` Worker exists with `/api/*` and `/s/*` routes, R2 and TOKEN_SECRET.
-Aiven is running, but its public schema is still empty; Hyperdrive and the EMAIL
-binding are absent. These are the remaining connection and notification setup
-requirements, not missing React screens. Production checkout is still disabled.
+The production Pages deployment uses main commit `93e44cc` and has succeeded.
+The `nalarostore` Worker has `/api/*` and `/s/*` routes, R2, TOKEN_SECRET and the
+verified Hyperdrive binding. Worker version:
+`e1fe7877-c602-47bb-9d3d-216db889da9d`. Aiven migrations 0001 through 0005 are
+applied with verified checksums and 30 public tables. The database was empty
+before migration; the migration introduced structure and the initial
+platform_settings row, without test accounts, stores or orders.
+
+Validation completed:
+
+- `npm run check` passed: types, schema checks, typecheck, 43 tests and production
+  build. One native PostgreSQL encrypted backup/restore test was skipped because
+  no TEST_PG_CONTAINER/Docker environment was available.
+- `npm run check:worker` passed.
+- Five Playwright E2E tests passed using isolated PGlite and Firebase Auth
+  Emulator: merchant/product/guest order/manual payment/completion, responsive
+  marketing/auth layouts, external custom-order redirect, account verification/
+  reset/password change, and manual six-calendar-month UMKM access/revocation.
+  The obsolete local `/custom` layout assertion was replaced with an explicit
+  destination redirect test; the external form submission was not exercised.
+- Production `/api/live`, `/api/health`, `/api/public/plans` and capabilities
+  returned 200. Health reports database connected and liveCheckout false.
+  Merchant API without credentials returned 401; a nonexistent store returned 404.
+- Production `/`, `/login`, and `/demo/batiknalaro` rendered at 390px and 1350px
+  without horizontal overflow or page errors. Local layout tests additionally
+  covered 320px, 768px and 1440px. These are browser viewports, not physical-device tests.
+
+Readiness: the database/backend foundation and local business flows are ready
+for further controlled verification, not unrestricted live checkout. Remaining:
+
+- Firebase's public project config still lacks `store.nalaro.digital` in Authorized
+  Domains. Add it under Authentication > Settings > Authorized domains before
+  testing production verification/reset emails; those actions use the current
+  application origin as continue URL.
+- EMAIL binding and real transactional delivery remain deferred by user choice.
+- Production plans/prices and billing instructions have not been configured.
+- Real signed-in merchant/guest transactions, native backup/restore to staging,
+  origin connection-limit/load tests and actual scheduled-job effects have not
+  been production-verified. The local flows above do not prove these external paths.
+
+Keep ENABLE_LIVE_CHECKOUT=false until the remaining release gates are satisfied.
+Detailed command artifacts are local and ignored under `.wrangler/readiness/`,
+`.wrangler/readiness-e2e/` and `test-results/`.
 
 `/api/live` is a process liveness probe. `/api/health` returns HTTP 503 when the
 Hyperdrive binding is missing or the application schema cannot be queried; only
@@ -188,7 +236,7 @@ for shorter pilots and revocation (0). Approval remains manual and records the
 requested duration and resulting expiry in the audit log. Form submission alone
 does not grant this access. This does not publish a draft store or configure billing.
 
-This audit did not migrate Aiven, provision Hyperdrive, enable checkout, change
-plans, or activate paid infrastructure. The Aiven connector can inspect SQL but
-redacts connection credentials. Use a private terminal for the existing migration
-and Hyperdrive provisioning workflow above; do not send passwords in chat.
+This run applied the authorized Aiven migrations and verified the already-deployed
+Hyperdrive binding. It did not enable checkout, change plans, send real emails,
+activate paid infrastructure, or create production test users/orders. Source
+configuration and E2E test changes are local until separately committed/pushed.
