@@ -44,6 +44,18 @@ test("merchant → product → guest checkout → manual verification → comple
   expect((await pilot).ok()).toBe(true);
   await page.goto("/app/products");
   await page.getByRole("button", { name: "Tambah produk" }).click();
+  await expect(page.locator(".seller-editor-back")).toBeVisible();
+  await expect(page.getByLabel("Unggah foto utama")).toHaveCount(1);
+  await expect(page.getByLabel("Unggah foto galeri")).toHaveCount(1);
+  await page.getByRole("button", { name: "Tambah foto dari link" }).click();
+  await expect(page.getByLabel("Link foto 1")).toBeVisible();
+  await page.getByRole("button", { name: "Hapus foto galeri 1" }).click();
+  await expect(page.getByLabel("Link foto 1")).toHaveCount(0);
+  await page.getByRole("button", { name: "Tambah varian" }).click();
+  await expect(page.getByRole("button", { name: "Hapus varian 2" })).toBeVisible();
+  await page.getByRole("button", { name: "Hapus varian 2" }).click();
+  await expect(page.getByRole("button", { name: "Hapus varian 2" })).toHaveCount(0);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   await page.getByLabel("Nama produk").fill("Kaos Browser");
   await page.getByLabel("Link produk").fill("kaos-browser");
   await page.getByLabel("Harga (Rp)", { exact: true }).fill("120000");
