@@ -373,17 +373,29 @@ function Overview({ sid, store }: { sid: string; store: Store }) {
                 <strong>{value.summary.orders}</strong>
               </div>
             </div>
-            <section className="work-section">
-              <h2>Stok perlu diperhatikan</h2>
+            <section className="work-section seller-stock-panel">
+              <div className="seller-panel-heading">
+                <Icon name="box" size={19} />
+                <h2>Stok perlu diperhatikan</h2>
+                <Link to="/app/inventory">Lihat stok <Icon name="arrow-up-right" size={15} /></Link>
+              </div>
               {value.lowStock.length ? (
-                value.lowStock.map((v, i) => (
-                  <p key={i}>
-                    {v.name} · {v.option_label}{" "}
-                    <strong>{v.available_stock} tersedia</strong>
-                  </p>
-                ))
+                <div className="seller-stock-items">
+                  {value.lowStock.map((v, i) => (
+                    <div className="seller-stock-row" key={i}>
+                      <span>{v.name} · {v.option_label}</span>
+                      <strong>{v.available_stock} tersedia</strong>
+                    </div>
+                  ))}
+                </div>
               ) : (
-                <p>Tidak ada varian di bawah ambang stok.</p>
+                <div className="seller-stock-okay">
+                  <Icon name="check" size={18} />
+                  <div>
+                    <strong>Stok toko dalam kondisi aman.</strong>
+                    <p>Belum ada varian yang melewati batas stok minimum.</p>
+                  </div>
+                </div>
               )}
             </section>
           </>
@@ -465,7 +477,14 @@ function Products({ sid }: { sid: string }) {
           ))}
       </div>
       {value && !value.products.length && (
-        <p>Belum ada produk. Tambahkan produk pertama untuk menyiapkan toko.</p>
+        <div className="seller-product-empty">
+          <Icon name="box" size={29} />
+          <strong>Belum ada produk di katalog.</strong>
+          <p>Unggah produk pertama, lengkapi harga dan stok, lalu siapkan etalase tokomu.</p>
+          <button className="button button-dark" onClick={() => setEditing(null)}>
+            Mulai isi katalog <Icon name="arrow-right" size={16} />
+          </button>
+        </div>
       )}
     </>
   );
