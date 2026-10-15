@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { authorizationHeaders } from "../lib/firebase";
+import { Icon } from "../components/Icon";
 import { useData, rupiah } from "./api";
 
 export function ExportButton({
@@ -58,9 +59,10 @@ export function ExportButton({
     }
   }
   return (
-    <div>
-      <button className="button" disabled={busy} onClick={download}>
-        {busy ? "Menyiapkan ekspor…" : "Ekspor CSV"}
+    <div className="seller-export">
+      <button className="seller-export-button" type="button" disabled={busy} onClick={download}>
+        <Icon name={busy ? "refresh" : "file"} size={16} />
+        <span>{busy ? "Menyiapkan…" : "Ekspor CSV"}</span>
       </button>
       {error && (
         <p className="live-error" role="alert">
@@ -91,29 +93,32 @@ export function Customers({ sid }: { sid: string }) {
       <div className="workspace-heading">
         <div>
           <h1>Pelanggan</h1>
-          <p>
-            Kontak dari pesanan toko ini. Total belanja menghitung pembayaran
-            terverifikasi.
-          </p>
+          <p>Lihat pelanggan, riwayat pesanan, dan nilai belanja mereka.</p>
         </div>
         <ExportButton sid={sid} resource="customers" />
       </div>
-      <label>
-        Cari nama, email atau telepon
-        <input
-          value={q}
-          onChange={(e) => {
-            setQ(e.target.value);
-            setPage(1);
-          }}
-        />
+      <label className="seller-search">
+        <span>Cari pelanggan</span>
+        <span className="seller-search-control">
+          <Icon name="search" size={19} />
+          <input
+            type="search"
+            aria-label="Cari nama, email atau telepon"
+            placeholder="Nama, email, atau nomor telepon"
+            value={q}
+            onChange={(e) => {
+              setQ(e.target.value);
+              setPage(1);
+            }}
+          />
+        </span>
       </label>
       {data.error && (
         <p className="live-error" role="alert">
           {data.error}
         </p>
       )}
-      {data.loading && <p aria-busy="true">Memuat pelanggan…</p>}
+      {data.loading && <p className="seller-loading" aria-busy="true">Memuat pelanggan…</p>}
       <div className="live-order-list">
         {data.value?.customers.map((c) => (
           <article className="work-section customer-row" key={c.contact_phone}>
@@ -130,24 +135,38 @@ export function Customers({ sid }: { sid: string }) {
           </article>
         ))}
       </div>
-      {data.value && !data.value.customers.length && (
-        <p>Belum ada pelanggan yang sesuai.</p>
+      {data.value && !data.loading && !data.value.customers.length && (
+        <div className="seller-empty" role="status">
+          <span className="seller-empty-icon"><Icon name="users" size={25} /></span>
+          <h2>{q ? "Pelanggan tidak ditemukan" : "Belum ada pelanggan"}</h2>
+          <p>{q
+            ? "Coba kata pencarian lain."
+            : "Saat pesanan pertama masuk, data pelanggan akan tampil di sini."}
+          </p>
+          {q && <button className="seller-text-action" onClick={() => { setQ(""); setPage(1); }}>Hapus pencarian</button>}
+        </div>
       )}
-      <div className="live-actions">
-        <button
-          disabled={page === 1 || data.loading}
-          onClick={() => setPage((p) => p - 1)}
-        >
-          Sebelumnya
-        </button>
-        <span>Halaman {page}</span>
-        <button
-          disabled={!data.value?.hasMore || data.loading}
-          onClick={() => setPage((p) => p + 1)}
-        >
-          Berikutnya
-        </button>
-      </div>
+      {(page > 1 || !!data.value?.hasMore) && (
+        <nav className="seller-pagination" aria-label="Halaman pelanggan">
+          <button
+            type="button"
+            disabled={page === 1 || data.loading}
+            onClick={() => setPage((p) => p - 1)}
+            aria-label="Halaman sebelumnya"
+          >
+            <Icon name="chevron-left" size={17} /><span>Sebelumnya</span>
+          </button>
+          <span>Halaman {page}</span>
+          <button
+            type="button"
+            disabled={!data.value?.hasMore || data.loading}
+            onClick={() => setPage((p) => p + 1)}
+            aria-label="Halaman berikutnya"
+          >
+            <span>Berikutnya</span><Icon name="chevron-right" size={17} />
+          </button>
+        </nav>
+      )}
     </>
   );
 }
@@ -169,11 +188,10 @@ export function Analytics({ sid }: { sid: string }) {
   return (
     <>
       <h1>Analitik penjualan</h1>
-      <p>
-        Pesanan dikelompokkan menurut tanggal dibuat (UTC). Pendapatan hanya
-        menghitung pesanan dengan pembayaran terverifikasi.
+      <p className="seller-section-lead">
+        Pantau penjualan dan pesanan yang sudah dibayar dalam periode pilihanmu.
       </p>
-      <div className="form-two">
+      <div className="form-two seller-date-filters">
         <label>
           Dari tanggal
           <input
@@ -218,7 +236,7 @@ export function Analytics({ sid }: { sid: string }) {
               </strong>
             </div>
           </div>
-          <section className="work-section">
+          <section className="work-section seller-analytics-panel">
             <h2>Penjualan per hari</h2>
             {data.value?.daily.map((d) => (
               <div className="checkout-line" key={d.day}>

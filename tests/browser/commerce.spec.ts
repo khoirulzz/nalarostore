@@ -23,6 +23,17 @@ test("merchant → product → guest checkout → manual verification → comple
   await expect(
     page.getByRole("heading", { name: "Ringkasan toko" }),
   ).toBeVisible();
+  await page.goto("/app/customers");
+  await expect(page.getByLabel("Cari nama, email atau telepon")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Belum ada pelanggan" })).toBeVisible();
+  await expect(page.locator(".seller-export-button .icon")).toBeVisible();
+  await page.getByRole("button", { name: "Buka menu" }).click();
+  await expect(page.locator(".workspace-sidebar .logout .icon")).toBeVisible();
+  await page.locator(".seller-drawer-close").click();
+  await page.goto("/app/billing");
+  await expect(page.getByRole("heading", { name: "Langganan toko" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Tagihan" })).toBeVisible();
+  await expect(page.getByText("Instruksi pembayaran belum ditetapkan admin.")).toHaveCount(0);
   await page.goto("/admin");
   await page.getByRole("button", { name: "Atur pilot" }).click();
   await page.getByLabel("Lama pilot (hari)").fill("7");
@@ -34,7 +45,7 @@ test("merchant → product → guest checkout → manual verification → comple
   await page.goto("/app/products");
   await page.getByRole("button", { name: "Tambah produk" }).click();
   await page.getByLabel("Nama produk").fill("Kaos Browser");
-  await page.getByLabel("Alamat produk").fill("kaos-browser");
+  await page.getByLabel("Link produk").fill("kaos-browser");
   await page.getByLabel("Harga (Rp)", { exact: true }).fill("120000");
   await page.getByLabel("SKU", { exact: true }).fill("BROWSER-M");
   await page.getByLabel("Pilihan", { exact: true }).fill("Ukuran M");
@@ -45,6 +56,13 @@ test("merchant → product → guest checkout → manual verification → comple
     page.getByRole("heading", { name: "Kaos Browser" }),
   ).toBeVisible();
   await page.goto("/app/settings");
+  await expect(page.getByRole("heading", { name: "Link toko" })).toBeVisible();
+  await page.evaluate(() => window.scrollTo(0, 750));
+  expect(
+    await page.locator(".workspace-topbar").evaluate(
+      (header) => Math.abs(header.getBoundingClientRect().top) < 2,
+    ),
+  ).toBe(true);
   await page
     .getByLabel("Alamat pengambilan")
     .fill("Jalan Toko Browser Nomor 1");
