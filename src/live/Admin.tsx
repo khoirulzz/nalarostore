@@ -150,7 +150,7 @@ function AdminPanel() {
           <span>nalaro store<small>ADMIN CONSOLE</small></span>
         </Link>
         <Link to="/app" className="admin-merchant-link">
-          <Icon name="store" size={18} />
+          <Icon name="box" size={18} />
           <span>Workspace seller</span>
           <Icon name="arrow-up-right" size={15} />
         </Link>
