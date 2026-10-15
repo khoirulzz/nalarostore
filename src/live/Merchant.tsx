@@ -1067,7 +1067,7 @@ function Orders({ sid }: { sid: string }) {
             Berikutnya <Icon name="chevron-right" size={17} />
           </button>
         </nav>
-      )
+      )}
     </>
   );
 }
