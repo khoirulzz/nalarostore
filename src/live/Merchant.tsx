@@ -607,8 +607,13 @@ function ProductEditor({
   }
   async function save(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    if (gallery.some((photo) => !photo.url.trim())) {
+      setError("Masih ada foto galeri tanpa link. Lengkapi atau hapus foto kosong terlebih dahulu.");
+      return;
+    }
     const f = new FormData(e.currentTarget);
     setBusy(true);
+    setError("");
     try {
       await api(
         `/api/merchant/stores/${sid}/products${product ? "/" + product.id : ""}`,
@@ -638,11 +643,11 @@ function ProductEditor({
       setBusy(false);
     }
   }
-  async function upload(file?: File) {
-    if (!file) return;
+  async function uploadMedia(file: File): Promise<string> {
     setBusy(true);
+    setError("");
     try {
-      const r = await fetch(`/api/merchant/stores/${sid}/media`, {
+      const response = await fetch(`/api/merchant/stores/${sid}/media`, {
         method: "POST",
         headers: {
           "content-type": file.type,
@@ -650,23 +655,41 @@ function ProductEditor({
         },
         body: file,
       });
-      const data = (await r.json()) as { error?: string; url: string };
-      if (!r.ok) throw Error(data.error);
-      setImage(data.url);
-    } catch (e) {
-      setError((e as Error).message);
+      const result = (await response.json()) as { error?: string; url?: string };
+      if (!response.ok || !result.url) {
+        throw Error(result.error || "Foto belum berhasil diunggah. Coba lagi.");
+      }
+      return result.url;
     } finally {
       setBusy(false);
     }
   }
+  async function upload(file?: File, target: "main" | "gallery" = "main", variantIndex?: number) {
+    if (!file || busy) return;
+    try {
+      const url = await uploadMedia(file);
+      if (variantIndex !== undefined) change(variantIndex, "image_url", url);
+      else if (target === "gallery") setGallery((previous) => [...previous, { url, alt: "" }]);
+      else setImage(url);
+    } catch (error) {
+      setError((error as Error).message);
+    }
+  }
   return (
-    <>
-      <button className="back-link" onClick={done}>
-        <Icon name="arrow-left" /> Kembali ke produk
-      </button>
-      <h1>{product ? "Edit produk" : "Tambah produk"}</h1>
-      <form className="live-form live-editor" onSubmit={save}>
-        <div className="form-two">
+    <div className="seller-product-editor">
+      <div className="seller-editor-heading">
+        <button type="button" className="seller-editor-back" onClick={done}>
+          <Icon name="arrow-left" size={17} /> <span>Kembali ke produk</span>
+        </button>
+        <h1>{product ? "Edit produk" : "Tambah produk"}</h1>
+        <p>Lengkapi informasi, foto, dan stok agar produk siap ditampilkan di tokomu.</p>
+      </div>
+      <form className="live-form live-editor seller-editor-form" onSubmit={save}>
+        <section className="seller-editor-section seller-editor-basics">
+          <header className="seller-editor-section-head">
+            <div><Icon name="file" size={19} /><h2>Informasi produk</h2></div>
+          </header>
+          <div className="form-two">
           <label>
             Nama produk
             <input
@@ -718,12 +741,29 @@ function ProductEditor({
             />
           </label>
         </div>
-        <label>
-          Foto produk
+        </section>
+        <section className="seller-editor-section seller-main-photo-section">
+          <header className="seller-editor-section-head">
+            <div><Icon name="upload" size={19} /><h2>Foto utama</h2></div>
+          </header>
+          <p className="seller-editor-section-help">Pilih foto terbaik untuk tampilan pertama produkmu.</p>
+        <label className="seller-file-picker">
+          <Icon name="upload" size={19} />
+          <span className="seller-picker-copy">
+            <strong>{busy ? "Mengunggah foto…" : "Unggah foto utama"}</strong>
+            <small>JPG, PNG atau WebP dari perangkatmu</small>
+          </span>
+          <Icon name="plus" size={17} />
           <input
             type="file"
+            aria-label="Unggah foto utama"
             accept="image/png,image/jpeg,image/webp"
-            onChange={(e) => upload(e.target.files?.[0])}
+            disabled={busy}
+            onChange={(e) => {
+              const file = e.currentTarget.files?.[0];
+              e.currentTarget.value = "";
+              void upload(file);
+            }}
           />
         </label>
         <label>
@@ -738,96 +778,129 @@ function ProductEditor({
             alt="Pratinjau produk"
           />
         )}
-        <fieldset>
-          <legend>Galeri produk</legend>
-          {gallery.map((g, i) => (
-            <div className="form-two" key={i}>
-              <label>
-                URL foto {i + 1}
-                <input
-                  value={g.url}
-                  onChange={(e) =>
-                    setGallery((prev) =>
-                      prev.map((x, n) =>
-                        n === i ? { ...x, url: e.target.value } : x,
-                      ),
-                    )
-                  }
-                />
-              </label>
-              <label>
-                Deskripsi foto
-                <input
-                  value={g.alt}
-                  onChange={(e) =>
-                    setGallery((prev) =>
-                      prev.map((x, n) =>
-                        n === i ? { ...x, alt: e.target.value } : x,
-                      ),
-                    )
-                  }
-                />
-              </label>
-              <button
-                type="button"
-                onClick={() =>
-                  setGallery((prev) => prev.filter((_, n) => n !== i))
-                }
-              >
-                Hapus foto
-              </button>
+        </section>
+        <section className="seller-editor-section seller-gallery-section">
+          <header className="seller-editor-section-head">
+            <div><Icon name="grid" size={19} /><h2>Galeri produk</h2></div>
+            <span>{gallery.length}/12</span>
+          </header>
+          <p className="seller-editor-section-help">Tampilkan sisi lain produkmu. Kamu bisa mengunggah foto atau memasukkan link gambar.</p>
+          {gallery.length === 0 && (
+            <div className="seller-gallery-empty">
+              <Icon name="grid" size={22} />
+              <span>Belum ada foto tambahan. Galeri akan membantu pelanggan melihat detail produk.</span>
             </div>
-          ))}
-          <button
-            type="button"
-            disabled={gallery.length >= 12}
-            onClick={() =>
-              setGallery((prev) => [...prev, { url: "", alt: "" }])
-            }
-          >
-            Tambah foto galeri
-          </button>
-          <label>
-            Unggah foto galeri
-            <input
-              type="file"
-              accept="image/png,image/jpeg,image/webp"
+          )}
+          <div className="seller-gallery-list">
+            {gallery.map((galleryPhoto, index) => (
+              <div className="seller-gallery-item" key={index}>
+                {galleryPhoto.url ? (
+                  <MediaImage
+                    src={galleryPhoto.url}
+                    alt={galleryPhoto.alt || `Foto galeri ${index + 1}`}
+                    className="seller-gallery-thumbnail"
+                  />
+                ) : (
+                  <div className="seller-gallery-thumbnail seller-gallery-placeholder">
+                    <Icon name="bag" size={22} />
+                  </div>
+                )}
+                <div className="seller-gallery-fields">
+                  <label>
+                    Link foto {index + 1}
+                    <input
+                      value={galleryPhoto.url}
+                      placeholder="https://..."
+                      onChange={(event) =>
+                        setGallery((previous) =>
+                          previous.map((photo, current) =>
+                            current === index ? { ...photo, url: event.target.value } : photo,
+                          ),
+                        )
+                      }
+                    />
+                  </label>
+                  <label>
+                    Keterangan foto (opsional)
+                    <input
+                      value={galleryPhoto.alt}
+                      placeholder="Contoh: Tampilan bagian belakang"
+                      onChange={(event) =>
+                        setGallery((previous) =>
+                          previous.map((photo, current) =>
+                            current === index ? { ...photo, alt: event.target.value } : photo,
+                          ),
+                        )
+                      }
+                    />
+                  </label>
+                </div>
+                <button
+                  type="button"
+                  className="seller-editor-remove"
+                  aria-label={`Hapus foto galeri ${index + 1}`}
+                  disabled={busy}
+                  onClick={() => setGallery((previous) => previous.filter((_, current) => current !== index))}
+                >
+                  <Icon name="close" size={16} /> Hapus foto
+                </button>
+              </div>
+            ))}
+          </div>
+          <div className="seller-gallery-actions">
+            <label className="seller-file-picker seller-gallery-picker">
+              <Icon name="upload" size={19} />
+              <span className="seller-picker-copy">
+                <strong>{busy ? "Mengunggah foto…" : "Unggah foto galeri"}</strong>
+                <small>{gallery.length >= 12 ? "Maksimal 12 foto tambahan" : "Pilih gambar dari perangkat"}</small>
+              </span>
+              <Icon name="arrow-right" size={16} />
+              <input
+                type="file"
+                aria-label="Unggah foto galeri"
+                accept="image/png,image/jpeg,image/webp"
+                disabled={busy || gallery.length >= 12}
+                onChange={(event) => {
+                  const file = event.currentTarget.files?.[0];
+                  event.currentTarget.value = "";
+                  void upload(file, "gallery");
+                }}
+              />
+            </label>
+            <button
+              type="button"
+              className="seller-editor-add"
               disabled={busy || gallery.length >= 12}
-              onChange={async (e) => {
-                const file = e.target.files?.[0];
-                if (!file) return;
-                setBusy(true);
-                try {
-                  const response = await fetch(
-                    `/api/merchant/stores/${sid}/media`,
-                    {
-                      method: "POST",
-                      headers: {
-                        "content-type": file.type,
-                        ...(await authorizationHeaders()),
-                      },
-                      body: file,
-                    },
-                  );
-                  const r = (await response.json()) as {
-                    url: string;
-                    error?: string;
-                  };
-                  if (!response.ok) throw Error(r.error);
-                  setGallery((prev) => [...prev, { url: r.url, alt: "" }]);
-                } catch (e) {
-                  setError((e as Error).message);
-                } finally {
-                  setBusy(false);
-                }
-              }}
-            />
-          </label>
-        </fieldset>
-        <fieldset>
-          <legend>Varian & stok</legend>
+              onClick={() => setGallery((previous) => [...previous, { url: "", alt: "" }])}
+            >
+              <Icon name="plus" size={18} /> Tambah foto dari link
+            </button>
+          </div>
+        </section>
+        <section className="seller-editor-section seller-variants-section">
+          <header className="seller-editor-section-head">
+            <div><Icon name="box" size={19} /><h2>Varian & stok</h2></div>
+            <span>{variants.length} pilihan</span>
+          </header>
+          <p className="seller-editor-section-help">Atur SKU, ukuran atau warna, serta jumlah stok setiap pilihan produk.</p>
           {variants.map((v, i) => (
-            <div className="variant-row" key={v.id || i}>
+            <div className="variant-row seller-variant-card" key={v.id || i}>
+              <div className="seller-variant-title">
+                <span>Varian {String(i + 1).padStart(2, "0")}</span>
+                {variants.length > 1 && !v.id ? (
+                  <button
+                    type="button"
+                    className="seller-remove-variant"
+                    aria-label={`Hapus varian ${i + 1}`}
+                    disabled={busy}
+                    onClick={() => setVariants((previous) => previous.filter((_, current) => current !== i))}
+                  >
+                    <Icon name="close" size={15} /> Hapus varian
+                  </button>
+                ) : (
+                  <span className="seller-variant-meta">{v.reserved_qty || 0} dalam pesanan</span>
+                )}
+              </div>
               <label>
                 SKU
                 <input
@@ -859,15 +932,32 @@ function ProductEditor({
                   }
                 />
               </label>
-              <label>
-                Foto varian (URL)
+              <div className="seller-variant-image-field">
+                <label htmlFor={`variant-image-${i}`}>Link foto khusus varian (opsional)</label>
                 <input
+                  id={`variant-image-${i}`}
                   value={v.image_url || ""}
-                  onChange={(e) =>
-                    change(i, "image_url", e.target.value || null)
-                  }
+                  placeholder="https://..."
+                  onChange={(e) => change(i, "image_url", e.target.value || null)}
                 />
-              </label>
+                <span className="seller-variant-photo-actions">
+                  <label className="seller-variant-upload">
+                    <Icon name="upload" size={15} />
+                    <span>Unggah foto varian</span>
+                    <input
+                      type="file"
+                      aria-label={`Unggah foto varian ${i + 1}`}
+                      accept="image/png,image/jpeg,image/webp"
+                      disabled={busy}
+                      onChange={(event) => {
+                        const file = event.currentTarget.files?.[0];
+                        event.currentTarget.value = "";
+                        void upload(file, "main", i);
+                      }}
+                    />
+                  </label>
+                </span>
+              </div>
               <label>
                 Stok total
                 <input
@@ -895,12 +985,17 @@ function ProductEditor({
           ))}
           <button
             type="button"
-            className="text-link"
-            onClick={() => setVariants((v) => [...v, { ...defaultVariant }])}
+            className="seller-editor-add seller-add-variant"
+            disabled={busy || variants.length >= 40}
+            onClick={() => setVariants((previous) => [...previous, { ...defaultVariant }])}
           >
-            Tambah varian <Icon name="plus" />
+            <Icon name="plus" size={18} /> Tambah varian
           </button>
-        </fieldset>
+        </section>
+        <section className="seller-editor-section seller-product-visibility">
+          <header className="seller-editor-section-head">
+            <div><Icon name="eye" size={19} /><h2>Publikasi</h2></div>
+          </header>
         <label>
           Status produk
           <select name="status" defaultValue={product?.status || "draft"}>
@@ -908,13 +1003,20 @@ function ProductEditor({
             <option value="active">Terbitkan</option>
             <option value="archived">Arsipkan</option>
           </select>
+          <small>Produk draft tidak akan ditampilkan kepada pelanggan.</small>
         </label>
+        </section>
         <Notice error={error} />
-        <button className="button button-dark" disabled={busy}>
-          {busy ? "Menyimpan…" : "Simpan produk"}
-        </button>
+        <div className="seller-editor-footer">
+          <button className="button button-dark" disabled={busy}>
+            <Icon name="check" size={18} /> {busy ? "Menyimpan…" : "Simpan produk"}
+          </button>
+          <button type="button" className="seller-editor-cancel" onClick={done} disabled={busy}>
+            Batal
+          </button>
+        </div>
       </form>
-    </>
+    </div>
   );
 }
 function Orders({ sid }: { sid: string }) {
