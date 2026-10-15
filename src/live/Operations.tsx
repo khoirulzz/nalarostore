@@ -166,7 +166,7 @@ export function Customers({ sid }: { sid: string }) {
             <span>Berikutnya</span><Icon name="chevron-right" size={17} />
           </button>
         </nav>
-      )>
+      )}
     </>
   );
 }
