@@ -1469,3 +1469,99 @@ textarea:focus-visible {
     bottom: 10px;
   }
 }
+
+
+/* Store creation is a URL setup, not a physical-address input. */
+.new-store-setup {
+  max-width: 760px;
+}
+.new-store-heading {
+  max-width: 670px;
+  margin-bottom: 30px;
+}
+.new-store-eyebrow {
+  color: #527055;
+  display: block;
+  font-size: 11px;
+  letter-spacing: .13em;
+  font-weight: 760;
+  margin-bottom: 13px;
+}
+.new-store-setup .new-store-heading h1 {
+  margin: 0 0 16px;
+  font-size: clamp(31px, 3.2vw, 43px);
+  letter-spacing: -.065em;
+  line-height: 1.14;
+}
+.new-store-heading > p {
+  font-size: 14px;
+  color: #697168;
+  line-height: 1.75;
+  margin: 0;
+}
+.new-store-form {
+  gap: 22px;
+  padding: clamp(22px, 3vw, 32px);
+  background: #fff;
+  border: 1px solid #e5e5de;
+  border-radius: 15px;
+  box-shadow: 0 15px 38px rgba(32, 37, 29, .035);
+}
+.new-store-form label {
+  gap: 9px;
+}
+.new-store-form label input {
+  font-size: 15px;
+  font-weight: 550;
+  border-radius: 9px;
+  min-height: 50px;
+  padding: 12px 14px;
+}
+.new-store-form label small {
+  line-height: 1.55;
+}
+.new-store-preview {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  background: #f5f7f3;
+  border: 1px solid #e4e9df;
+  padding: 15px;
+  border-radius: 10px;
+}
+.new-store-preview > span {
+  font-size: 11px;
+  color: #687266;
+}
+.new-store-preview strong {
+  color: #253c2a;
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+.new-store-preview small {
+  font-size: 11px;
+  color: #747e73;
+}
+.new-store-preview small.new-store-available {
+  color: #256c42;
+}
+.new-store-preview small.new-store-unavailable {
+  color: #a23928;
+}
+.new-store-form .new-store-submit {
+  min-height: 48px;
+  display: inline-flex;
+  align-items: center;
+  gap: 16px;
+  justify-content: center;
+  padding: 12px 22px;
+  border-radius: 9px;
+}
+@media (max-width: 767px) {
+  .new-store-setup .new-store-heading h1 { font-size: clamp(31px, 8vw, 39px); }
+  .new-store-heading { margin-bottom: 22px; }
+  .new-store-heading > p { font-size: 13px; }
+  .new-store-form { padding: 21px 18px; gap: 20px; }
+  .new-store-form label input { min-height: 50px; }
+  .new-store-form .new-store-submit { width: 100%; min-height: 50px; }
+}
