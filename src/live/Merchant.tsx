@@ -216,6 +216,19 @@ function Workspace() {
     </div>
   );
 }
+function storeSlug(value: string): string {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 48)
+    .replace(/-+$/g, "");
+}
+const validStoreSlug = (value: string) =>
+  /^[a-z0-9][a-z0-9-]{1,46}[a-z0-9]$/.test(value);
+
 function NewStore({ onCreated }: { onCreated: () => void }) {
   const [error, setError] = useState(""),
     [busy, setBusy] = useState(false);
@@ -223,9 +236,10 @@ function NewStore({ onCreated }: { onCreated: () => void }) {
     [slug, setSlug] = useState(""),
     [manual, setManual] = useState(false),
     [available, setAvailable] = useState<boolean | null>(null);
+  const slugValid = validStoreSlug(slug);
   useEffect(() => {
     setAvailable(null);
-    if (slug.length < 3) return;
+    if (!validStoreSlug(slug)) return;
     let active = true;
     const timer = setTimeout(() => {
       void api<{ available: boolean }>(
@@ -243,28 +257,44 @@ function NewStore({ onCreated }: { onCreated: () => void }) {
   }, [slug]);
   async function submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    const f = new FormData(e.currentTarget);
+    if (!slugValid) {
+      setError("Link toko perlu 3–48 karakter, dimulai dan diakhiri huruf atau angka.");
+      return;
+    }
+    if (available === false) {
+      setError("Link toko sudah digunakan. Silakan pilih yang lain.");
+      return;
+    }
     setBusy(true);
+    setError("");
     try {
       await api("/api/merchant/stores", "POST", {
-        name: f.get("name"),
-        slug: f.get("slug"),
+        name: name.trim(),
+        slug,
       });
       onCreated();
     } catch (e) {
-      setError((e as Error).message);
+      const message = (e as Error).message || "";
+      setError(
+        /slug.*(pattern|invalid|string)|invalid.*slug/i.test(message)
+          ? "Link toko tidak valid. Gunakan huruf kecil, angka, atau tanda hubung."
+          : message,
+      );
     } finally {
       setBusy(false);
     }
   }
   return (
-    <div className="live-editor">
-      <h1>Buat toko pertamamu.</h1>
-      <p>
-        Atur nama dan alamat. Toko disimpan sebagai draft sampai siap menerima
-        pesanan.
-      </p>
-      <form onSubmit={submit} className="live-form">
+    <div className="live-editor new-store-setup">
+      <div className="new-store-heading">
+        <span className="new-store-eyebrow">LANGKAH PERTAMA · IDENTITAS TOKO</span>
+        <h1>Buat toko pertamamu.</h1>
+        <p>
+          Tentukan nama dan link toko yang mudah diingat. Setelah dibuat, kamu bisa
+          melengkapi alamat fisik, produk, pembayaran, serta tampilan toko di pengaturan.
+        </p>
+      </div>
+      <form onSubmit={submit} className="live-form new-store-form">
         <label>
           Nama toko
           <input
@@ -272,49 +302,59 @@ function NewStore({ onCreated }: { onCreated: () => void }) {
             required
             minLength={2}
             maxLength={120}
+            placeholder="Contoh: Nalaro Batik"
+            autoComplete="organization"
             value={name}
             onChange={(e) => {
               setName(e.target.value);
-              if (!manual)
-                setSlug(
-                  e.target.value
-                    .normalize("NFD")
-                    .replace(/[\u0300-\u036f]/g, "")
-                    .toLowerCase()
-                    .replace(/[^a-z0-9]+/g, "-")
-                    .replace(/^-|-$/g, "")
-                    .slice(0, 48),
-                );
+              setError("");
+              if (!manual) setSlug(storeSlug(e.target.value));
             }}
           />
+          <small>Nama yang akan tampil pada halaman toko dan katalog.</small>
         </label>
         <label>
-          Alamat toko
+          Link toko
           <input
             name="slug"
             required
+            minLength={3}
+            maxLength={48}
             pattern="[a-z0-9][a-z0-9-]{1,46}[a-z0-9]"
+            title="Gunakan 3–48 huruf kecil, angka, atau tanda hubung."
+            inputMode="url"
+            spellCheck={false}
+            autoCapitalize="none"
+            autoComplete="off"
+            placeholder="contoh: nalaro-batik"
             value={slug}
             onChange={(e) => {
               setManual(true);
-              setSlug(e.target.value.toLowerCase());
+              setError("");
+              setSlug(storeSlug(e.target.value));
             }}
           />
-          <small>3–48 karakter, huruf kecil, angka dan tanda hubung.</small>
-          {available !== null && (
-            <small role="status">
-              {available
-                ? "Alamat tersedia."
-                : "Alamat belum dapat digunakan. Pilih alamat lain."}
-            </small>
-          )}
+          <small>Ini alamat web toko, bukan alamat lokasi toko. Spasi otomatis diubah menjadi tanda hubung.</small>
         </label>
+        <div className="new-store-preview" aria-live="polite">
+          <span>Link tokomu nanti</span>
+          <strong>store.nalaro.digital/s/{slug || "nama-toko"}</strong>
+          {slug.length > 0 && !slugValid ? (
+            <small>Gunakan minimal 3 karakter dan akhiri dengan huruf atau angka.</small>
+          ) : available !== null ? (
+            <small className={available ? "new-store-available" : "new-store-unavailable"}>
+              {available ? "✓ Link tersedia" : "Link sudah digunakan. Coba yang lain."}
+            </small>
+          ) : slugValid ? (
+            <small>Memeriksa ketersediaan link…</small>
+          ) : null}
+        </div>
         <Notice error={error} />
         <button
-          className="button button-dark"
-          disabled={busy || available === false}
+          className="button button-dark new-store-submit"
+          disabled={busy || !slugValid || available === false || name.trim().length < 2}
         >
-          {busy ? "Membuat…" : "Buat toko"}
+          {busy ? "Membuat toko…" : "Buat toko"} <Icon name="arrow-right" size={18} />
         </button>
       </form>
     </div>
