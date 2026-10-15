@@ -32,13 +32,15 @@ function Frame({
   children,
   title,
   description,
+  compact = false,
 }: {
   children: ReactNode;
   title: string;
   description: string;
+  compact?: boolean;
 }) {
   return (
-    <main className="auth-page">
+    <main className={`auth-page ${compact ? "auth-page-compact" : ""}`}>
       <Link className="brand" to="/">
         <img src="/favicon-32x32.png" alt="" />
         nalaro store
@@ -129,6 +131,13 @@ export function PasswordField({
     </div>
   );
 }
+async function dashboardRoute(): Promise<string> {
+  // The Worker, not a client-side email comparison, owns platform privileges.
+  const { user } = await api<{ user: User | null }>("/api/auth/me");
+  if (!user) throw Error("Sesi akun belum tersedia. Silakan masuk kembali.");
+  return !user.verified ? "/verify" : user.admin ? "/admin" : "/app";
+}
+
 async function checkPassword(password: string) {
   const a = requireFirebase();
   if (firebaseEmulated) {
@@ -176,7 +185,7 @@ export function Auth({ register = false }: { register?: boolean }) {
         navigate("/verify");
       } else {
         await signInWithEmailAndPassword(a, email, password);
-        navigate(a.currentUser?.emailVerified ? "/app" : "/verify");
+        navigate(await dashboardRoute(), { replace: true });
       }
     } catch (e) {
       setError(authError(e));
@@ -289,7 +298,8 @@ export function Verify() {
   const [search] = useSearchParams(),
     [message, setMessage] = useState(""),
     [busy, setBusy] = useState(false),
-    [verified, setVerified] = useState(false);
+    [verified, setVerified] = useState(false),
+    [destination, setDestination] = useState("/app");
   async function verify() {
     setBusy(true);
     setMessage("");
@@ -302,7 +312,9 @@ export function Verify() {
         await reload(a.currentUser);
         await a.currentUser.getIdToken(true);
       }
-      if (code || a.currentUser?.emailVerified) {
+      if (a.currentUser?.emailVerified) {
+        const route = await dashboardRoute();
+        setDestination(route);
         setVerified(true);
         setMessage("Email berhasil diverifikasi. Akunmu siap digunakan.");
       } else
@@ -334,34 +346,49 @@ export function Verify() {
   }
   return (
     <Frame
-      title="Verifikasi alamat email."
-      description="Buka tautan pada email agar kamu bisa mengelola toko."
+      compact
+      title={verified ? "Email terverifikasi." : "Verifikasi alamat email."}
+      description={
+        verified
+          ? "Akunmu siap digunakan. Kamu bisa melanjutkan dari dashboard."
+          : "Satu langkah lagi agar akunmu bisa mengelola toko dengan aman."
+      }
     >
-      <section className="live-form">
-        <h2>Konfirmasi email</h2>
-        <p>{auth?.currentUser?.email}</p>
-        {!verified && (
-          <>
-            <button
-              className="button button-dark"
-              onClick={verify}
-              disabled={busy}
-            >
-              {busy
-                ? "Memproses..."
-                : search.get("oobCode")
-                  ? "Konfirmasi email"
-                  : "Saya sudah memverifikasi email"}
+      <section className="verify-card" aria-label="Status verifikasi email">
+        <div className={`verify-symbol ${verified ? "is-success" : ""}`}>
+          <span aria-hidden="true">{verified ? "✓" : "@"}</span>
+        </div>
+        <p className="verify-eyebrow">KEAMANAN AKUN</p>
+        <h2>{verified ? "Verifikasi berhasil" : "Konfirmasi email"}</h2>
+        <p className="verify-card-intro">
+          {verified
+            ? "Alamat email sudah dikonfirmasi."
+            : "Periksa inbox atau folder spam untuk menemukan tautan verifikasi."}
+        </p>
+        <div className="verify-email">
+          <span>Email akun</span>
+          <strong>{auth?.currentUser?.email || "Belum masuk"}</strong>
+        </div>
+        {message && (
+          <p className={`verify-message ${verified ? "is-success" : ""}`} role="status">
+            {message}
+          </p>
+        )}
+        {!verified ? (
+          <div className="verify-actions">
+            <button className="button button-dark" onClick={verify} disabled={busy}>
+              {busy ? "Memproses..." : search.get("oobCode") ? "Konfirmasi email" : "Saya sudah memverifikasi email"}
             </button>
-            <button onClick={resend} disabled={busy}>
+            <button className="verify-secondary" onClick={resend} disabled={busy}>
               Kirim ulang tautan
             </button>
-          </>
+            <Link to="/login">Masuk dengan akun lain</Link>
+          </div>
+        ) : (
+          <Link className="button button-dark verify-primary" to={destination}>
+            {destination === "/admin" ? "Buka dashboard admin" : "Buka workspace"} ↗
+          </Link>
         )}
-        {message && <p role="status">{message}</p>}
-        <Link to={verified ? "/app" : "/login"}>
-          {verified ? "Buka workspace" : "Masuk ke akun"}
-        </Link>
       </section>
     </Frame>
   );

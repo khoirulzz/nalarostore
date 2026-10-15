@@ -9,6 +9,8 @@ test("merchant → product → guest checkout → manual verification → comple
   await page.getByLabel("Email", { exact: true }).fill("owner@local.test");
   await page.getByLabel("Kata sandi", { exact: true }).fill("LocalTest123");
   await page.getByRole("button", { name: "Masuk", exact: true }).click();
+  await expect(page).toHaveURL(/admin$/);
+  await page.goto("/app");
   await expect(
     page.getByRole("heading", { name: "Buat toko pertamamu." }),
   ).toBeVisible();
@@ -19,11 +21,12 @@ test("merchant → product → guest checkout → manual verification → comple
     page.getByRole("heading", { name: "Ringkasan toko" }),
   ).toBeVisible();
   await page.goto("/admin");
-  page.once("dialog", (d) => d.accept("7"));
+  await page.getByRole("button", { name: "Atur pilot" }).click();
+  await page.getByLabel("Lama pilot (hari)").fill("7");
   const pilot = page.waitForResponse(
     (r) => r.url().includes("/pilot") && r.request().method() === "POST",
   );
-  await page.getByRole("button", { name: "Atur masa pilot" }).click();
+  await page.getByRole("button", { name: "Simpan perubahan" }).click();
   expect((await pilot).ok()).toBe(true);
   await page.goto("/app/products");
   await page.getByRole("button", { name: "Tambah produk" }).click();
@@ -236,17 +239,17 @@ test("owner activates and ends the six-month UMKM access", async ({ page }) => {
   await page.getByLabel("Email", { exact: true }).fill("owner@local.test");
   await page.getByLabel("Kata sandi", { exact: true }).fill("LocalTest123");
   await page.getByRole("button", { name: "Masuk", exact: true }).click();
-  await expect(page.getByRole("heading", {name: "Ringkasan toko"})).toBeVisible();
-  await page.goto("/admin");
-  const row = page.locator(".live-order-row").filter({hasText: "toko-browser"});
-  page.once("dialog", d => d.accept());
+  await expect(page).toHaveURL(/admin$/);
+  const row = page.locator(".admin-record").filter({hasText: "toko-browser"});
+  await row.getByRole("button", {name: "UMKM 6 bulan"}).click();
   const activation = page.waitForResponse(r => r.url().endsWith("/pilot") && r.request().method() === "POST");
-  await row.getByRole("button", {name: "Aktifkan UMKM 6 bulan"}).click();
+  await page.getByRole("button", {name: "Aktifkan akses"}).click();
   expect((await activation).ok()).toBe(true);
   await expect(row.getByText(/Pilot sampai/)).toBeVisible();
-  page.once("dialog", d => d.accept("0"));
+  await row.getByRole("button", {name: "Atur pilot"}).click();
+  await page.getByLabel("Lama pilot (hari)").fill("0");
   const ending = page.waitForResponse(r => r.url().endsWith("/pilot") && r.request().method() === "POST");
-  await row.getByRole("button", {name: "Atur masa pilot"}).click();
+  await page.getByRole("button", {name: "Simpan perubahan"}).click();
   expect((await ending).ok()).toBe(true);
   await expect(row.getByText(/Pilot sampai/)).toHaveCount(0);
 });

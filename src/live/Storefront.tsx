@@ -666,6 +666,32 @@ function LiveProduct({
           </button>
         </div>
       </div>
+      <div className="live-mobile-buybar" aria-label="Pembelian cepat">
+        <div className="live-mobile-buybar-price">
+          <span>Harga</span>
+          <strong>{rupiah(v?.price_override_idr ?? p.price_idr)}</strong>
+        </div>
+        <button
+          className="live-mobile-cart"
+          aria-label="Tambah ke keranjang"
+          disabled={!v || stock < 1 || quantity < 1 || quantity > stock || !Number.isInteger(quantity)}
+          onClick={() => v && add(v, quantity)}
+        >
+          <Icon name="bag" size={21} />
+        </button>
+        <button
+          className="live-mobile-checkout"
+          disabled={!v || stock < 1 || quantity < 1 || quantity > stock || !Number.isInteger(quantity)}
+          onClick={() => {
+            if (v) {
+              add(v, quantity);
+              navigate(base + "/checkout");
+            }
+          }}
+        >
+          Beli sekarang <Icon name="arrow-right" size={17} />
+        </button>
+      </div>
     </section>
   );
 }
