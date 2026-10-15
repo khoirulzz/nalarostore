@@ -607,8 +607,13 @@ function ProductEditor({
   }
   async function save(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    if (gallery.some((photo) => !photo.url.trim())) {
+      setError("Masih ada foto galeri tanpa link. Lengkapi atau hapus foto kosong terlebih dahulu.");
+      return;
+    }
     const f = new FormData(e.currentTarget);
     setBusy(true);
+    setError("");
     try {
       await api(
         `/api/merchant/stores/${sid}/products${product ? "/" + product.id : ""}`,
@@ -882,7 +887,19 @@ function ProductEditor({
             <div className="variant-row seller-variant-card" key={v.id || i}>
               <div className="seller-variant-title">
                 <span>Varian {String(i + 1).padStart(2, "0")}</span>
-                <span className="seller-variant-meta">{v.reserved_qty || 0} dalam pesanan</span>
+                {variants.length > 1 && !v.id ? (
+                  <button
+                    type="button"
+                    className="seller-remove-variant"
+                    aria-label={`Hapus varian ${i + 1}`}
+                    disabled={busy}
+                    onClick={() => setVariants((previous) => previous.filter((_, current) => current !== i))}
+                  >
+                    <Icon name="close" size={15} /> Hapus varian
+                  </button>
+                ) : (
+                  <span className="seller-variant-meta">{v.reserved_qty || 0} dalam pesanan</span>
+                )}
               </div>
               <label>
                 SKU
