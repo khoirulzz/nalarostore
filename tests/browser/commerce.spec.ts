@@ -9,7 +9,7 @@ test("merchant → product → guest checkout → manual verification → comple
   await page.getByLabel("Email", { exact: true }).fill("owner@local.test");
   await page.getByLabel("Kata sandi", { exact: true }).fill("LocalTest123");
   await page.getByRole("button", { name: "Masuk", exact: true }).click();
-  await expect(page).toHaveURL(/\\/admin$/);
+  await expect(page).toHaveURL(/admin$/);
   await page.goto("/app");
   await expect(
     page.getByRole("heading", { name: "Buat toko pertamamu." }),
@@ -238,7 +238,7 @@ test("owner activates and ends the six-month UMKM access", async ({ page }) => {
   await page.getByLabel("Email", { exact: true }).fill("owner@local.test");
   await page.getByLabel("Kata sandi", { exact: true }).fill("LocalTest123");
   await page.getByRole("button", { name: "Masuk", exact: true }).click();
-  await expect(page).toHaveURL(/\\/admin$/);
+  await expect(page).toHaveURL(/admin$/);
   const row = page.locator(".admin-record").filter({hasText: "toko-browser"});
   page.once("dialog", d => d.accept());
   const activation = page.waitForResponse(r => r.url().endsWith("/pilot") && r.request().method() === "POST");
