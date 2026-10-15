@@ -11,6 +11,7 @@ import {
   type Invoice,
   type Store,
 } from "./api";
+type AdminAction = { kind: "invoice" | "domain" | "pilot" | "umkm"; id: string };
 const adminTabs: { key: string; label: string; short: string; icon: IconName }[] = [
   { key: "overview", label: "Operasional", short: "Beranda", icon: "home" },
   { key: "plans", label: "Paket & harga", short: "Paket", icon: "credit-card" },
@@ -45,7 +46,11 @@ function AdminPanel() {
     [error, setError] = useState(""),
     [editing, setEditing] = useState<Plan | null | false>(false),
     [lead, setLead] = useState<Lead | null>(null),
-    [search, setSearch] = useState("");
+    [search, setSearch] = useState(""),
+    [action, setAction] = useState<AdminAction | null>(null),
+    [pilotDays, setPilotDays] = useState("7"),
+    [actionBusy, setActionBusy] = useState(false),
+    [actionError, setActionError] = useState("");
   const overview = useData<{
       stores: Store[];
       invoices: Invoice[];
@@ -62,60 +67,42 @@ function AdminPanel() {
         next_attempt_at: string;
       }[];
     }>(tab === "outbox" ? "/api/admin/outbox" : null, rev);
-  async function verify(id: string) {
-    if (!window.confirm("Dana invoice langganan telah diterima dan diperiksa?"))
-      return;
-    try {
-      await api(`/api/admin/invoices/${id}/verify`, "POST", {});
-      setRev((r) => r + 1);
-    } catch (e) {
-      setError((e as Error).message);
-    }
+  function openAction(kind: AdminAction["kind"], id: string) {
+    setAction({ kind, id });
+    setPilotDays("7");
+    setActionError("");
   }
-  async function domain(sid: string) {
-    if (
-      !window.confirm(
-        "DNS, route Worker, dan sertifikat HTTPS subdomain ini sudah diuji?",
-      )
-    )
-      return;
+  async function submitAction() {
+    if (!action || actionBusy) return;
+    let endpoint = "";
+    let payload: { days?: number; months?: number; verified?: boolean } = {};
+    if (action.kind === "pilot") {
+      const days = Number(pilotDays);
+      if (!Number.isInteger(days) || days < 0 || days > 90 || pilotDays.trim() === "") {
+        setActionError("Isi jumlah hari dari 0 sampai 90.");
+        return;
+      }
+      endpoint = `/api/admin/stores/${action.id}/pilot`;
+      payload = { days };
+    } else if (action.kind === "umkm") {
+      endpoint = `/api/admin/stores/${action.id}/pilot`;
+      payload = { months: 6 };
+    } else if (action.kind === "domain") {
+      endpoint = `/api/admin/stores/${action.id}/domain`;
+      payload = { verified: true };
+    } else {
+      endpoint = `/api/admin/invoices/${action.id}/verify`;
+    }
+    setActionBusy(true);
+    setActionError("");
     try {
-      await api(`/api/admin/stores/${sid}/domain`, "POST", { verified: true });
+      await api(endpoint, "POST", payload);
+      setAction(null);
       setRev((r) => r + 1);
     } catch (e) {
-      setError((e as Error).message);
-    }
-  }
-  async function pilot(sid: string) {
-    const value = window.prompt(
-      "Lama toko pilot dalam hari (1–90). Isi 0 untuk mengakhiri akses pilot.",
-      "7",
-    );
-    if (value === null) return;
-    const days = Number(value);
-    if (!Number.isInteger(days) || days < 0 || days > 90) {
-      setError("Isi 0–90 hari.");
-      return;
-    }
-    try {
-      await api(`/api/admin/stores/${sid}/pilot`, "POST", { days });
-      setRev((r) => r + 1);
-    } catch (e) {
-      setError((e as Error).message);
-    }
-  }
-  async function approveUmkm(sid: string) {
-    if (
-      !window.confirm(
-        "Peserta ini sudah ditinjau dan disetujui untuk program UMKM? Akses gratis akan berlaku enam bulan sejak hari ini.",
-      )
-    )
-      return;
-    try {
-      await api(`/api/admin/stores/${sid}/pilot`, "POST", { months: 6 });
-      setRev((r) => r + 1);
-    } catch (e) {
-      setError((e as Error).message);
+      setActionError((e as Error).message);
+    } finally {
+      setActionBusy(false);
     }
   }
   const storeCount = overview.value?.stores.length;
@@ -251,9 +238,9 @@ function AdminPanel() {
                         <Link className="admin-action-primary" to={"/s/" + store.slug}>
                           <Icon name="eye" size={16} /> Lihat toko
                         </Link>
-                        <button onClick={() => pilot(store.id)}>Atur pilot</button>
-                        <button onClick={() => approveUmkm(store.id)}>UMKM 6 bulan</button>
-                        <button onClick={() => domain(store.id)}>Verifikasi domain</button>
+                        <button onClick={() => openAction("pilot", store.id)}>Atur pilot</button>
+                        <button onClick={() => openAction("umkm", store.id)}>UMKM 6 bulan</button>
+                        <button onClick={() => openAction("domain", store.id)}>Verifikasi domain</button>
                       </div>
                     </article>
                   ))}
@@ -287,7 +274,7 @@ function AdminPanel() {
                       </div>
                       {["unpaid", "overdue"].includes(invoice.status) && (
                         <div className="admin-record-actions">
-                          <button className="admin-action-primary" onClick={() => verify(invoice.id)}>
+                          <button className="admin-action-primary" onClick={() => openAction("invoice", invoice.id)}>
                             <Icon name="check" size={16} /> Verifikasi pembayaran
                           </button>
                         </div>
@@ -442,6 +429,68 @@ function AdminPanel() {
             </div>
           ))}
       </main>
+      {action && (
+        <div className="admin-dialog-backdrop">
+          <section className="admin-dialog" role="dialog" aria-modal="true" aria-labelledby="admin-dialog-title">
+            <header className="admin-dialog-head">
+              <span className="admin-eyebrow">KONFIRMASI TINDAKAN</span>
+              <button type="button" aria-label="Tutup dialog" onClick={() => setAction(null)} disabled={actionBusy}>
+                <Icon name="close" size={19} />
+              </button>
+            </header>
+            <h2 id="admin-dialog-title">
+              {action.kind === "pilot"
+                ? "Atur masa pilot"
+                : action.kind === "umkm"
+                  ? "Aktifkan program UMKM"
+                  : action.kind === "domain"
+                    ? "Verifikasi subdomain"
+                    : "Verifikasi pembayaran"}
+            </h2>
+            <p>
+              {action.kind === "pilot"
+                ? "Tentukan jumlah hari akses pilot. Gunakan 0 hari untuk mengakhiri akses."
+                : action.kind === "umkm"
+                  ? "Pastikan peserta sudah ditinjau dan disetujui. Akses gratis berlangsung enam bulan sejak hari ini."
+                  : action.kind === "domain"
+                    ? "Lanjutkan hanya jika DNS, route Worker, dan sertifikat HTTPS telah diuji."
+                    : "Lanjutkan hanya jika dana pembayaran invoice telah diterima dan diperiksa."}
+            </p>
+            <form onSubmit={(e) => { e.preventDefault(); void submitAction(); }}>
+              {action.kind === "pilot" && (
+                <label className="admin-dialog-input">
+                  Lama pilot (hari)
+                  <input
+                    type="number"
+                    min={0}
+                    max={90}
+                    step={1}
+                    required
+                    inputMode="numeric"
+                    value={pilotDays}
+                    onChange={(e) => setPilotDays(e.target.value)}
+                  />
+                </label>
+              )}
+              {actionError && <p className="live-error" role="alert">{actionError}</p>}
+              <div className="admin-dialog-actions">
+                <button type="button" className="admin-dialog-cancel" onClick={() => setAction(null)} disabled={actionBusy}>
+                  Batal
+                </button>
+                <button type="submit" className="admin-dialog-submit" disabled={actionBusy}>
+                  {actionBusy
+                    ? "Memproses…"
+                    : action.kind === "pilot"
+                      ? "Simpan perubahan"
+                      : action.kind === "umkm"
+                        ? "Aktifkan akses"
+                        : "Ya, verifikasi"}
+                </button>
+              </div>
+            </form>
+          </section>
+        </div>
+      )}
       <nav className="admin-mobile-nav" aria-label="Navigasi admin mobile">
         {adminTabs.map((item) => (
           <button
