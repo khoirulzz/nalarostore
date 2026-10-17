@@ -2400,4 +2400,41 @@ describe("seller and buyer workspace isolation", () => {
     );
     expect(Number(utc.body.summary.revenue)).toBe(0);
   });
+  it("keeps a renamed product and variant in one ranking row", async () => {
+    await db.query(
+      "UPDATE orders SET payment_status='paid',order_status='confirmed',created_at='2026-10-17T18:00:00Z' WHERE store_id=$1",
+      [sid],
+    );
+    const row = (
+      await db.query(
+        "SELECT id FROM orders WHERE store_id=$1 ORDER BY id LIMIT 1",
+        [sid],
+      )
+    )[0];
+    await db.query(
+      "UPDATE order_items SET name_snapshot='Nama Lama',variant_snapshot='Ukuran Lama' WHERE store_id=$1 AND order_id=$2",
+      [sid, row.id],
+    );
+    await db.query(
+      "UPDATE products SET name='Nama Produk Baru' WHERE id=$1 AND store_id=$2",
+      [pid, sid],
+    );
+    await db.query(
+      "UPDATE product_variants SET option_label='L' WHERE id=$1 AND store_id=$2",
+      [vid, sid],
+    );
+    const result = await request(
+      `/api/merchant/stores/${sid}/analytics?from=2026-10-18&to=2026-10-18`,
+      "GET",
+      undefined,
+      cookieA,
+    );
+    expect(result.status).toBe(200);
+    expect(result.body.top_products).toHaveLength(1);
+    expect(result.body.top_variants).toHaveLength(1);
+    expect(result.body.top_products[0].name).toBe("Nama Produk Baru");
+    expect(result.body.top_products[0].units).toBe(2);
+    expect(result.body.top_variants[0].variant).toBe("L");
+    expect(Number(result.body.top_products[0].revenue)).toBe(200000);
+  });
 });
