@@ -4054,3 +4054,57 @@ textarea:focus-visible {
     }
   }
 }
+.seller-notification-bell {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  font-size: 12px;
+}
+.seller-notification-bell b {
+  background: #fff;
+  color: #b50936;
+  padding: 3px 6px;
+  border-radius: 12px;
+  font-size: 10px;
+}
+.workspace .workspace-topbar {
+  background: linear-gradient(120deg, #d30c3f, #f51a56);
+  color: #fff;
+  gap: 12px;
+}
+.workspace .workspace-topbar .workspace-current-store {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.workspace .workspace-topbar .mobile-menu,
+.seller-guide-replay {
+  background: transparent;
+  color: inherit;
+  border: 0;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 10px;
+}
+@media (max-width: 650px) {
+  .workspace-topbar .work-view-store {
+    font-size: 0;
+    gap: 0;
+    padding: 8px;
+  }
+  .workspace-topbar .work-view-store .icon {
+    width: 20px;
+    height: 20px;
+  }
+  .workspace .workspace-topbar {
+    gap: 6px;
+  }
+  .seller-notification-bell {
+    min-height: 44px;
+    min-width: 32px;
+    justify-content: center;
+  }
+}

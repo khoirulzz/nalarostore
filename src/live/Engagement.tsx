@@ -2,6 +2,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 import { api, useData } from "./api";
 import { auth } from "../lib/firebase";
+import { Icon } from "../components/Icon";
 
 type Conversation = {
   id: string;
@@ -21,6 +22,7 @@ function usePoll<T>(
   path: string | null,
   headers: Record<string, string> = {},
   revision = 0,
+  interval = 8000,
 ) {
   const [value, setValue] = useState<T | null>(null),
     [loadedPath, setLoadedPath] = useState<string | null>(null),
@@ -49,7 +51,7 @@ function usePoll<T>(
       } catch (e) {
         if (active) setError((e as Error).message);
       } finally {
-        if (active) timer = setTimeout(() => void refresh(), 8000);
+        if (active) timer = setTimeout(() => void refresh(), interval);
       }
     }
     void refresh();
@@ -57,7 +59,7 @@ function usePoll<T>(
       active = false;
       clearTimeout(timer);
     };
-  }, [path, encoded, revision]);
+  }, [path, encoded, revision, interval]);
   return { value: loadedPath === path ? value : null, error };
 }
 export function ResponsibleProfile({ sid }: { sid: string }) {
@@ -536,5 +538,31 @@ export function Notifications({ sid }: { sid: string }) {
         <p>Belum ada notifikasi operasional.</p>
       )}
     </>
+  );
+}
+
+export function NotificationBell({
+  sid,
+  contextQuery,
+}: {
+  sid: string;
+  contextQuery: string;
+}) {
+  const data = usePoll<{ unread: number }>(
+    `/api/merchant/stores/${sid}/notifications`,
+    {},
+    0,
+    30000,
+  );
+  const unread = data.value?.unread || 0;
+  return (
+    <Link
+      className="seller-notification-bell"
+      to={"/app/notifications" + contextQuery}
+      aria-label={`Notifikasi${unread ? ", " + unread + " belum dibaca" : ""}`}
+    >
+      <Icon name="alert" size={20} />
+      {unread > 0 && <b>{unread > 99 ? "99+" : unread}</b>}
+    </Link>
   );
 }

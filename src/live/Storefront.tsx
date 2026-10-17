@@ -760,6 +760,12 @@ function LiveCheckout({
     total = subtotal + shipping;
   const buyer = useBuyerSession();
   const storageKey = "checkout-v1:" + endpoint + ":" + (buyer?.uid || "guest");
+  const [contact, setContact] = useState({
+    name: "",
+    phone: "",
+    email: buyer?.email || "",
+    address: "",
+  });
   const [idempotency] = useState(() => {
     let key: string | null = null;
     try {
@@ -819,7 +825,16 @@ function LiveCheckout({
       </Link>
       <h1>Selesaikan pemesanan.</h1>
       <p>Bayar melalui rekening atau QRIS toko setelah pesanan diterima.</p>
-      <CheckoutAccount />
+      <CheckoutAccount
+        onAddress={(a) =>
+          setContact({
+            name: a.recipient_name,
+            phone: a.contact_phone,
+            email: buyer?.email || "",
+            address: a.address,
+          })
+        }
+      />
       {!enabled && (
         <p className="notice">
           Pemesanan belum dibuka. Hubungi toko untuk informasi.
@@ -839,6 +854,10 @@ function LiveCheckout({
               <input
                 required
                 name="name"
+                value={contact.name}
+                onChange={(e) =>
+                  setContact((c) => ({ ...c, name: e.target.value }))
+                }
                 minLength={2}
                 maxLength={120}
                 autoComplete="name"
@@ -849,6 +868,10 @@ function LiveCheckout({
               <input
                 required
                 name="phone"
+                value={contact.phone}
+                onChange={(e) =>
+                  setContact((c) => ({ ...c, phone: e.target.value }))
+                }
                 type="tel"
                 pattern="[+0-9 ()-]{8,25}"
                 autoComplete="tel"
@@ -856,7 +879,15 @@ function LiveCheckout({
             </label>
             <label>
               Email (opsional)
-              <input name="email" type="email" autoComplete="email" />
+              <input
+                name="email"
+                type="email"
+                autoComplete="email"
+                value={contact.email}
+                onChange={(e) =>
+                  setContact((c) => ({ ...c, email: e.target.value }))
+                }
+              />
               <small>Email digunakan untuk pembaruan pesanan.</small>
             </label>
           </fieldset>
@@ -884,6 +915,10 @@ function LiveCheckout({
                 <textarea
                   required
                   name="address"
+                  value={contact.address}
+                  onChange={(e) =>
+                    setContact((c) => ({ ...c, address: e.target.value }))
+                  }
                   minLength={12}
                   maxLength={2000}
                   autoComplete="street-address"

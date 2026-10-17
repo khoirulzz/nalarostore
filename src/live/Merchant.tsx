@@ -7,7 +7,12 @@ import { RequireAuth, AccountSecurity } from "./Auth";
 import { authorizationHeaders, requireFirebase } from "../lib/firebase";
 import { signOut } from "firebase/auth";
 import { Customers, Analytics, ExportButton } from "./Operations";
-import { ResponsibleProfile, Conversations, Notifications } from "./Engagement";
+import {
+  ResponsibleProfile,
+  Conversations,
+  Notifications,
+  NotificationBell,
+} from "./Engagement";
 import { SellerGuide } from "./SellerGuide";
 import {
   api,
@@ -205,9 +210,6 @@ function Workspace() {
       </aside>
       <div className="workspace-main">
         <header className="workspace-topbar">
-          <button type="button" onClick={() => setGuideReplay((r) => r + 1)}>
-            Panduan
-          </button>
           <button
             className="mobile-menu"
             onClick={() => setDrawer(true)}
@@ -221,6 +223,17 @@ function Workspace() {
           >
             {store?.name || "Workspace"}
           </span>
+          <button
+            className="seller-guide-replay"
+            type="button"
+            aria-label="Panduan fitur"
+            onClick={() => setGuideReplay((r) => r + 1)}
+          >
+            <Icon name="help" size={20} />
+          </button>
+          {sid && (
+            <NotificationBell key={sid} sid={sid} contextQuery={contextQuery} />
+          )}
           {store && (
             <Link
               to={"/preview/" + store.id}
@@ -333,7 +346,7 @@ function Workspace() {
           onClick={() => setDrawer(false)}
         />
       )}
-      {store && account.value?.user.id && !adminStore && (
+      {store && account.value?.user.id && !adminStore && section !== "new" && (
         <SellerGuide userId={account.value.user.id} replay={guideReplay} />
       )}
     </div>

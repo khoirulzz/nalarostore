@@ -25,7 +25,11 @@ type Address = {
   address: string;
   is_default: boolean;
 };
-export function CheckoutAccount() {
+export function CheckoutAccount({
+  onAddress,
+}: {
+  onAddress: (address: Address) => void;
+}) {
   const user = useBuyerSession();
   const addresses = useData<{ addresses: Address[] }>(
     user?.emailVerified ? "/api/customer/addresses" : null,
@@ -34,22 +38,6 @@ export function CheckoutAccount() {
     "/account",
     import.meta.env.VITE_APP_ORIGIN || "https://store.nalaro.digital",
   ).href;
-  function fill(a: Address) {
-    const form = document.querySelector<HTMLFormElement>(".checkout-layout");
-    for (const [key, value] of Object.entries({
-      name: a.recipient_name,
-      phone: a.contact_phone,
-      email: user?.email || "",
-      address: a.address,
-    })) {
-      const field = form?.elements.namedItem(key);
-      if (
-        field instanceof HTMLInputElement ||
-        field instanceof HTMLTextAreaElement
-      )
-        field.value = value;
-    }
-  }
   return (
     <section className="notice checkout-account">
       <strong>
@@ -81,7 +69,7 @@ export function CheckoutAccount() {
               const a = addresses.value?.addresses.find(
                 (a) => a.id === e.target.value,
               );
-              if (a) fill(a);
+              if (a) onAddress(a);
             }}
           >
             <option value="">Pilih alamat</option>
