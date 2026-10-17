@@ -1,0 +1,207 @@
+.seller-center-section {
+  padding-block: 88px;
+  background: #170b10;
+  color: #fff7f9;
+  overflow: clip;
+  scroll-margin-top: 72px !important;
+}
+.seller-center-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+  align-items: center;
+  gap: clamp(40px, 6vw, 100px);
+}
+.seller-center-copy {
+  min-width: 0;
+  padding-block: 16px;
+}
+.seller-center-copy h2 {
+  font:
+    650 clamp(40px, 4.15vw, 67px)/1.07 "Manrope",
+    sans-serif;
+  letter-spacing: -0.065em;
+  margin: 0 0 30px;
+}
+.seller-center-copy h2 em {
+  color: #ff799c;
+  font-style: normal;
+}
+.seller-center-copy .seller-center-intro {
+  font-size: 19px;
+  font-weight: 650;
+  color: #fff7f9;
+  margin: 0 0 10px;
+}
+.seller-center-copy > p {
+  max-width: 440px;
+  color: #cdbcc2;
+  font-size: 16px;
+  line-height: 1.8;
+}
+.seller-center-benefits {
+  list-style: none;
+  margin: 28px 0 34px;
+  padding: 0;
+  max-width: 460px;
+}
+.seller-center-benefits li {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding: 15px 0;
+  border-top: 1px solid #ffffff20;
+  font-size: 14px;
+  line-height: 1.6;
+}
+.seller-center-benefits .icon {
+  color: #ff92ae;
+}
+.seller-center-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+  align-items: center;
+}
+.seller-app-button {
+  background: #ff3568;
+  color: #18070d;
+  border-radius: 0;
+}
+.seller-app-button:hover {
+  background: #ff799c;
+}
+.seller-web-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  border-bottom: 1px solid #fff7f96b;
+  padding-block: 8px;
+}
+.seller-web-link:hover {
+  color: #ff92ae;
+}
+.seller-center-copy .seller-center-availability {
+  color: #bda6ae;
+  max-width: 390px;
+  font-size: 12px;
+  line-height: 1.65;
+  margin: 18px 0 0;
+}
+.seller-center-visual {
+  position: relative;
+  min-width: 0;
+  margin: 0;
+  background: radial-gradient(ellipse at 50% 45%, #431122, #210d15 65%);
+  border: 1px solid #ffffff0f;
+}
+.seller-center-motion {
+  width: 100%;
+  height: 760px;
+}
+.seller-center-visual figcaption {
+  text-align: center;
+  padding: 0 16px 22px;
+  margin-top: -4px;
+  font-size: 11px;
+  line-height: 1.5;
+  color: #bda6ae;
+}
+.seller-motion-placeholder {
+  height: 760px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  font:
+    600 20px/1.1 "Manrope",
+    sans-serif;
+  color: #ffedf2;
+}
+.seller-motion-placeholder img {
+  border-radius: 12px;
+}
+@media (min-width: 1440px) {
+  .seller-center-motion,
+  .seller-motion-placeholder {
+    height: 830px;
+  }
+}
+@media (max-width: 1000px) {
+  .seller-center-layout {
+    gap: 32px;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+  .seller-center-copy h2 {
+    font-size: clamp(36px, 4.5vw, 50px);
+  }
+  .seller-center-motion,
+  .seller-motion-placeholder {
+    height: 690px;
+  }
+  .seller-center-actions {
+    gap: 12px 20px;
+  }
+}
+@media (max-width: 780px) {
+  .seller-center-section {
+    padding-block: 58px;
+  }
+  .seller-center-layout {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 34px;
+  }
+  .seller-center-copy {
+    padding: 0;
+  }
+  .seller-center-copy h2 {
+    font-size: clamp(38px, 7.6vw, 57px);
+    margin-bottom: 24px;
+  }
+  .seller-center-copy h2 em br {
+    display: none;
+  }
+  .seller-center-copy > p {
+    max-width: 560px;
+    font-size: 15px;
+  }
+  .seller-center-benefits {
+    max-width: 560px;
+    margin: 22px 0 26px;
+  }
+  .seller-center-visual {
+    width: min(100%, 500px);
+    justify-self: center;
+  }
+  .seller-center-motion,
+  .seller-motion-placeholder {
+    height: clamp(630px, 160vw, 800px);
+  }
+}
+@media (max-width: 390px) {
+  .seller-center-copy h2 {
+    font-size: 36px;
+  }
+  .seller-center-benefits li {
+    font-size: 13px;
+    gap: 12px;
+  }
+  .seller-center-actions {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .seller-app-button {
+    width: 100%;
+    padding-inline: 18px;
+  }
+  .seller-center-motion,
+  .seller-motion-placeholder {
+    height: 620px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .seller-app-button:hover {
+    transform: none;
+  }
+}

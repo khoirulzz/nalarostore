@@ -286,3 +286,36 @@ test("owner activates and ends the six-month UMKM access", async ({ page }) => {
   expect((await ending).ok()).toBe(true);
   await expect(row.getByText(/Pilot sampai/)).toHaveCount(0);
 });
+
+test("Seller Center motion fits phones and desktop, respects reduced motion and exposes honest app access", async ({ page }) => {
+  await page.emulateMedia({reducedMotion: "reduce"});
+  for (const width of [320, 390, 768, 1024, 1440]) {
+    await page.setViewportSize({width, height: 900});
+    await page.goto("/");
+    const section = page.locator("#seller-center");
+    await section.scrollIntoViewIfNeeded();
+    await expect(section.getByRole("heading", {name: /Tokomu ikut jalan/})).toBeVisible();
+    const play = section.getByRole("button", {name: "Putar animasi", exact: true});
+    await expect(play).toBeVisible();
+    await expect(section.locator("#omzet")).toHaveText("Rp4.650.000");
+    const host = section.locator(".seller-center-motion");
+    expect(await host.evaluate(el => el.shadowRoot!.querySelector(".motion-stage")!.classList.contains("motion-static"))).toBe(true);
+    const contained = await host.evaluate(el => {
+      const phone = el.shadowRoot!.querySelector(".phone")!.getBoundingClientRect();
+      const stage = el.getBoundingClientRect();
+      return phone.left >= stage.left && phone.right <= stage.right && phone.top >= stage.top && phone.bottom <= stage.bottom;
+    });
+    expect(contained).toBe(true);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+    await expect(section.getByRole("link", {name: /Dapatkan app Android/})).toHaveAttribute("href", /^https:\/\/wa\.me\/6285771298582\?text=/);
+    await expect(section.getByRole("link", {name: /Daftar lewat web/})).toHaveAttribute("href", "/register");
+    await section.screenshot({path: `test-results/seller-center-${width}.png`});
+    await play.click();
+    await expect(section.getByRole("button", {name: "Jeda animasi", exact: true})).toBeVisible();
+    await section.getByRole("button", {name: "Jeda animasi", exact: true}).click();
+    await expect(play).toBeVisible();
+    await section.getByRole("button", {name: "Putar ulang", exact: true}).click();
+    await expect(section.locator("#intro")).not.toHaveClass(/out/);
+    await expect(section.locator("#omzet")).toHaveText("Rp0");
+  }
+});
