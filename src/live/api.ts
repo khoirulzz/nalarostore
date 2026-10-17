@@ -64,7 +64,6 @@ export function useData<T>(path: string | null, revision = 0) {
     let current = true;
     setLoading(true);
     setError("");
-    setValue(null);
     if (!path) {
       setLoading(false);
       return () => {

@@ -4108,3 +4108,17 @@ textarea:focus-visible {
     justify-content: center;
   }
 }
+.live-store .store-account-tools {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  min-width: 0;
+}
+.live-store .store-account-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 40px;
+  min-height: 44px;
+}

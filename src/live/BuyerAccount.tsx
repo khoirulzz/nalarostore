@@ -34,10 +34,12 @@ export function CheckoutAccount({
   const addresses = useData<{ addresses: Address[] }>(
     user?.emailVerified ? "/api/customer/addresses" : null,
   );
-  const accountURL = new URL(
-    "/account",
-    import.meta.env.VITE_APP_ORIGIN || "https://store.nalaro.digital",
-  ).href;
+  const accountURL = window.location.pathname.startsWith("/s/")
+    ? "/account"
+    : new URL(
+        "/account",
+        import.meta.env.VITE_APP_ORIGIN || "https://store.nalaro.digital",
+      ).href;
   return (
     <section className="notice checkout-account">
       <strong>
@@ -367,11 +369,7 @@ function Account() {
           <>
             {profile.error && <p role="alert">{profile.error}</p>}
             {profile.value && (
-              <form
-                key={revision}
-                className="work-section live-form"
-                onSubmit={saveProfile}
-              >
+              <form className="work-section live-form" onSubmit={saveProfile}>
                 <h2>Profil pembeli</h2>
                 <label>
                   Nama lengkap

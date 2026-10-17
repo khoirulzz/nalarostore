@@ -68,10 +68,15 @@ export async function handleAPI(
     await db.query("SELECT pilot_until,umkm_activated_at FROM stores LIMIT 0");
     await db.query("SELECT billing_mode FROM store_subscriptions LIMIT 0");
     await db.query("SELECT id FROM platform_settings WHERE id=true");
+    await db.query("SELECT buyer_user_id FROM orders LIMIT 0");
+    await db.query(
+      "SELECT c.buyer_user_id,p.store_id FROM customer_conversations c CROSS JOIN store_responsible_profiles p LIMIT 0",
+    );
     return json({
       status: "ok",
       phase: "1-3",
       database: "connected",
+      schema: 7,
       liveCheckout: env.ENABLE_LIVE_CHECKOUT === "true",
     });
   }
@@ -85,6 +90,9 @@ export async function handleAPI(
       email: !!env.EMAIL,
       subscriptionBilling: true,
       customInquiry: true,
+      buyerAccounts: true,
+      customerChat: true,
+      notifications: "foreground",
     });
   const newChat = path.match(
     /^\/api\/public\/(?:stores\/([a-z0-9-]+)|store)\/conversations$/,

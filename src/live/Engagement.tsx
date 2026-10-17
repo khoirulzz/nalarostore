@@ -31,7 +31,6 @@ function usePoll<T>(
   useEffect(() => {
     let active = true,
       timer: ReturnType<typeof setTimeout>;
-    setValue(null);
     setError("");
     async function refresh() {
       try {

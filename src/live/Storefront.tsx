@@ -206,14 +206,27 @@ export function LiveStore({
               store.name
             )}
           </Link>
-          <Link
-            className="store-bag"
-            to={base + "/cart"}
-            aria-label={"Keranjang " + count + " item"}
-          >
-            <Icon name="bag" />
-            {count > 0 && <span>{count}</span>}
-          </Link>
+          <div className="store-account-tools">
+            {!preview && (
+              <a
+                className="store-account-link"
+                href={
+                  hostname ? "https://store.nalaro.digital/account" : "/account"
+                }
+                aria-label="Akun pembeli"
+              >
+                <Icon name="users" size={20} />
+              </a>
+            )}
+            <Link
+              className="store-bag"
+              to={base + "/cart"}
+              aria-label={"Keranjang " + count + " item"}
+            >
+              <Icon name="bag" />
+              {count > 0 && <span>{count}</span>}
+            </Link>
+          </div>
         </div>
       </header>
       <main>
@@ -888,7 +901,10 @@ function LiveCheckout({
                   setContact((c) => ({ ...c, email: e.target.value }))
                 }
               />
-              <small>Email digunakan untuk pembaruan pesanan.</small>
+              <small>
+                Email dicantumkan pada pesanan. Status tersedia melalui tautan
+                pelacakan.
+              </small>
             </label>
           </fieldset>
           <fieldset>
