@@ -36,7 +36,7 @@ export async function salesAnalytics(db: DB, sid: string, url: URL) {
   );
   const top = async (variants: boolean) =>
     db.query(
-      `SELECT p.id AS product_id,${variants ? "v.id AS variant_id,i.variant_snapshot AS variant," : ""}i.name_snapshot AS name,sum(i.quantity)::int AS units,sum(i.line_total_idr) AS revenue FROM order_items i JOIN orders o ON o.id=i.order_id AND o.store_id=i.store_id JOIN product_variants v ON v.id=i.variant_id AND v.store_id=i.store_id JOIN products p ON p.id=v.product_id AND p.store_id=v.store_id WHERE o.store_id=$1 AND o.${paid.replaceAll("order_status", "o.order_status")} AND o.created_at>=($2::date::timestamp AT TIME ZONE $4) AND o.created_at<(($3::date+1)::timestamp AT TIME ZONE $4) GROUP BY p.id,i.name_snapshot${variants ? ",v.id,i.variant_snapshot" : ""} ORDER BY units DESC,revenue DESC,p.id LIMIT 20`,
+      `SELECT p.id AS product_id,${variants ? "v.id AS variant_id,v.option_label AS variant," : ""}p.name AS name,sum(i.quantity)::int AS units,sum(i.line_total_idr) AS revenue FROM order_items i JOIN orders o ON o.id=i.order_id AND o.store_id=i.store_id JOIN product_variants v ON v.id=i.variant_id AND v.store_id=i.store_id JOIN products p ON p.id=v.product_id AND p.store_id=v.store_id WHERE o.store_id=$1 AND o.${paid.replaceAll("order_status", "o.order_status")} AND o.created_at>=($2::date::timestamp AT TIME ZONE $4) AND o.created_at<(($3::date+1)::timestamp AT TIME ZONE $4) GROUP BY p.id${variants ? ",v.id" : ""} ORDER BY units DESC,revenue DESC,p.id LIMIT 20`,
       [sid, from, to, timezone],
     );
   const top_products = await top(false),
