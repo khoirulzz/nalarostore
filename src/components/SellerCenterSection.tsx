@@ -51,7 +51,7 @@ export function SellerCenterSection() {
             Tokomu ikut jalan.
             <br />
             <em>
-              Kelolanya dari
+              Kelolanya dari{" "}
               <br />
               genggaman.
             </em>
