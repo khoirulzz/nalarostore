@@ -60,11 +60,8 @@ function tick(ms = 100) {
   frames.clear();
   callbacks.forEach((callback) => callback(time));
 }
-function button(id: string) {
-  return root.getElementById(id) as HTMLButtonElement;
-}
 
-it("plays the supplied dashboard/product sequence and stops scheduling frames when paused or offscreen", () => {
+it("plays the supplied dashboard/product sequence and stops scheduling frames while offscreen, then resumes and loops automatically", () => {
   motion = mountSellerMotion(root);
   expect(frames.size).toBe(0);
   motion.setActive(true);
@@ -72,21 +69,19 @@ it("plays the supplied dashboard/product sequence and stops scheduling frames wh
   expect(root.getElementById("omzet")?.textContent).toBe("Rp4.650.000");
   expect(root.getElementById("nOrd")?.textContent).toBe("13");
   expect(root.getElementById("todo")?.classList.contains("alert")).toBe(true);
-  button("bPlay").click();
+  motion.setActive(false);
   expect(frames.size).toBe(0);
   const amount = root.getElementById("omzet")?.textContent;
   tick(5000);
   expect(root.getElementById("omzet")?.textContent).toBe(amount);
-  button("bPlay").click();
+  motion.setActive(true);
   for (let n = 0; n < 75; n++) tick();
   expect(root.getElementById("vProd")?.classList.contains("on")).toBe(true);
   expect(root.getElementById("p2")?.classList.contains("live")).toBe(true);
   motion.setActive(false);
   expect(frames.size).toBe(0);
   motion.setActive(true);
-  button("bRe").click();
-  tick();
-  tick();
+  for (let n = 0; n < 65; n++) tick();
   expect(root.getElementById("intro")?.classList.contains("out")).toBe(false);
   expect(root.getElementById("omzet")?.textContent).toBe("Rp0");
   motion.dispose();
@@ -95,16 +90,18 @@ it("plays the supplied dashboard/product sequence and stops scheduling frames wh
   expect(preferenceListeners.size).toBe(0);
 });
 
-it("shows a readable still frame for reduced motion and only plays after an explicit choice", () => {
+it("shows a readable still frame for reduced motion and responds to preference changes", () => {
   reduced = true;
   motion = mountSellerMotion(root);
   motion.setActive(true);
   expect(frames.size).toBe(0);
   expect(root.getElementById("omzet")?.textContent).toBe("Rp4.650.000");
   expect(root.getElementById("intro")?.classList.contains("out")).toBe(true);
-  expect(button("bPlay").textContent).toBe("Putar animasi");
-  button("bPlay").click();
+  expect(root.querySelector("button")).toBeNull();
+  reduced = false;
+  for (const listener of preferenceListeners) listener();
   expect(frames.size).toBe(1);
+  reduced = true;
   for (const listener of preferenceListeners) listener();
   expect(frames.size).toBe(0);
 });

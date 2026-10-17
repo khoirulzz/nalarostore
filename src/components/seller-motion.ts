@@ -25,9 +25,7 @@ export function mountSellerMotion(root: ShadowRoot) {
     p2w = $("p2w"),
     p2 = $("p2"),
     add = $("btnAdd"),
-    dot = $("bdot"),
-    playButton = $("bPlay"),
-    replayButton = $("bRe");
+    dot = $("bdot");
   const segs = [...root.querySelectorAll<HTMLElement>("#stories b")];
   const preference = matchMedia("(prefers-reduced-motion: reduce)");
   let t = 0,
@@ -277,20 +275,7 @@ export function mountSellerMotion(root: ShadowRoot) {
     raf = 0;
     last = 0;
     stage.classList.toggle("motion-paused", paused || !active);
-    playButton.textContent = paused ? "Putar animasi" : "Jeda animasi";
-    playButton.setAttribute("aria-pressed", String(!paused));
     if (active && !paused && !disposed) raf = requestAnimationFrame(frame);
-  }
-  function play() {
-    paused = !paused;
-    stage.classList.remove("motion-static");
-    sync();
-  }
-  function replay() {
-    stage.classList.remove("motion-static");
-    reset();
-    paused = false;
-    sync();
   }
   function onPreference() {
     paused = preference.matches;
@@ -313,7 +298,7 @@ export function mountSellerMotion(root: ShadowRoot) {
     const scale = Math.max(
       0.1,
       Math.min(
-        (host.clientHeight - 108) / 812,
+        (host.clientHeight - 48) / 812,
         (host.clientWidth - 32) / 392,
         1,
       ),
@@ -324,8 +309,6 @@ export function mountSellerMotion(root: ShadowRoot) {
   }
   const resize = new ResizeObserver(fit);
   resize.observe(root.host);
-  playButton.addEventListener("click", play);
-  replayButton.addEventListener("click", replay);
   preference.addEventListener("change", onPreference);
   reset();
   if (paused) snapshot();
@@ -341,8 +324,6 @@ export function mountSellerMotion(root: ShadowRoot) {
       cancelAnimationFrame(raf);
       resize.disconnect();
       preference.removeEventListener("change", onPreference);
-      playButton.removeEventListener("click", play);
-      replayButton.removeEventListener("click", replay);
     },
   };
 }
