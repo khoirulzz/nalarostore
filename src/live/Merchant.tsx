@@ -46,11 +46,20 @@ const menus: { key: string; label: string; icon: IconName }[] = [
   { key: "account", label: "Keamanan akun", icon: "shield" },
 ];
 function Notice({ error }: { error: string }) {
+  const adminStore = new URLSearchParams(window.location.search).get(
+    "adminStore",
+  );
   return error ? (
     <p className="live-error" role="alert">
       {error}
       {/paket|[Ll]angganan|[Kk]uota/.test(error) && (
-        <Link className="seller-upgrade-link" to="/app/billing">
+        <Link
+          className="seller-upgrade-link"
+          to={
+            "/app/billing" +
+            (adminStore ? "?adminStore=" + encodeURIComponent(adminStore) : "")
+          }
+        >
           Lihat paket & upgrade <Icon name="arrow-right" size={15} />
         </Link>
       )}
@@ -236,7 +245,7 @@ function Workspace() {
           )}
           {store && (
             <Link
-              to={"/preview/" + store.id}
+              to={"/preview/" + store.id + contextQuery}
               target="_blank"
               className="work-view-store"
             >
