@@ -1023,8 +1023,8 @@ it("scopes draft preview, customer summaries, analytics and exports to authorize
   );
   const expected = (
     await db.query(
-      "SELECT COALESCE(sum(total_idr) FILTER(WHERE payment_status='paid'),0) AS revenue FROM orders WHERE store_id=$1",
-      [storeA],
+      "SELECT COALESCE(sum(total_idr) FILTER(WHERE payment_status='paid'),0) AS revenue FROM orders WHERE store_id=$1 AND created_at >= $2::date AND created_at < $3::date+interval '1 day'",
+      [storeA, analytics.body.from, analytics.body.to],
     )
   )[0];
   expect(Number(analytics.body.summary.revenue)).toBe(Number(expected.revenue));

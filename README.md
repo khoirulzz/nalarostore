@@ -20,7 +20,7 @@ Storefront/cart/checkout never consume production demo products. Customer paymen
 - The landing advertises an **application-based** six-month Free UMKM program, plus illustrative introductory monthly offers: Starter Rp69,000 (crossed-out comparison Rp199,000) and Growth Rp129,000 (comparison Rp399,000). These are marketing copy, **not** automatically published backend plans or subscription entitlements. The owner must verify genuine reference prices and activate matching billing packages and terms before launch.
 - `/program-umkm` collects program applications with existing abuse-protected public lead submission; the internal intake is tagged `[PENGAJUAN PROGRAM UMKM ...]` to distinguish it from archived custom requests. Selecting a participant and granting a full six-month free entitlement remain operator actions, not auto-activation.
 - `/legal/privasi`, `/legal/ketentuan` and `/legal/program-umkm` provide baseline policy text. They need owner/legal review before going live.
-- Each store's platform-hosted address is distinct. Custom domains require verified infrastructure, package eligibility and activation; the feature is **not** generally available. Mobile merchant access is through a browser, not a downloadable native app.
+- Each store's platform-hosted address is distinct. Custom domains require verified infrastructure, package eligibility and activation; the feature is **not** generally available. Merchant access is available through the browser and the separate Android Seller Center app. The landing section uses the owner-supplied motion design and links to a beta APK request through Nalaro WhatsApp until a public signed download is available.
 
 ## Local development
 
@@ -93,3 +93,20 @@ Tracking pages no longer depend on published catalog or subscription entitlement
 Merchant operations include paged/searchable/date-filtered orders, customer summaries, basic paid-order analytics, CSV export and printable order summaries. Export stays tenant-scoped and protects spreadsheet cells against formula input. Store and product HTML metadata are prepared in the Worker; full storefront SSR, advanced funnel analytics, staff invitation, gateway/shipping integration and more themes remain future work.
 
 Privacy/support/contract terms and plan amounts must be set by the owner; this implementation does not invent business promises or activate production checkout. Production Aiven migrations/Hyperdrive, real notification email, actual restore/load, DNS/TLS and physical-device checks remain separate release gates.
+
+## Seller Center landing presentation
+
+The Seller Center section reuses the owner's supplied HTML phone design, embedded
+product photography, SVG logo, UI and 23-second sequence. `SellerCenterSection`
+loads the separate motion chunk near the viewport; `SellerCenterMotion` isolates
+its styles in a shadow root. Playback stops offscreen and in background tabs,
+provides pause/replay controls, and starts on a still dashboard when reduced
+motion is enabled. No iframe or relaxed Content Security Policy is needed.
+
+The hero app CTA links to this section; store demos remain in the header, footer
+and dedicated demo section. The app supports registration, and web registration
+remains available beside the Android action. There is currently no public signed
+APK release in the app repository. `SELLER_APP_URL` points to the existing Nalaro
+WhatsApp number for requesting the Android beta; the displayed copy states this
+explicitly. Replace that URL **and its availability/button copy** when a public
+APK or store listing is ready. Do not link visitors to private CI artifacts.

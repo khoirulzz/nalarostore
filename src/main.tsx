@@ -32,6 +32,7 @@ import "./styles.css";
 import "./live/live.css";
 import { PublicPricing, UmkmApplication } from "./live/PublicOffers";
 import { LegalPage } from "./live/LegalPages";
+import { SellerCenterSection } from "./components/SellerCenterSection";
 const Auth = lazy(() =>
   import("./live/Auth").then((m) => ({ default: m.Auth })),
 );
@@ -156,6 +157,9 @@ function MarketingNav() {
           <a href="/#cara-kerja" onClick={() => setOpen(false)}>
             Cara kerja
           </a>
+          <a href="/#seller-center" onClick={() => setOpen(false)}>
+            Seller Center
+          </a>
           <a href="/#paket" onClick={() => setOpen(false)}>
             Harga paket
           </a>
@@ -202,6 +206,7 @@ function Footer() {
           <div className="footer-column">
             <h3>Jelajahi Nalaro Store</h3>
             <a href="/#fitur">Fitur toko</a>
+            <a href="/#seller-center">App Seller Center</a>
             <Link to="/demo/batiknalaro">Coba demo toko</Link>
             <a href="/#paket">Harga & paket</a>
             <a href="/#pertanyaan">Pertanyaan umum</a>
@@ -303,9 +308,9 @@ function Marketing() {
                 <Link to="/register" className="button button-orange">
                   Mulai buka toko <Icon name="arrow-up-right" size={19} />
                 </Link>
-                <Link to="/demo/batiknalaro" className="button button-ghost">
-                  Lihat demo toko <Icon name="arrow-right" size={18} />
-                </Link>
+                <a href="#seller-center" className="button button-ghost">
+                  App Android <Icon name="arrow-right" size={18} />
+                </a>
               </div>
               <div className="hero-foot">
                 <span className="hero-rule" />
@@ -516,7 +521,7 @@ function Marketing() {
                 di depan laptop.
               </p>
               <a className="text-link" href="/app">Buka dashboard toko <Icon name="arrow-up-right" size={18}/></a>
-              <span className="mobile-access-note">Akses lewat browser HP. Aplikasi native belum tersedia.</span>
+              <a className="mobile-access-note" href="#seller-center">Lebih suka pakai app? Kenali Seller Center untuk Android.</a>
             </div>
             <div className="mobile-access-visual" role="img" aria-label="Ilustrasi model muda Indonesia tersenyum saat melihat toko dari ponsel">
               <img src="/images/mobile-merchant.webp" alt="" loading="lazy"/>
@@ -556,6 +561,7 @@ function Marketing() {
             </div>
           </div>
         </section>
+        <SellerCenterSection />
         <PublicPricing />
         <section className="demo-showcase section-spacing">
           <div className="shell demo-showcase-layout">
@@ -627,9 +633,10 @@ function Marketing() {
               <details>
                 <summary>Bisa dipakai dari ponsel?</summary>
                 <p>
-                  Bisa. Pelanggan dapat berbelanja dari ponsel, dan kamu bisa
-                  membuka dashboard toko untuk mengelola produk serta memantau
-                  pesanan.
+                  Bisa. Kelola produk, stok, pesanan, dan omzet lewat aplikasi
+                  Nalaro Seller Center untuk Android atau dashboard web. Kamu
+                  juga bisa mendaftar langsung dari aplikasi. Pelanggan tetap
+                  berbelanja lewat link tokomu tanpa perlu memasang app.
                 </p>
               </details>
               <details>
