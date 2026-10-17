@@ -295,8 +295,8 @@ test("Seller Center motion fits phones and desktop, respects reduced motion and 
     const section = page.locator("#seller-center");
     await section.scrollIntoViewIfNeeded();
     await expect(section.getByRole("heading", {name: /Tokomu ikut jalan/})).toBeVisible();
-    const play = section.getByRole("button", {name: "Putar animasi", exact: true});
-    await expect(play).toBeVisible();
+    await expect(section.locator("#omzet")).toBeVisible();
+    await expect(section.getByRole("button")).toHaveCount(0);
     await expect(section.locator("#omzet")).toHaveText("Rp4.650.000");
     const host = section.locator(".seller-center-motion");
     expect(await host.evaluate(el => el.shadowRoot!.querySelector(".motion-stage")!.classList.contains("motion-static"))).toBe(true);
@@ -310,12 +310,8 @@ test("Seller Center motion fits phones and desktop, respects reduced motion and 
     await expect(section.getByRole("link", {name: /Dapatkan app Android/})).toHaveAttribute("href", /^https:\/\/wa\.me\/6285771298582\?text=/);
     await expect(section.getByRole("link", {name: /Daftar lewat web/})).toHaveAttribute("href", "/register");
     await section.screenshot({path: `test-results/seller-center-${width}.png`});
-    await play.click();
-    await expect(section.getByRole("button", {name: "Jeda animasi", exact: true})).toBeVisible();
-    await section.getByRole("button", {name: "Jeda animasi", exact: true}).click();
-    await expect(play).toBeVisible();
-    await section.getByRole("button", {name: "Putar ulang", exact: true}).click();
-    await expect(section.locator("#intro")).not.toHaveClass(/out/);
-    await expect(section.locator("#omzet")).toHaveText("Rp0");
+    await page.emulateMedia({reducedMotion: "no-preference"});
+    await expect.poll(() => host.evaluate(el => el.shadowRoot!.querySelector(".motion-stage")!.classList.contains("motion-static"))).toBe(false);
+    await page.emulateMedia({reducedMotion: "reduce"});
   }
 });

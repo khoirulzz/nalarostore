@@ -100,7 +100,7 @@ The Seller Center section reuses the owner's supplied HTML phone design, embedde
 product photography, SVG logo, UI and 23-second sequence. `SellerCenterSection`
 loads the separate motion chunk near the viewport; `SellerCenterMotion` isolates
 its styles in a shadow root. Playback stops offscreen and in background tabs,
-provides pause/replay controls, and starts on a still dashboard when reduced
+loops automatically without playback controls, and starts on a still dashboard when reduced
 motion is enabled. No iframe or relaxed Content Security Policy is needed.
 
 The hero app CTA links to this section; store demos remain in the header, footer
