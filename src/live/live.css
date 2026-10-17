@@ -2719,3 +2719,70 @@ textarea:focus-visible {
   color: #86564a;
 }
 .seller-remove-variant:hover { background: #fff5f1; }
+
+/* Focused administration and guided store activation. */
+.admin-store-detail { display: grid; gap: 20px; }
+.admin-store-summary { padding: clamp(20px,3vw,32px); }
+.admin-store-summary h2 { margin: 8px 0; font-size: 27px; letter-spacing: -.04em; }
+.admin-store-summary h3 { margin: 0 0 12px; font-size: 19px; }
+.admin-store-summary p { color: #626c61; line-height: 1.7; overflow-wrap: anywhere; font-size: 13px; }
+.admin-store-stats { display: flex; flex-wrap: wrap; gap: 12px; margin: 18px 0; }
+.admin-store-stats > span { border-radius: 8px; background: #f2f5ef; padding: 10px 14px; font-size: 12px; }
+.admin-page .live-form input:not([type=checkbox]), .admin-page .live-form select, .admin-page .live-form textarea, .admin-dialog .live-form input, .admin-dialog .live-form textarea { width: 100%; min-width: 0; border: 1px solid #dce2d7; border-radius: 9px; background: #fcfdfb; padding: 13px 14px; font: inherit; color: #243329; min-height: 48px; }
+.admin-page .live-form label { color: #344438; font-size: 13px; font-weight: 650; gap: 8px; }
+.admin-page .live-form small { color: #737b70; font-size: 12px; line-height: 1.6; font-weight: 400; }
+.admin-page .live-form { gap: 20px; }
+.admin-page .live-editor { background: #fff; border: 1px solid #e0e5db; padding: clamp(20px,3vw,32px); border-radius: 14px; width: 100%; max-width: 800px; }
+.admin-page .check-label { display: flex; align-items: center; gap: 10px; }
+.admin-page .check-label input { accent-color: #284b34; width: 20px; height: 20px; }
+.admin-page .button { border-radius: 9px; min-height: 46px; }
+.admin-page button:disabled, .seller-billing-page button:disabled { opacity: .52; cursor: not-allowed; }
+.admin-danger { border-color: #ead0c9; }
+.admin-danger h3 { color: #963c2c; }
+.admin-danger-button { background: #ad3e30; color: #fff; border: 1px solid #ad3e30; border-radius: 8px; min-height: 46px; padding: 12px 18px; font-weight: 700; }
+.admin-success { background: #eaf4e7; border: 1px solid #cadfc3; padding: 16px 20px; border-radius: 10px; color: #284831; font-size: 13px; }
+.admin-workspace-banner, .seller-setup-callout { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 14px; border-radius: 10px; padding: 18px; background: #eef3e8; color: #365034; border: 1px solid #dce6d3; margin-bottom: 20px; font-size: 13px; line-height: 1.7; }
+.admin-workspace-banner a, .seller-upgrade-link { display: inline-flex; gap: 8px; align-items: center; font-weight: 700; text-decoration: underline; }
+.seller-upgrade-link { margin-top: 10px; display: flex; }
+.seller-setup-callout { display: block; }
+.seller-setup-callout p { margin: 8px 0; }
+.seller-setup-panel { background: #fff; border: 1px solid #e0e6d9; padding: clamp(20px,3vw,30px); border-radius: 15px; margin-bottom: 24px; }
+.seller-setup-panel h2 { margin: 0 0 10px; font-size: 23px; letter-spacing: -.04em; }
+.seller-setup-panel p { color: #697560; font-size: 13px; line-height: 1.7; }
+.seller-setup-panel ol { list-style: none; padding: 0; display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; margin: 20px 0 0; }
+.seller-setup-panel li a { display: flex; align-items: center; gap: 12px; height: 100%; border: 1px solid #e1e7db; border-radius: 10px; padding: 15px; }
+.seller-setup-panel li a > span:nth-child(2) { flex: 1; min-width: 0; }
+.seller-setup-panel strong { font-size: 13px; display: block; }
+.seller-setup-panel small { display: block; color: #73816b; font-size: 11px; line-height: 1.6; margin-top: 5px; }
+.seller-step-number { flex-shrink: 0; display: grid; place-items: center; width: 29px; height: 29px; border-radius: 50%; background: #f0f2eb; color: #6a755e; font-size: 12px; font-weight: 750; }
+.seller-setup-panel .is-complete .seller-step-number { background: #dcebd1; color: #2d522f; }
+.seller-plan-features { font-size: 12px; line-height: 1.8; padding-left: 18px; color: #52634b; }
+.admin-record-identity { min-width: 0; overflow-wrap: anywhere; }
+.admin-dialog .live-form { display: grid; gap: 16px; }
+.admin-dialog .live-form label { display: grid; gap: 10px; font-size: 13px; }
+.admin-dialog .live-form p { line-height: 1.7; font-size: 13px; }
+@media (max-width:680px) {
+  .admin-page .admin-main { padding-top: 24px; }
+  .admin-page .admin-intro h1 { font-size: 29px; }
+  .admin-intro { margin-bottom: 20px; }
+  .admin-page .admin-kpis { grid-template-columns: repeat(3,minmax(0,1fr)); gap: 8px; margin-bottom: 24px; }
+  .admin-page .admin-kpi { padding: 13px 10px; }
+  .admin-page .admin-kpi:first-child { grid-column: auto; display: block; }
+  .admin-page .admin-kpi-head { font-size: 10px; gap: 4px; align-items: start; }
+  .admin-page .admin-kpi-head .icon { display: none; }
+  .admin-page .admin-kpi > strong { font-size: 27px; margin: 12px 0 3px; }
+  .admin-page .admin-kpi > small { font-size: 10px; }
+  .admin-store-summary .admin-record-main { align-items: start; gap: 10px; }
+  .admin-store-summary .admin-record-main > div { min-width: 0; }
+  .admin-store-summary h2 { overflow-wrap: anywhere; font-size: 24px; }
+  .admin-store-stats { gap: 8px; }
+  .admin-store-stats > span { padding: 8px 10px; }
+  .seller-setup-panel ol { grid-template-columns: 1fr; }
+  .admin-dialog-actions button { white-space: normal; padding: 11px; }
+}
+.admin-page .back-link { justify-self: start; border: 0; background: transparent; padding: 10px 0; color: #416047; font: inherit; font-size: 13px; font-weight: 700; text-align: left; min-height: 44px; }
+.admin-page .back-link:hover { text-decoration: underline; }
+@media (min-width:1000px) {
+  .admin-store-detail { grid-template-columns: repeat(2,minmax(0,1fr)); align-items: start; }
+  .admin-store-detail > .back-link, .admin-store-detail > .live-error, .admin-store-detail > .admin-success, .admin-store-detail > .admin-store-summary:first-of-type, .admin-store-detail > .admin-danger { grid-column: 1/-1; }
+}

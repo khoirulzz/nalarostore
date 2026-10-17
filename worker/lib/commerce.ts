@@ -312,7 +312,7 @@ export async function orderRoutes(
   );
   if (!match) return;
   const [, sid, oid, action] = match;
-  const access = await storeAccess(db, user, sid);
+  const access = await storeAccess(db, user, sid, request.method !== "GET");
   requireUser(user);
   if (request.method !== "GET")
     assert(

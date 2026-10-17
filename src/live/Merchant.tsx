@@ -1,3 +1,4 @@
+import { AdminModal } from "./AdminStore";
 import { MediaImage } from "../components/MediaImage";
 import { useEffect, useState, type FormEvent } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
@@ -8,6 +9,7 @@ import { signOut } from "firebase/auth";
 import { Customers, Analytics, ExportButton } from "./Operations";
 import {
   api,
+  APIError,
   useData,
   rupiah,
   label,
@@ -36,6 +38,11 @@ function Notice({ error }: { error: string }) {
   return error ? (
     <p className="live-error" role="alert">
       {error}
+      {/paket|[Ll]angganan|[Kk]uota/.test(error) && (
+        <Link className="seller-upgrade-link" to="/app/billing">
+          Lihat paket & upgrade <Icon name="arrow-right" size={15} />
+        </Link>
+      )}
     </p>
   ) : null;
 }
@@ -59,10 +66,18 @@ function Workspace() {
     [drawer, setDrawer] = useState(false);
   const location = useLocation(),
     navigate = useNavigate();
-  const sid = value?.stores.some((s) => s.id === selected)
-    ? selected
+  const requestedStore = new URLSearchParams(location.search).get("store");
+  const chosenStore = requestedStore || selected;
+  const sid = value?.stores.some((s) => s.id === chosenStore)
+    ? chosenStore
     : value?.stores[0]?.id || "";
   const store = value?.stores.find((s) => s.id === sid);
+  useEffect(() => {
+    if (requestedStore && value?.stores.some((s) => s.id === requestedStore)) {
+      setSelected(requestedStore);
+      localStorage.setItem("nalaro-selected-store", requestedStore);
+    }
+  }, [requestedStore, value]);
   const section =
     location.pathname.slice("/app".length).split("/").filter(Boolean)[0] || "";
   useEffect(() => {
@@ -159,7 +174,10 @@ function Workspace() {
           >
             <Icon name="menu" />
           </button>
-          <span className="workspace-current-store" title={store?.name || "Workspace"}>
+          <span
+            className="workspace-current-store"
+            title={store?.name || "Workspace"}
+          >
             {store?.name || "Workspace"}
           </span>
           {store && (
@@ -173,6 +191,20 @@ function Workspace() {
           )}
         </header>
         <main className="workspace-content">
+          {account.value?.user.admin && store && (
+            <div className="admin-workspace-banner">
+              <span>Anda mengelola toko sebagai admin platform.</span>
+              <Link to={`/admin?tab=overview&store=${sid}`}>
+                Kembali ke detail admin <Icon name="arrow-right" size={15} />
+              </Link>
+            </div>
+          )}
+          {store?.status === "suspended" && (
+            <p className="live-error" role="alert">
+              Toko dinonaktifkan admin. Hubungi pengelola platform untuk
+              mengaktifkannya kembali.
+            </p>
+          )}
           <Notice error={error} />
           {loading && !value ? (
             <p aria-busy="true">Memuat toko…</p>
@@ -225,7 +257,11 @@ function Workspace() {
           </Link>
         ))}
         <button
-          className={drawer || !menus.slice(0, 3).some((m) => m.key === section) ? "active" : ""}
+          className={
+            drawer || !menus.slice(0, 3).some((m) => m.key === section)
+              ? "active"
+              : ""
+          }
           aria-expanded={drawer}
           aria-label="Buka navigasi lainnya"
           onClick={() => setDrawer(!drawer)}
@@ -286,7 +322,9 @@ function NewStore({ onCreated }: { onCreated: () => void }) {
   async function submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (!slugValid) {
-      setError("Link toko perlu 3–48 karakter, dimulai dan diakhiri huruf atau angka.");
+      setError(
+        "Link toko perlu 3–48 karakter, dimulai dan diakhiri huruf atau angka.",
+      );
       return;
     }
     if (available === false) {
@@ -315,11 +353,14 @@ function NewStore({ onCreated }: { onCreated: () => void }) {
   return (
     <div className="live-editor new-store-setup">
       <div className="new-store-heading">
-        <span className="new-store-eyebrow">LANGKAH PERTAMA · IDENTITAS TOKO</span>
+        <span className="new-store-eyebrow">
+          LANGKAH PERTAMA · IDENTITAS TOKO
+        </span>
         <h1>Buat toko pertamamu.</h1>
         <p>
-          Tentukan nama dan link toko yang mudah diingat. Setelah dibuat, kamu bisa
-          melengkapi alamat fisik, produk, pembayaran, serta tampilan toko di pengaturan.
+          Tentukan nama dan link toko yang mudah diingat. Setelah dibuat, kamu
+          bisa melengkapi alamat fisik, produk, pembayaran, serta tampilan toko
+          di pengaturan.
         </p>
       </div>
       <form onSubmit={submit} className="live-form new-store-form">
@@ -362,16 +403,27 @@ function NewStore({ onCreated }: { onCreated: () => void }) {
               setSlug(storeSlug(e.target.value));
             }}
           />
-          <small>Ini alamat web toko, bukan alamat lokasi toko. Spasi otomatis diubah menjadi tanda hubung.</small>
+          <small>
+            Ini alamat web toko, bukan alamat lokasi toko. Spasi otomatis diubah
+            menjadi tanda hubung.
+          </small>
         </label>
         <div className="new-store-preview" aria-live="polite">
           <span>Link tokomu nanti</span>
           <strong>store.nalaro.digital/s/{slug || "nama-toko"}</strong>
           {slug.length > 0 && !slugValid ? (
-            <small>Gunakan minimal 3 karakter dan akhiri dengan huruf atau angka.</small>
+            <small>
+              Gunakan minimal 3 karakter dan akhiri dengan huruf atau angka.
+            </small>
           ) : available !== null ? (
-            <small className={available ? "new-store-available" : "new-store-unavailable"}>
-              {available ? "✓ Link tersedia" : "Link sudah digunakan. Coba yang lain."}
+            <small
+              className={
+                available ? "new-store-available" : "new-store-unavailable"
+              }
+            >
+              {available
+                ? "✓ Link tersedia"
+                : "Link sudah digunakan. Coba yang lain."}
             </small>
           ) : slugValid ? (
             <small>Memeriksa ketersediaan link…</small>
@@ -380,9 +432,12 @@ function NewStore({ onCreated }: { onCreated: () => void }) {
         <Notice error={error} />
         <button
           className="button button-dark new-store-submit"
-          disabled={busy || !slugValid || available === false || name.trim().length < 2}
+          disabled={
+            busy || !slugValid || available === false || name.trim().length < 2
+          }
         >
-          {busy ? "Membuat toko…" : "Buat toko"} <Icon name="arrow-right" size={18} />
+          {busy ? "Membuat toko…" : "Buat toko"}{" "}
+          <Icon name="arrow-right" size={18} />
         </button>
       </form>
     </div>
@@ -393,6 +448,57 @@ function Overview({ sid, store }: { sid: string; store: Store }) {
     summary: { orders: number; revenue: number; pending: number };
     lowStock: { name: string; option_label: string; available_stock: number }[];
   }>(`/api/merchant/stores/${sid}/overview`);
+  const preparation = useData<{ products: Product[] }>(
+    `/api/merchant/stores/${sid}/products`,
+  );
+  const configuration = useData<{ settings: Settings }>(
+    `/api/merchant/stores/${sid}/settings`,
+  );
+  const access = useData<{ accessAvailable: boolean }>(
+    `/api/merchant/stores/${sid}/billing`,
+  );
+  const steps = [
+    {
+      name: "Tambahkan produk",
+      description: "Isi foto, harga, varian, dan stok.",
+      to: "/app/products",
+      done: Boolean(
+        preparation.value?.products.some(
+          (p) =>
+            p.status === "active" &&
+            p.variants.some(
+              (v) => Number(v.stock_qty) > Number(v.reserved_qty || 0),
+            ),
+        ),
+      ),
+    },
+    {
+      name: "Lengkapi toko",
+      description: "Kontak, pembayaran, pengiriman, dan kebijakan toko.",
+      to: "/app/settings",
+      done: Boolean(
+        configuration.value?.settings.contact_phone &&
+        (configuration.value.settings.bank_details ||
+          configuration.value.settings.qris_media_key) &&
+        configuration.value.settings.policies.length >= 20 &&
+        (configuration.value.settings.delivery_enabled ||
+          (configuration.value.settings.pickup_enabled &&
+            configuration.value.settings.pickup_address)),
+      ),
+    },
+    {
+      name: "Aktifkan paket",
+      description: "Pilih paket atau gunakan akses yang disetujui admin.",
+      to: "/app/billing",
+      done: access.value?.accessAvailable === true,
+    },
+    {
+      name: "Terbitkan toko",
+      description: "Periksa pratinjau, lalu buka toko untuk pembeli.",
+      to: "/app/settings",
+      done: store.status === "published",
+    },
+  ];
   return (
     <>
       <div className="workspace-heading">
@@ -410,6 +516,34 @@ function Overview({ sid, store }: { sid: string; store: Store }) {
         </Link>
       </div>
       <Notice error={error} />
+      {store.status !== "published" && (
+        <section className="seller-setup-panel">
+          <div>
+            <span className="admin-eyebrow">PERSIAPAN TOKO</span>
+            <h2>Siapkan toko, lalu mulai berjualan.</h2>
+            <p>
+              {steps.filter((s) => s.done).length} dari 4 langkah selesai.
+              Produk dan pengaturan dapat disiapkan sebelum membeli paket.
+            </p>
+          </div>
+          <ol>
+            {steps.map((step, i) => (
+              <li key={step.name} className={step.done ? "is-complete" : ""}>
+                <Link to={step.to}>
+                  <span className="seller-step-number">
+                    {step.done ? <Icon name="check" size={16} /> : i + 1}
+                  </span>
+                  <span>
+                    <strong>{step.name}</strong>
+                    <small>{step.description}</small>
+                  </span>
+                  <Icon name="arrow-right" size={16} />
+                </Link>
+              </li>
+            ))}
+          </ol>
+        </section>
+      )}
       {loading ? (
         <p>Memuat ringkasan…</p>
       ) : (
@@ -445,13 +579,17 @@ function Overview({ sid, store }: { sid: string; store: Store }) {
               <div className="seller-panel-heading">
                 <Icon name="box" size={19} />
                 <h2>Stok perlu diperhatikan</h2>
-                <Link to="/app/inventory">Lihat stok <Icon name="arrow-up-right" size={15} /></Link>
+                <Link to="/app/inventory">
+                  Lihat stok <Icon name="arrow-up-right" size={15} />
+                </Link>
               </div>
               {value.lowStock.length ? (
                 <div className="seller-stock-items">
                   {value.lowStock.map((v, i) => (
                     <div className="seller-stock-row" key={i}>
-                      <span>{v.name} · {v.option_label}</span>
+                      <span>
+                        {v.name} · {v.option_label}
+                      </span>
                       <strong>{v.available_stock} tersedia</strong>
                     </div>
                   ))}
@@ -480,9 +618,10 @@ function Products({ sid }: { sid: string }) {
     `/api/merchant/stores/${sid}/products`,
     rev,
   );
-  const filteredProducts = value?.products.filter((p) =>
-    p.name.toLowerCase().includes(q.toLowerCase().trim()),
-  ) || [];
+  const filteredProducts =
+    value?.products.filter((p) =>
+      p.name.toLowerCase().includes(q.toLowerCase().trim()),
+    ) || [];
   if (editing !== false)
     return (
       <ProductEditor
@@ -503,7 +642,10 @@ function Products({ sid }: { sid: string }) {
         </div>
         <div className="seller-heading-actions">
           <ExportButton sid={sid} resource="products" />
-          <button className="button button-dark" onClick={() => setEditing(null)}>
+          <button
+            className="button button-dark"
+            onClick={() => setEditing(null)}
+          >
             <Icon name="plus" size={17} /> Tambah produk
           </button>
         </div>
@@ -524,49 +666,55 @@ function Products({ sid }: { sid: string }) {
       </label>
       <div className="work-product-list seller-product-list">
         {filteredProducts.map((p) => (
-            <article key={p.id}>
-              {p.primary_image_url ? (
-                <MediaImage src={p.primary_image_url} alt="" />
-              ) : (
-                <span className="media-placeholder">
-                  <Icon name="box" />
-                </span>
-              )}
-              <div>
-                <h3>{p.name}</h3>
-                <p>
-                  {p.category} · {label(p.status)}
-                </p>
-              </div>
-              <strong>{rupiah(p.price_idr)}</strong>
-              <span className="product-stock">
-                {p.variants.reduce(
-                  (a, v) =>
-                    a + (v.status === "active" ? Number(v.available_stock) : 0),
-                  0,
-                )}{" "}
-                tersedia
+          <article key={p.id}>
+            {p.primary_image_url ? (
+              <MediaImage src={p.primary_image_url} alt="" />
+            ) : (
+              <span className="media-placeholder">
+                <Icon name="box" />
               </span>
-              <button
-                aria-label={"Edit " + p.name}
-                onClick={() => setEditing(p)}
-              >
-                <Icon name="edit" />
-              </button>
-            </article>
-          ))}
+            )}
+            <div>
+              <h3>{p.name}</h3>
+              <p>
+                {p.category} · {label(p.status)}
+              </p>
+            </div>
+            <strong>{rupiah(p.price_idr)}</strong>
+            <span className="product-stock">
+              {p.variants.reduce(
+                (a, v) =>
+                  a + (v.status === "active" ? Number(v.available_stock) : 0),
+                0,
+              )}{" "}
+              tersedia
+            </span>
+            <button aria-label={"Edit " + p.name} onClick={() => setEditing(p)}>
+              <Icon name="edit" />
+            </button>
+          </article>
+        ))}
       </div>
       {value && !filteredProducts.length && (
         <div className="seller-empty" role="status">
-          <span className="seller-empty-icon"><Icon name="box" size={25} /></span>
+          <span className="seller-empty-icon">
+            <Icon name="box" size={25} />
+          </span>
           <h2>{q ? "Produk tidak ditemukan" : "Katalog masih kosong"}</h2>
-          <p>{q
-            ? "Coba kata pencarian lain."
-            : "Tambahkan produk pertama agar pelanggan bisa mulai mengenal tokomu."}</p>
+          <p>
+            {q
+              ? "Coba kata pencarian lain."
+              : "Tambahkan produk pertama agar pelanggan bisa mulai mengenal tokomu."}
+          </p>
           {q ? (
-            <button className="seller-text-action" onClick={() => setQ("")}>Hapus pencarian</button>
+            <button className="seller-text-action" onClick={() => setQ("")}>
+              Hapus pencarian
+            </button>
           ) : (
-            <button className="seller-inline-button" onClick={() => setEditing(null)}>
+            <button
+              className="seller-inline-button"
+              onClick={() => setEditing(null)}
+            >
               <Icon name="plus" size={16} /> Isi katalog pertama
             </button>
           )}
@@ -608,7 +756,9 @@ function ProductEditor({
   async function save(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (gallery.some((photo) => !photo.url.trim())) {
-      setError("Masih ada foto galeri tanpa link. Lengkapi atau hapus foto kosong terlebih dahulu.");
+      setError(
+        "Masih ada foto galeri tanpa link. Lengkapi atau hapus foto kosong terlebih dahulu.",
+      );
       return;
     }
     const f = new FormData(e.currentTarget);
@@ -655,7 +805,10 @@ function ProductEditor({
         },
         body: file,
       });
-      const result = (await response.json()) as { error?: string; url?: string };
+      const result = (await response.json()) as {
+        error?: string;
+        url?: string;
+      };
       if (!response.ok || !result.url) {
         throw Error(result.error || "Foto belum berhasil diunggah. Coba lagi.");
       }
@@ -664,12 +817,17 @@ function ProductEditor({
       setBusy(false);
     }
   }
-  async function upload(file?: File, target: "main" | "gallery" = "main", variantIndex?: number) {
+  async function upload(
+    file?: File,
+    target: "main" | "gallery" = "main",
+    variantIndex?: number,
+  ) {
     if (!file || busy) return;
     try {
       const url = await uploadMedia(file);
       if (variantIndex !== undefined) change(variantIndex, "image_url", url);
-      else if (target === "gallery") setGallery((previous) => [...previous, { url, alt: "" }]);
+      else if (target === "gallery")
+        setGallery((previous) => [...previous, { url, alt: "" }]);
       else setImage(url);
     } catch (error) {
       setError((error as Error).message);
@@ -682,113 +840,147 @@ function ProductEditor({
           <Icon name="arrow-left" size={17} /> <span>Kembali ke produk</span>
         </button>
         <h1>{product ? "Edit produk" : "Tambah produk"}</h1>
-        <p>Lengkapi informasi, foto, dan stok agar produk siap ditampilkan di tokomu.</p>
+        <p>
+          Lengkapi informasi, foto, dan stok agar produk siap ditampilkan di
+          tokomu.
+        </p>
       </div>
-      <form className="live-form live-editor seller-editor-form" onSubmit={save}>
+      <form
+        className="live-form live-editor seller-editor-form"
+        onSubmit={save}
+      >
         <section className="seller-editor-section seller-editor-basics">
           <header className="seller-editor-section-head">
-            <div><Icon name="file" size={19} /><h2>Informasi produk</h2></div>
+            <div>
+              <Icon name="file" size={19} />
+              <h2>Informasi produk</h2>
+            </div>
           </header>
           <div className="form-two">
+            <label>
+              Nama produk
+              <input
+                required
+                name="name"
+                defaultValue={product?.name}
+                maxLength={160}
+              />
+            </label>
+            <label>
+              Link produk
+              <input
+                required
+                name="slug"
+                defaultValue={product?.slug}
+                placeholder="misal: batik-kawung"
+                pattern="[a-z0-9][a-z0-9-]{1,46}[a-z0-9]"
+                onChange={(event) => {
+                  event.currentTarget.value = storeSlug(
+                    event.currentTarget.value,
+                  );
+                }}
+              />
+              <small>
+                Bagian dari alamat web produkmu. Spasi otomatis menjadi tanda
+                hubung.
+              </small>
+            </label>
+          </div>
           <label>
-            Nama produk
-            <input
-              required
-              name="name"
-              defaultValue={product?.name}
-              maxLength={160}
+            Deskripsi
+            <textarea
+              name="description"
+              rows={5}
+              defaultValue={product?.description}
             />
           </label>
-          <label>
-            Link produk
-            <input
-              required
-              name="slug"
-              defaultValue={product?.slug}
-              placeholder="misal: batik-kawung"
-              pattern="[a-z0-9][a-z0-9-]{1,46}[a-z0-9]"
-              onChange={(event) => { event.currentTarget.value = storeSlug(event.currentTarget.value); }}
-            />
-            <small>Bagian dari alamat web produkmu. Spasi otomatis menjadi tanda hubung.</small>
-          </label>
-        </div>
-        <label>
-          Deskripsi
-          <textarea
-            name="description"
-            rows={5}
-            defaultValue={product?.description}
-          />
-        </label>
-        <div className="form-two">
-          <label>
-            Harga (Rp)
-            <input
-              required
-              name="price"
-              type="number"
-              min={0}
-              max={1000000000}
-              defaultValue={product?.price_idr || 0}
-            />
-          </label>
-          <label>
-            Kategori
-            <input
-              required
-              name="category"
-              defaultValue={product?.category || "Produk"}
-            />
-          </label>
-        </div>
+          <div className="form-two">
+            <label>
+              Harga (Rp)
+              <input
+                required
+                name="price"
+                type="number"
+                min={0}
+                max={1000000000}
+                defaultValue={product?.price_idr || 0}
+              />
+            </label>
+            <label>
+              Kategori
+              <input
+                required
+                name="category"
+                defaultValue={product?.category || "Produk"}
+              />
+            </label>
+          </div>
         </section>
         <section className="seller-editor-section seller-main-photo-section">
           <header className="seller-editor-section-head">
-            <div><Icon name="upload" size={19} /><h2>Foto utama</h2></div>
+            <div>
+              <Icon name="upload" size={19} />
+              <h2>Foto utama</h2>
+            </div>
           </header>
-          <p className="seller-editor-section-help">Pilih foto terbaik untuk tampilan pertama produkmu.</p>
-        <label className="seller-file-picker">
-          <Icon name="upload" size={19} />
-          <span className="seller-picker-copy">
-            <strong>{busy ? "Mengunggah foto…" : "Unggah foto utama"}</strong>
-            <small>JPG, PNG atau WebP dari perangkatmu</small>
-          </span>
-          <Icon name="plus" size={17} />
-          <input
-            type="file"
-            aria-label="Unggah foto utama"
-            accept="image/png,image/jpeg,image/webp"
-            disabled={busy}
-            onChange={(e) => {
-              const file = e.currentTarget.files?.[0];
-              e.currentTarget.value = "";
-              void upload(file);
-            }}
-          />
-        </label>
-        <label>
-          Link foto produk (opsional)
-          <input value={image} onChange={(e) => setImage(e.target.value)} placeholder="https://..." />
-          <small>Unggah foto dari perangkat atau gunakan link gambar.</small>
-        </label>
-        {image && (
-          <MediaImage
-            className="editor-photo"
-            src={image}
-            alt="Pratinjau produk"
-          />
-        )}
+          <p className="seller-editor-section-help">
+            Pilih foto terbaik untuk tampilan pertama produkmu.
+          </p>
+          <label className="seller-file-picker">
+            <Icon name="upload" size={19} />
+            <span className="seller-picker-copy">
+              <strong>{busy ? "Mengunggah foto…" : "Unggah foto utama"}</strong>
+              <small>JPG, PNG atau WebP dari perangkatmu</small>
+            </span>
+            <Icon name="plus" size={17} />
+            <input
+              type="file"
+              aria-label="Unggah foto utama"
+              accept="image/png,image/jpeg,image/webp"
+              disabled={busy}
+              onChange={(e) => {
+                const file = e.currentTarget.files?.[0];
+                e.currentTarget.value = "";
+                void upload(file);
+              }}
+            />
+          </label>
+          <label>
+            Link foto produk (opsional)
+            <input
+              value={image}
+              onChange={(e) => setImage(e.target.value)}
+              placeholder="https://..."
+            />
+            <small>Unggah foto dari perangkat atau gunakan link gambar.</small>
+          </label>
+          {image && (
+            <MediaImage
+              className="editor-photo"
+              src={image}
+              alt="Pratinjau produk"
+            />
+          )}
         </section>
         <section className="seller-editor-section seller-gallery-section">
           <header className="seller-editor-section-head">
-            <div><Icon name="grid" size={19} /><h2>Galeri produk</h2></div>
+            <div>
+              <Icon name="grid" size={19} />
+              <h2>Galeri produk</h2>
+            </div>
             <span>{gallery.length}/12</span>
           </header>
-          <p className="seller-editor-section-help">Tampilkan sisi lain produkmu. Kamu bisa mengunggah foto atau memasukkan link gambar.</p>
+          <p className="seller-editor-section-help">
+            Tampilkan sisi lain produkmu. Kamu bisa mengunggah foto atau
+            memasukkan link gambar.
+          </p>
           {gallery.length === 0 && (
             <div className="seller-gallery-empty">
               <Icon name="grid" size={22} />
-              <span>Belum ada foto tambahan. Galeri akan membantu pelanggan melihat detail produk.</span>
+              <span>
+                Belum ada foto tambahan. Galeri akan membantu pelanggan melihat
+                detail produk.
+              </span>
             </div>
           )}
           <div className="seller-gallery-list">
@@ -814,7 +1006,9 @@ function ProductEditor({
                       onChange={(event) =>
                         setGallery((previous) =>
                           previous.map((photo, current) =>
-                            current === index ? { ...photo, url: event.target.value } : photo,
+                            current === index
+                              ? { ...photo, url: event.target.value }
+                              : photo,
                           ),
                         )
                       }
@@ -828,7 +1022,9 @@ function ProductEditor({
                       onChange={(event) =>
                         setGallery((previous) =>
                           previous.map((photo, current) =>
-                            current === index ? { ...photo, alt: event.target.value } : photo,
+                            current === index
+                              ? { ...photo, alt: event.target.value }
+                              : photo,
                           ),
                         )
                       }
@@ -840,7 +1036,11 @@ function ProductEditor({
                   className="seller-editor-remove"
                   aria-label={`Hapus foto galeri ${index + 1}`}
                   disabled={busy}
-                  onClick={() => setGallery((previous) => previous.filter((_, current) => current !== index))}
+                  onClick={() =>
+                    setGallery((previous) =>
+                      previous.filter((_, current) => current !== index),
+                    )
+                  }
                 >
                   <Icon name="close" size={16} /> Hapus foto
                 </button>
@@ -851,8 +1051,14 @@ function ProductEditor({
             <label className="seller-file-picker seller-gallery-picker">
               <Icon name="upload" size={19} />
               <span className="seller-picker-copy">
-                <strong>{busy ? "Mengunggah foto…" : "Unggah foto galeri"}</strong>
-                <small>{gallery.length >= 12 ? "Maksimal 12 foto tambahan" : "Pilih gambar dari perangkat"}</small>
+                <strong>
+                  {busy ? "Mengunggah foto…" : "Unggah foto galeri"}
+                </strong>
+                <small>
+                  {gallery.length >= 12
+                    ? "Maksimal 12 foto tambahan"
+                    : "Pilih gambar dari perangkat"}
+                </small>
               </span>
               <Icon name="arrow-right" size={16} />
               <input
@@ -871,7 +1077,9 @@ function ProductEditor({
               type="button"
               className="seller-editor-add"
               disabled={busy || gallery.length >= 12}
-              onClick={() => setGallery((previous) => [...previous, { url: "", alt: "" }])}
+              onClick={() =>
+                setGallery((previous) => [...previous, { url: "", alt: "" }])
+              }
             >
               <Icon name="plus" size={18} /> Tambah foto dari link
             </button>
@@ -879,10 +1087,16 @@ function ProductEditor({
         </section>
         <section className="seller-editor-section seller-variants-section">
           <header className="seller-editor-section-head">
-            <div><Icon name="box" size={19} /><h2>Varian & stok</h2></div>
+            <div>
+              <Icon name="box" size={19} />
+              <h2>Varian & stok</h2>
+            </div>
             <span>{variants.length} pilihan</span>
           </header>
-          <p className="seller-editor-section-help">Atur SKU, ukuran atau warna, serta jumlah stok setiap pilihan produk.</p>
+          <p className="seller-editor-section-help">
+            Atur SKU, ukuran atau warna, serta jumlah stok setiap pilihan
+            produk.
+          </p>
           {variants.map((v, i) => (
             <div className="variant-row seller-variant-card" key={v.id || i}>
               <div className="seller-variant-title">
@@ -893,12 +1107,18 @@ function ProductEditor({
                     className="seller-remove-variant"
                     aria-label={`Hapus varian ${i + 1}`}
                     disabled={busy}
-                    onClick={() => setVariants((previous) => previous.filter((_, current) => current !== i))}
+                    onClick={() =>
+                      setVariants((previous) =>
+                        previous.filter((_, current) => current !== i),
+                      )
+                    }
                   >
                     <Icon name="close" size={15} /> Hapus varian
                   </button>
                 ) : (
-                  <span className="seller-variant-meta">{v.reserved_qty || 0} dalam pesanan</span>
+                  <span className="seller-variant-meta">
+                    {v.reserved_qty || 0} dalam pesanan
+                  </span>
                 )}
               </div>
               <label>
@@ -933,12 +1153,16 @@ function ProductEditor({
                 />
               </label>
               <div className="seller-variant-image-field">
-                <label htmlFor={`variant-image-${i}`}>Link foto khusus varian (opsional)</label>
+                <label htmlFor={`variant-image-${i}`}>
+                  Link foto khusus varian (opsional)
+                </label>
                 <input
                   id={`variant-image-${i}`}
                   value={v.image_url || ""}
                   placeholder="https://..."
-                  onChange={(e) => change(i, "image_url", e.target.value || null)}
+                  onChange={(e) =>
+                    change(i, "image_url", e.target.value || null)
+                  }
                 />
                 <span className="seller-variant-photo-actions">
                   <label className="seller-variant-upload">
@@ -987,31 +1211,42 @@ function ProductEditor({
             type="button"
             className="seller-editor-add seller-add-variant"
             disabled={busy || variants.length >= 40}
-            onClick={() => setVariants((previous) => [...previous, { ...defaultVariant }])}
+            onClick={() =>
+              setVariants((previous) => [...previous, { ...defaultVariant }])
+            }
           >
             <Icon name="plus" size={18} /> Tambah varian
           </button>
         </section>
         <section className="seller-editor-section seller-product-visibility">
           <header className="seller-editor-section-head">
-            <div><Icon name="eye" size={19} /><h2>Publikasi</h2></div>
+            <div>
+              <Icon name="eye" size={19} />
+              <h2>Publikasi</h2>
+            </div>
           </header>
-        <label>
-          Status produk
-          <select name="status" defaultValue={product?.status || "draft"}>
-            <option value="draft">Draft</option>
-            <option value="active">Terbitkan</option>
-            <option value="archived">Arsipkan</option>
-          </select>
-          <small>Produk draft tidak akan ditampilkan kepada pelanggan.</small>
-        </label>
+          <label>
+            Status produk
+            <select name="status" defaultValue={product?.status || "draft"}>
+              <option value="draft">Draft</option>
+              <option value="active">Terbitkan</option>
+              <option value="archived">Arsipkan</option>
+            </select>
+            <small>Produk draft tidak akan ditampilkan kepada pelanggan.</small>
+          </label>
         </section>
         <Notice error={error} />
         <div className="seller-editor-footer">
           <button className="button button-dark" disabled={busy}>
-            <Icon name="check" size={18} /> {busy ? "Menyimpan…" : "Simpan produk"}
+            <Icon name="check" size={18} />{" "}
+            {busy ? "Menyimpan…" : "Simpan produk"}
           </button>
-          <button type="button" className="seller-editor-cancel" onClick={done} disabled={busy}>
+          <button
+            type="button"
+            className="seller-editor-cancel"
+            onClick={done}
+            disabled={busy}
+          >
             Batal
           </button>
         </div>
@@ -1064,14 +1299,14 @@ function Orders({ sid }: { sid: string }) {
           <span className="seller-search-control">
             <Icon name="search" size={18} />
             <input
-            type="search"
-            aria-label="Cari nomor atau nama"
-            placeholder="Nomor pesanan atau nama..."
-            value={q}
-            onChange={(e) => {
-              setQ(e.target.value);
-              setPage(1);
-            }}
+              type="search"
+              aria-label="Cari nomor atau nama"
+              placeholder="Nomor pesanan atau nama..."
+              value={q}
+              onChange={(e) => {
+                setQ(e.target.value);
+                setPage(1);
+              }}
             />
           </span>
         </label>
@@ -1101,7 +1336,10 @@ function Orders({ sid }: { sid: string }) {
         </label>
       </div>
       <Notice error={error} />
-      <div className="work-tabbar seller-order-tabs" aria-label="Filter pesanan">
+      <div
+        className="work-tabbar seller-order-tabs"
+        aria-label="Filter pesanan"
+      >
         {[
           ["all", "Semua"],
           ["unpaid", "Belum dibayar"],
@@ -1133,27 +1371,54 @@ function Orders({ sid }: { sid: string }) {
           >
             <span className="seller-order-card-top">
               <strong>{order.order_number}</strong>
-              <small>{new Date(order.created_at).toLocaleDateString("id-ID")}</small>
+              <small>
+                {new Date(order.created_at).toLocaleDateString("id-ID")}
+              </small>
             </span>
             <span className="seller-order-card-body">
               <span>
-                <span className="seller-order-customer">{order.customer_name}</span>
-                <span className="seller-order-status">{label(order.payment_status)} · {label(order.fulfillment_status)}</span>
+                <span className="seller-order-customer">
+                  {order.customer_name}
+                </span>
+                <span className="seller-order-status">
+                  {label(order.payment_status)} ·{" "}
+                  {label(order.fulfillment_status)}
+                </span>
               </span>
-              <span className="seller-order-total">{rupiah(order.total_idr)} <Icon name="chevron-right" size={16} /></span>
+              <span className="seller-order-total">
+                {rupiah(order.total_idr)}{" "}
+                <Icon name="chevron-right" size={16} />
+              </span>
             </span>
           </button>
         ))}
       </div>
       {value && !loading && !value.orders.length && (
         <div className="seller-empty" role="status">
-          <span className="seller-empty-icon"><Icon name="orders" size={25} /></span>
-          <h2>{q || filter !== "all" || from || to ? "Pesanan tidak ditemukan" : "Belum ada pesanan"}</h2>
-          <p>{q || filter !== "all" || from || to
-            ? "Coba ubah pencarian atau filter pesanan."
-            : "Pesanan pelanggan akan muncul di sini saat tokomu mulai berjualan."}</p>
+          <span className="seller-empty-icon">
+            <Icon name="orders" size={25} />
+          </span>
+          <h2>
+            {q || filter !== "all" || from || to
+              ? "Pesanan tidak ditemukan"
+              : "Belum ada pesanan"}
+          </h2>
+          <p>
+            {q || filter !== "all" || from || to
+              ? "Coba ubah pencarian atau filter pesanan."
+              : "Pesanan pelanggan akan muncul di sini saat tokomu mulai berjualan."}
+          </p>
           {(q || filter !== "all" || from || to) && (
-            <button className="seller-text-action" onClick={() => { setQ(""); setFilter("all"); setFrom(""); setTo(""); setPage(1); }}>
+            <button
+              className="seller-text-action"
+              onClick={() => {
+                setQ("");
+                setFilter("all");
+                setFrom("");
+                setTo("");
+                setPage(1);
+              }}
+            >
               Hapus filter
             </button>
           )}
@@ -1161,11 +1426,17 @@ function Orders({ sid }: { sid: string }) {
       )}
       {(page > 1 || !!value?.hasMore) && (
         <nav className="seller-pagination" aria-label="Halaman pesanan">
-          <button disabled={page === 1 || loading} onClick={() => setPage((p) => p - 1)}>
+          <button
+            disabled={page === 1 || loading}
+            onClick={() => setPage((p) => p - 1)}
+          >
             <Icon name="chevron-left" size={17} /> Sebelumnya
           </button>
           <span>Halaman {page}</span>
-          <button disabled={!value?.hasMore || loading} onClick={() => setPage((p) => p + 1)}>
+          <button
+            disabled={!value?.hasMore || loading}
+            onClick={() => setPage((p) => p + 1)}
+          >
             Berikutnya <Icon name="chevron-right" size={17} />
           </button>
         </nav>
@@ -1365,6 +1636,7 @@ function StoreSettings({
   store: Store;
   refresh: () => void;
 }) {
+  const navigate = useNavigate();
   const [qrisKey, setQrisKey] = useState<string | null | undefined>(undefined);
   const [rev, setRev] = useState(0),
     [error, setError] = useState(""),
@@ -1459,7 +1731,13 @@ function StoreSettings({
       refresh();
       setMessage("Status toko diperbarui.");
     } catch (e) {
-      setError((e as Error).message);
+      if (
+        e instanceof APIError &&
+        e.status === 423 &&
+        !/dinonaktifkan/.test(e.message)
+      )
+        navigate("/app/billing?reason=publish");
+      else setError((e as Error).message);
     } finally {
       setBusy(false);
     }
@@ -1470,7 +1748,8 @@ function StoreSettings({
         <div>
           <h1>Tampilan & pengaturan</h1>
           <p className="seller-status-line">
-            <Icon name="info" size={15} /> Status toko: <strong>{label(store.status)}</strong>
+            <Icon name="info" size={15} /> Status toko:{" "}
+            <strong>{label(store.status)}</strong>
           </p>
         </div>
         <button
@@ -1478,7 +1757,10 @@ function StoreSettings({
           disabled={busy}
           onClick={publish}
         >
-          <Icon name={store.status === "published" ? "close" : "check"} size={17} />
+          <Icon
+            name={store.status === "published" ? "close" : "check"}
+            size={17}
+          />
           {store.status === "published" ? "Jeda toko" : "Terbitkan toko"}
         </button>
       </div>
@@ -1493,13 +1775,20 @@ function StoreSettings({
         <div className="seller-link-primary">
           <span>Link toko utama</span>
           <strong>store.nalaro.digital/s/{store.slug}</strong>
-          <Link to={"/s/" + store.slug} target="_blank" rel="noopener noreferrer">
+          <Link
+            to={"/s/" + store.slug}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
             <Icon name="external" size={16} /> Lihat toko
           </Link>
         </div>
         <details className="seller-domain-option">
           <summary>Gunakan alamat toko yang lebih singkat</summary>
-          <p>Alamat alternatif: <strong>{store.slug}.store.nalaro.digital</strong></p>
+          <p>
+            Alamat alternatif:{" "}
+            <strong>{store.slug}.store.nalaro.digital</strong>
+          </p>
           <button
             type="button"
             className="seller-inline-button"
@@ -1532,32 +1821,67 @@ function StoreSettings({
               <Icon name="chevron-right" size={17} />
             </Link>
             <div className="seller-readiness-item">
-              <Icon name={value.settings.bank_details || value.settings.qris_media_key ? "check" : "credit-card"} size={19} />
-              <span>{value.settings.bank_details || value.settings.qris_media_key
-                ? "Informasi pembayaran sudah diisi"
-                : "Lengkapi metode pembayaran"}</span>
+              <Icon
+                name={
+                  value.settings.bank_details || value.settings.qris_media_key
+                    ? "check"
+                    : "credit-card"
+                }
+                size={19}
+              />
+              <span>
+                {value.settings.bank_details || value.settings.qris_media_key
+                  ? "Informasi pembayaran sudah diisi"
+                  : "Lengkapi metode pembayaran"}
+              </span>
             </div>
             <div className="seller-readiness-item">
-              <Icon name={value.settings.pickup_enabled || value.settings.delivery_enabled ? "check" : "truck"} size={19} />
-              <span>{value.settings.pickup_enabled || value.settings.delivery_enabled
-                ? "Metode pengiriman sudah dipilih"
-                : "Pilih metode pengiriman atau pengambilan"}</span>
+              <Icon
+                name={
+                  value.settings.pickup_enabled ||
+                  value.settings.delivery_enabled
+                    ? "check"
+                    : "truck"
+                }
+                size={19}
+              />
+              <span>
+                {value.settings.pickup_enabled ||
+                value.settings.delivery_enabled
+                  ? "Metode pengiriman sudah dipilih"
+                  : "Pilih metode pengiriman atau pengambilan"}
+              </span>
             </div>
             <div className="seller-readiness-item">
-              <Icon name={value.settings.policies ? "check" : "file"} size={19} />
-              <span>{value.settings.policies
-                ? "Kebijakan toko sudah diisi"
-                : "Lengkapi kebijakan toko"}</span>
+              <Icon
+                name={value.settings.policies ? "check" : "file"}
+                size={19}
+              />
+              <span>
+                {value.settings.policies
+                  ? "Kebijakan toko sudah diisi"
+                  : "Lengkapi kebijakan toko"}
+              </span>
             </div>
             <div className="seller-readiness-item">
-              <Icon name={value.settings.contact_phone ? "check" : "phone"} size={19} />
-              <span>{value.settings.contact_phone
-                ? "Kontak toko sudah diisi"
-                : "Tambahkan nomor kontak toko"}</span>
+              <Icon
+                name={value.settings.contact_phone ? "check" : "phone"}
+                size={19}
+              />
+              <span>
+                {value.settings.contact_phone
+                  ? "Kontak toko sudah diisi"
+                  : "Tambahkan nomor kontak toko"}
+              </span>
             </div>
           </div>
           <div className="seller-card-actions">
-            <Link className="seller-inline-button" to={"/preview/" + sid} target="_blank" rel="noopener noreferrer">
+            <Link
+              className="seller-inline-button"
+              to={"/preview/" + sid}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
               <Icon name="eye" size={17} /> Pratinjau toko
             </Link>
             <Link className="seller-inline-button" to="/app/billing">
@@ -1567,8 +1891,14 @@ function StoreSettings({
         </section>
       )}
       {value && (
-        <form className="live-form live-editor seller-settings-form" key={rev} onSubmit={save}>
-          <h2><Icon name="box" size={20} /> Identitas toko</h2>
+        <form
+          className="live-form live-editor seller-settings-form"
+          key={rev}
+          onSubmit={save}
+        >
+          <h2>
+            <Icon name="box" size={20} /> Identitas toko
+          </h2>
           <label>
             Nama toko
             <input
@@ -1628,7 +1958,9 @@ function StoreSettings({
               defaultValue={value.settings.opening_hours}
             />
           </label>
-          <h2><Icon name="truck" size={20} /> Pengiriman</h2>
+          <h2>
+            <Icon name="truck" size={20} /> Pengiriman
+          </h2>
           <label className="check-label">
             <input
               name="pickup_enabled"
@@ -1661,7 +1993,9 @@ function StoreSettings({
               defaultValue={value.settings.shipping_fee_idr}
             />
           </label>
-          <h2><Icon name="credit-card" size={20} /> Pembayaran</h2>
+          <h2>
+            <Icon name="credit-card" size={20} /> Pembayaran
+          </h2>
           <label>
             Rekening & instruksi transfer
             <textarea
@@ -1692,7 +2026,11 @@ function StoreSettings({
                 }
                 alt="QRIS toko"
               />
-              <button type="button" className="seller-inline-button" onClick={() => setQrisKey(null)}>
+              <button
+                type="button"
+                className="seller-inline-button"
+                onClick={() => setQrisKey(null)}
+              >
                 <Icon name="close" size={16} /> Hapus QRIS
               </button>
             </div>
@@ -1714,7 +2052,10 @@ function StoreSettings({
               defaultValue={value.settings.low_stock_threshold}
             />
           </label>
-          <button className="button button-dark seller-save-settings" disabled={busy}>
+          <button
+            className="button button-dark seller-save-settings"
+            disabled={busy}
+          >
             <Icon name="check" size={18} /> Simpan pengaturan
           </button>
         </form>
@@ -1752,37 +2093,109 @@ function Inventory({ sid }: { sid: string }) {
 }
 function Billing({ sid }: { sid: string }) {
   const [rev, setRev] = useState(0),
-    [error, setError] = useState("");
+    [error, setError] = useState(""),
+    [busy, setBusy] = useState(false),
+    [message, setMessage] = useState(""),
+    [choice, setChoice] = useState<{
+      id: string;
+      name: string;
+      amount: number;
+      interval: string;
+    } | null>(null);
+  const location = useLocation();
   const data = useData<{
       paymentInstructions: string;
+      accessAvailable: boolean;
+      currentSubscriptionId: string | null;
+      pilotUntil: string | null;
+      entitlements: {
+        feature_code: string;
+        allowed: boolean;
+        limit_value: number | null;
+      }[];
       subscriptions: {
         id: string;
         name: string;
         status: string;
         current_period_end: string;
         billing_interval: string;
+        plan_price_id: string;
+        billing_mode: string;
       }[];
       invoices: Invoice[];
       usage: { feature_code: string; period_key: string; value: number }[];
     }>(`/api/merchant/stores/${sid}/billing`, rev),
     plans = useData<{ plans: Plan[] }>("/api/public/plans");
+  const current = data.value?.subscriptions.find(
+    (s) => s.id === data.value?.currentSubscriptionId,
+  );
+  const pending = data.value?.subscriptions.find((s) => s.status === "pending");
   async function choose(pid: string) {
+    if (busy) return;
+    setBusy(true);
+    setError("");
+    setMessage("");
     try {
       await api(`/api/merchant/stores/${sid}/billing`, "POST", {
         plan_price_id: pid,
+        confirm_replace: Boolean(current),
       });
+      setChoice(null);
+      setMessage(
+        "Tagihan dibuat. Ikuti instruksi pembayaran di bawah. Paket aktif setelah pembayaran diverifikasi admin.",
+      );
       setRev((r) => r + 1);
     } catch (e) {
       setError((e as Error).message);
+    } finally {
+      setBusy(false);
     }
   }
   return (
     <div className="seller-billing-page">
       <div className="seller-page-intro">
         <h1>Langganan toko</h1>
-        <p>Pilih paket untuk mengelola tokomu. Semua biaya layanan terlihat di sini.</p>
+        <p>
+          Pilih paket untuk mengelola tokomu. Semua biaya layanan terlihat di
+          sini.
+        </p>
       </div>
-      <Notice error={error || data.error || plans.error} />
+      <Notice
+        error={
+          choice
+            ? data.error || plans.error
+            : error || data.error || plans.error
+        }
+      />
+      {location.search.includes("reason=publish") && (
+        <div className="seller-setup-callout">
+          <strong>Aktifkan paket untuk menerbitkan toko.</strong>
+          <p>
+            Pengaturan tokomu sudah tersimpan. Pilih paket, selesaikan
+            pembayaran, lalu kembali ke pengaturan untuk menerbitkan toko.
+          </p>
+          <Link to="/app/settings">Kembali ke pengaturan</Link>
+        </div>
+      )}
+      {message && (
+        <p className="admin-success" role="status">
+          {message}
+        </p>
+      )}
+      {pending && (
+        <p className="seller-setup-callout" role="status">
+          Menunggu pembayaran paket <strong>{pending.name}</strong>. Tagihan ada
+          di bawah; pilihan ini belum mengganti paket aktif.
+        </p>
+      )}
+      {data.value?.pilotUntil &&
+        new Date(data.value.pilotUntil).getTime() > Date.now() && (
+          <p className="seller-setup-callout">
+            Akses pilot disetujui sampai{" "}
+            {new Date(data.value.pilotUntil).toLocaleDateString("id-ID")}. Paket
+            berbayar akan menggantikan akses ini setelah aktif.
+          </p>
+        )}
       <section className="seller-billing-panel">
         <div className="seller-card-title">
           <Icon name="credit-card" size={21} />
@@ -1791,15 +2204,22 @@ function Billing({ sid }: { sid: string }) {
             <p>Informasi paket yang terhubung dengan tokomu.</p>
           </div>
         </div>
-        {data.value?.subscriptions.length ? (
+        {current ? (
           <div className="seller-subscription-list">
-            {data.value.subscriptions.map((subscription) => (
+            {[current].map((subscription) => (
               <div key={subscription.id} className="seller-subscription-row">
                 <div>
                   <strong>{subscription.name}</strong>
-                  <span>Berlaku hingga {new Date(subscription.current_period_end).toLocaleDateString("id-ID")}</span>
+                  <span>
+                    Berlaku hingga{" "}
+                    {new Date(
+                      subscription.current_period_end,
+                    ).toLocaleDateString("id-ID")}
+                  </span>
                 </div>
-                <span className="seller-subscription-state">{label(subscription.status)}</span>
+                <span className="seller-subscription-state">
+                  {label(subscription.status)}
+                </span>
               </div>
             ))}
           </div>
@@ -1824,14 +2244,50 @@ function Billing({ sid }: { sid: string }) {
               <article key={plan.id} className="seller-plan">
                 <h3>{plan.name}</h3>
                 <p>{plan.description}</p>
+                <ul className="seller-plan-features">
+                  {plan.entitlements?.map((e) => (
+                    <li key={e.feature_code}>
+                      {label(e.feature_code)}:{" "}
+                      {e.allowed
+                        ? e.limit_value === null
+                          ? "Tanpa batas"
+                          : e.feature_code === "media_bytes"
+                            ? `${Number(e.limit_value) / 1000000} MB / bulan`
+                            : e.feature_code === "products"
+                              ? `${e.limit_value} produk`
+                              : `${e.limit_value} / bulan`
+                        : "Tidak tersedia"}
+                    </li>
+                  ))}
+                </ul>
                 <div className="seller-plan-actions">
                   {plan.prices.map((price) => (
                     <button
                       key={price.id}
                       className="seller-plan-button"
-                      onClick={() => choose(price.id!)}
+                      disabled={
+                        busy ||
+                        !data.value ||
+                        current?.plan_price_id === price.id ||
+                        pending?.plan_price_id === price.id
+                      }
+                      onClick={() => {
+                        setError("");
+                        setChoice({
+                          id: price.id!,
+                          name: plan.name,
+                          amount: Number(price.amount_idr),
+                          interval: price.billing_interval,
+                        });
+                      }}
                     >
-                      {rupiah(price.amount_idr)} / {price.billing_interval === "monthly" ? "bulan" : "tahun"}
+                      {current?.plan_price_id === price.id
+                        ? "Paket saat ini · "
+                        : pending?.plan_price_id === price.id
+                          ? "Menunggu pembayaran · "
+                          : ""}
+                      {rupiah(price.amount_idr)} /{" "}
+                      {price.billing_interval === "monthly" ? "bulan" : "tahun"}
                       <Icon name="arrow-right" size={16} />
                     </button>
                   ))}
@@ -1842,9 +2298,15 @@ function Billing({ sid }: { sid: string }) {
         ) : plans.value ? (
           <div className="seller-inline-empty">
             <Icon name="clock" size={20} />
-            <span>Paket langganan belum tersedia. Kamu tetap bisa menyiapkan tokomu.</span>
+            <span>
+              Paket langganan belum tersedia. Kamu tetap bisa menyiapkan tokomu.
+            </span>
           </div>
-        ) : <p className="seller-loading" aria-busy="true">Memuat pilihan paket…</p>}
+        ) : (
+          <p className="seller-loading" aria-busy="true">
+            Memuat pilihan paket…
+          </p>
+        )}
       </section>
       <section className="seller-billing-panel">
         <div className="seller-card-title">
@@ -1860,7 +2322,9 @@ function Billing({ sid }: { sid: string }) {
               <div className="seller-invoice-row" key={invoice.id}>
                 <div>
                   <strong>{invoice.invoice_number}</strong>
-                  <span>{new Date(invoice.period_start).toLocaleDateString("id-ID")}</span>
+                  <span>
+                    {new Date(invoice.period_start).toLocaleDateString("id-ID")}
+                  </span>
                 </div>
                 <div className="seller-invoice-meta">
                   <strong>{rupiah(invoice.amount_idr)}</strong>
@@ -1890,6 +2354,22 @@ function Billing({ sid }: { sid: string }) {
             <p>Ringkasan pemakaian yang tercatat pada paketmu.</p>
           </div>
         </div>
+        {data.value?.entitlements.length ? (
+          <ul className="seller-plan-features">
+            {data.value.entitlements.map((e) => (
+              <li key={e.feature_code}>
+                {label(e.feature_code)} ·{" "}
+                {e.allowed
+                  ? e.limit_value === null
+                    ? "Tanpa batas"
+                    : e.feature_code === "media_bytes"
+                      ? `${Number(e.limit_value) / 1000000} MB`
+                      : e.limit_value
+                  : "Tidak tersedia"}
+              </li>
+            ))}
+          </ul>
+        ) : null}
         {data.value?.usage.length ? (
           <div className="seller-usage-list">
             {data.value.usage.map((usage, index) => (
@@ -1906,6 +2386,53 @@ function Billing({ sid }: { sid: string }) {
           </div>
         )}
       </section>
+      {choice && (
+        <AdminModal
+          title={current ? "Ganti paket toko" : "Konfirmasi pilihan paket"}
+          busy={busy}
+          close={() => {
+            setChoice(null);
+            setError("");
+          }}
+        >
+          <p>
+            <strong>{choice.name}</strong> · {rupiah(choice.amount)} /{" "}
+            {label(choice.interval)}
+          </p>
+          <p>
+            {current
+              ? `Paket ${current.name} tetap berlaku sampai pembayaran paket baru diverifikasi. Setelah itu, paket lama dihentikan dan seluruh fitur serta batasnya diganti oleh paket baru. Tidak ada penggabungan kuota.`
+              : "Paket aktif setelah pembayaran diverifikasi admin. Selama menunggu, kamu dapat menyiapkan isi toko."}
+          </p>
+          <p>
+            Pemakaian bulan berjalan tetap tercatat. Biaya paket baru dibayar
+            penuh, tanpa pengembalian otomatis sisa masa paket lama.
+          </p>
+          {error && (
+            <p className="live-error" role="alert">
+              {error}
+            </p>
+          )}
+          <div className="admin-dialog-actions">
+            <button
+              disabled={busy}
+              onClick={() => {
+                setChoice(null);
+                setError("");
+              }}
+            >
+              Batal
+            </button>
+            <button
+              className="admin-dialog-submit"
+              disabled={busy}
+              onClick={() => void choose(choice.id)}
+            >
+              {busy ? "Membuat tagihan…" : "Setuju & buat tagihan"}
+            </button>
+          </div>
+        </AdminModal>
+      )}
     </div>
   );
 }

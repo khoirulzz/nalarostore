@@ -1,6 +1,8 @@
+import { normalizePlanCode } from "../../shared/plans";
+import { replaceSubscription } from "./admin-stores";
 import { z } from "zod";
 import type { DB } from "./db";
-import { assert, body, id, json, money } from "./security";
+import { assert, body, id, json, money, HttpError } from "./security";
 import {
   audit,
   enqueue,
@@ -31,7 +33,7 @@ export async function entitlement(
 ) {
   const sub = (
     await db.query(
-      `SELECT s.*,e.allowed,e.limit_value FROM store_subscriptions s LEFT JOIN plan_entitlements e ON e.plan_id=s.plan_id AND e.feature_code=$2 WHERE s.store_id=$1 AND s.status<>'canceled' ORDER BY s.created_at DESC LIMIT 1`,
+      `SELECT s.*,e.allowed,e.limit_value FROM store_subscriptions s LEFT JOIN plan_entitlements e ON e.plan_id=s.plan_id AND e.feature_code=$2 WHERE s.store_id=$1 AND s.status NOT IN ('canceled','pending') ORDER BY CASE WHEN s.status IN ('trial','active','grace','past_due') THEN 0 ELSE 1 END,s.created_at DESC LIMIT 1`,
       [sid, feature],
     )
   )[0];
@@ -52,17 +54,19 @@ export async function entitlement(
   const end = sub.current_period_end
     ? new Date(sub.current_period_end).getTime()
     : 0;
-  assert(
+  const active =
     ["trial", "active", "grace", "past_due"].includes(sub.status) &&
-      Date.now() <
-        end + (sub.status === "trial" ? 0 : sub.grace_days * 86400000),
+    Date.now() < end + (sub.status === "trial" ? 0 : sub.grace_days * 86400000);
+  if (!["storefront", "orders"].includes(feature) && !active) return;
+  assert(
+    active,
     423,
-    "Langganan toko berakhir. Hubungi pengelola toko.",
+    "Langganan toko berakhir. Pilih atau perbarui paket di halaman Langganan.",
   );
   assert(
     sub.allowed !== false,
     403,
-    "Fitur ini tidak tersedia pada paket toko.",
+    "Fitur ini tidak tersedia pada paket toko. Pilih upgrade di halaman Langganan.",
   );
   if (increment && sub.limit_value !== null && sub.limit_value !== undefined) {
     const used =
@@ -82,14 +86,24 @@ export async function entitlement(
     assert(
       Number(used) + increment <= Number(sub.limit_value),
       409,
-      "Kuota paket telah tercapai.",
+      "Kuota paket telah tercapai. Pilih upgrade di halaman Langganan.",
     );
   }
 }
 const planSchema = z
   .object({
-    code: z.string().regex(/^[a-z0-9-]{2,40}$/),
-    name: z.string().min(2).max(100),
+    code: z
+      .string()
+      .transform(normalizePlanCode)
+      .pipe(
+        z
+          .string()
+          .regex(
+            /^[a-z0-9-]{2,40}$/,
+            "Kode paket perlu 2–40 karakter, misalnya bisnis-bulanan.",
+          ),
+      ),
+    name: z.string().trim().min(2).max(100),
     description: z.string().max(3000).default(""),
     status: z.enum(["draft", "active", "archived"]),
     is_public: z.boolean(),
@@ -131,7 +145,7 @@ const planSchema = z
   );
 export async function publicPlans(db: DB) {
   return db.query(
-    `SELECT p.*,COALESCE((SELECT jsonb_agg(jsonb_build_object('id',pr.id,'billing_interval',pr.billing_interval,'amount_idr',pr.amount_idr)) FROM plan_prices pr WHERE pr.plan_id=p.id AND pr.is_active),'[]') AS prices FROM plans p WHERE p.is_public AND p.status='active' ORDER BY p.sort_order`,
+    `SELECT p.*,COALESCE((SELECT jsonb_agg(jsonb_build_object('id',pr.id,'billing_interval',pr.billing_interval,'amount_idr',pr.amount_idr)) FROM plan_prices pr WHERE pr.plan_id=p.id AND pr.is_active),'[]') AS prices,COALESCE((SELECT jsonb_agg(e) FROM plan_entitlements e WHERE e.plan_id=p.id),'[]') AS entitlements FROM plans p WHERE p.is_public AND p.status='active' ORDER BY p.sort_order`,
   );
 }
 export async function billingRoutes(
@@ -183,10 +197,27 @@ export async function billingRoutes(
   );
   if (merchant) {
     const sid = merchant[1];
-    const access = await storeAccess(db, user, sid);
+    const access = await storeAccess(db, user, sid, request.method !== "GET");
     requireUser(user);
-    if (request.method === "GET")
+    if (request.method === "GET") {
+      const current = (
+        await db.query(
+          `SELECT id FROM store_subscriptions WHERE store_id=$1 AND status IN ('trial','active','grace','past_due') AND current_period_end+CASE WHEN status='trial' THEN interval '0 days' ELSE interval '1 day'*grace_days END>now() LIMIT 1`,
+          [sid],
+        )
+      )[0];
+      let accessAvailable = true;
+      try {
+        await entitlement(db, sid, "storefront");
+      } catch (e) {
+        if (e instanceof HttpError && [403, 423].includes(e.status))
+          accessAvailable = false;
+        else throw e;
+      }
       return json({
+        accessAvailable,
+        currentSubscriptionId: current?.id || null,
+        pilotUntil: access.pilot_until,
         paymentInstructions:
           (
             await db.query(
@@ -205,14 +236,25 @@ export async function billingRoutes(
           "SELECT * FROM usage_counters WHERE store_id=$1",
           [sid],
         ),
+        entitlements: await db.query(
+          `SELECT e.* FROM plan_entitlements e JOIN store_subscriptions s ON s.plan_id=e.plan_id WHERE s.store_id=$1 AND s.id=$2`,
+          [sid, current?.id || null],
+        ),
       });
+    }
     if (request.method === "POST") {
       assert(
         access.role === "owner",
         403,
         "Hanya pemilik toko dapat memilih paket.",
       );
-      const c = await body(request, z.object({ plan_price_id: id }));
+      const c = await body(
+        request,
+        z.object({
+          plan_price_id: id,
+          confirm_replace: z.boolean().default(false),
+        }),
+      );
       const subid = crypto.randomUUID();
       await db.tx(async (tx) => {
         await tx.query("SELECT id FROM stores WHERE id=$1 FOR UPDATE", [sid]);
@@ -232,16 +274,40 @@ export async function billingRoutes(
         )[0];
         assert(pr, 404, "Paket tidak tersedia.");
         const active = await tx.query(
-          `SELECT id FROM store_subscriptions WHERE store_id=$1 AND status IN ('trial','active','past_due','grace')`,
+          `SELECT id,plan_price_id FROM store_subscriptions WHERE store_id=$1 AND status IN ('trial','active','past_due','grace') AND current_period_end+CASE WHEN status='trial' THEN interval '0 days' ELSE interval '1 day'*grace_days END>now()`,
           [sid],
         );
         assert(
-          !active.length,
+          !active.some((s) => s.plan_price_id === pr.id),
           409,
-          "Toko masih memiliki langganan. Hubungi admin untuk perubahan paket.",
+          "Paket ini sudah aktif.",
+        );
+        assert(
+          !active.length || c.confirm_replace,
+          409,
+          "Konfirmasikan penggantian paket. Seluruh fitur dan batas paket lama berakhir setelah pembayaran diverifikasi.",
+        );
+        const pending = (
+          await tx.query(
+            "SELECT id,plan_price_id FROM store_subscriptions WHERE store_id=$1 AND status='pending'",
+            [sid],
+          )
+        )[0];
+        assert(
+          !pending || pending.plan_price_id !== pr.id,
+          409,
+          "Tagihan paket ini sudah tersedia. Selesaikan pembayaran pada tagihan yang ada.",
         );
         await tx.query(
-          `INSERT INTO store_subscriptions(id,store_id,plan_id,plan_price_id,billing_interval,price_snapshot_idr,status,current_period_start,current_period_end,grace_days) VALUES($1,$2,$3,$4,$5,$6,'trial',now(),now()+interval '1 day'*$7,$8)`,
+          `UPDATE subscription_invoices SET status='void' WHERE status IN ('unpaid','overdue','draft') AND subscription_id IN (SELECT id FROM store_subscriptions WHERE store_id=$1 AND status='pending')`,
+          [sid],
+        );
+        await tx.query(
+          "UPDATE store_subscriptions SET status='canceled' WHERE store_id=$1 AND status='pending'",
+          [sid],
+        );
+        await tx.query(
+          `INSERT INTO store_subscriptions(id,store_id,plan_id,plan_price_id,billing_interval,price_snapshot_idr,status,current_period_start,current_period_end,grace_days) VALUES($1,$2,$3,$4,$5,$6,'pending',now(),now(),$7)`,
           [
             subid,
             sid,
@@ -249,7 +315,6 @@ export async function billingRoutes(
             pr.id,
             pr.billing_interval,
             pr.amount_idr,
-            policy.trial_days,
             policy.grace_days,
           ],
         );
@@ -314,11 +379,21 @@ export async function billingRoutes(
       ]),
     );
     await db.tx(async (tx) => {
+      const locked = (
+        await tx.query(
+          "SELECT umkm_activated_at FROM stores WHERE id=$1 FOR UPDATE",
+          [pilot[1]],
+        )
+      )[0];
+      assert(locked, 404, "Toko tidak ditemukan.");
+      if ("months" in c && locked.umkm_activated_at) return;
+      // Explicit admin pilot activation replaces previous package rights.
+      if (("days" in c && c.days > 0) || "months" in c)
+        await replaceSubscription(tx, pilot[1]);
       const store = await tx.query(
-        "UPDATE stores SET pilot_until=CASE WHEN $2=0 AND $3=0 THEN NULL ELSE now()+interval '1 day'*$2+interval '1 month'*$3 END WHERE id=$1 RETURNING id,pilot_until",
+        "UPDATE stores SET pilot_until=CASE WHEN $2=0 AND $3=0 THEN NULL ELSE now()+interval '1 day'*$2+interval '1 month'*$3 END,umkm_activated_at=CASE WHEN $3=6 THEN now() ELSE umkm_activated_at END WHERE id=$1 RETURNING id,pilot_until",
         [pilot[1], "days" in c ? c.days : 0, "months" in c ? c.months : 0],
       );
-      assert(store[0], 404, "Toko tidak ditemukan.");
       await audit(tx, user.id, pilot[1], "pilot.update", "store", pilot[1], {
         ...c,
         pilot_until: store[0].pilot_until,
@@ -362,7 +437,9 @@ export async function billingRoutes(
   if (path === "/api/admin/overview" && request.method === "GET")
     return json({
       stores: await db.query(
-        "SELECT id,slug,name,status,pilot_until FROM stores ORDER BY created_at DESC LIMIT 200",
+        `SELECT s.id,s.slug,s.name,s.status,s.pilot_until,s.umkm_activated_at,u.email AS owner_email,
+        (SELECT p.name FROM store_subscriptions sub JOIN plans p ON p.id=sub.plan_id WHERE sub.store_id=s.id AND sub.status IN ('trial','active','grace','past_due') LIMIT 1) AS plan_name
+        FROM stores s JOIN merchants m ON m.id=s.merchant_id JOIN users u ON u.id=m.owner_user_id ORDER BY s.created_at DESC`,
       ),
       invoices: await db.query(
         `SELECT i.*,s.store_id FROM subscription_invoices i JOIN store_subscriptions s ON s.id=i.subscription_id ORDER BY i.issued_at DESC LIMIT 200`,
@@ -382,6 +459,16 @@ export async function billingRoutes(
     const c = await body(request, planSchema),
       pid = planMatch[1] || crypto.randomUUID();
     await db.tx(async (tx) => {
+      assert(
+        !(
+          await tx.query("SELECT id FROM plans WHERE code=$1 AND id<>$2", [
+            c.code,
+            pid,
+          ])
+        )[0],
+        409,
+        "Kode paket sudah digunakan. Pilih kode lain.",
+      );
       if (planMatch[1]) {
         const found = await tx.query(
           "SELECT id FROM plans WHERE id=$1 FOR UPDATE",
@@ -437,11 +524,14 @@ export async function billingRoutes(
     await db.tx(async (tx) => {
       const peek = (
         await tx.query(
-          "SELECT subscription_id FROM subscription_invoices WHERE id=$1",
+          "SELECT i.subscription_id,s.store_id FROM subscription_invoices i JOIN store_subscriptions s ON s.id=i.subscription_id WHERE i.id=$1",
           [pay[1]],
         )
       )[0];
       assert(peek, 404, "Invoice tidak ditemukan.");
+      await tx.query("SELECT id FROM stores WHERE id=$1 FOR UPDATE", [
+        peek.store_id,
+      ]);
       const sub = (
         await tx.query(
           "SELECT * FROM store_subscriptions WHERE id=$1 FOR UPDATE",
@@ -460,6 +550,24 @@ export async function billingRoutes(
         409,
         "Invoice tidak dapat diverifikasi.",
       );
+      if (sub.status === "pending")
+        await replaceSubscription(tx, sub.store_id, sub.id);
+      else {
+        if (sub.status === "expired")
+          assert(
+            !(
+              await tx.query(
+                `SELECT id FROM store_subscriptions WHERE store_id=$1 AND id<>$2 AND status IN ('trial','active','grace','past_due')`,
+                [sub.store_id, sub.id],
+              )
+            )[0],
+            409,
+            "Tagihan lama tidak dapat menggantikan paket aktif. Pilih paket melalui halaman Langganan.",
+          );
+        await tx.query("UPDATE stores SET pilot_until=NULL WHERE id=$1", [
+          sub.store_id,
+        ]);
+      }
       await tx.query(
         `UPDATE subscription_invoices SET status='paid',paid_at=now(),verified_by=$2 WHERE id=$1`,
         [inv.id, user.id],
@@ -514,6 +622,7 @@ export async function billingRoutes(
     const c = await body(
       request,
       z.object({
+        store_id: id.nullable().default(null),
         status: z.enum([
           "new",
           "reviewing",
@@ -539,8 +648,19 @@ export async function billingRoutes(
         ]),
       }),
     );
+    const existingLead = (
+      await db.query(
+        "SELECT project_brief FROM custom_project_leads WHERE id=$1",
+        [lead[1]],
+      )
+    )[0];
+    assert(existingLead, 404, "Pengajuan tidak ditemukan.");
+    const program = existingLead.project_brief.startsWith(
+      "[PENGAJUAN PROGRAM UMKM",
+    );
     assert(
-      !["quoted", "accepted", "closed"].includes(c.status) ||
+      program ||
+        !["quoted", "accepted", "closed"].includes(c.status) ||
         (c.quote_idr !== null &&
           c.source_ownership !== "pending" &&
           c.contract_terms.length >= 20),
@@ -555,8 +675,33 @@ export async function billingRoutes(
       "Proyek harus disepakati sebelum serah terima.",
     );
     await db.tx(async (tx) => {
+      if (c.store_id) {
+        const target = (
+          await tx.query(
+            "SELECT id,umkm_activated_at FROM stores WHERE id=$1 FOR UPDATE",
+            [c.store_id],
+          )
+        )[0];
+        assert(target, 404, "Toko peserta tidak ditemukan.");
+        if (program && c.status === "accepted" && !target.umkm_activated_at) {
+          await replaceSubscription(tx, c.store_id);
+          await tx.query(
+            "UPDATE stores SET pilot_until=now()+interval '6 months',umkm_activated_at=now() WHERE id=$1",
+            [c.store_id],
+          );
+          await audit(
+            tx,
+            user.id,
+            c.store_id,
+            "pilot.update",
+            "store",
+            c.store_id,
+            { months: 6, lead_id: lead[1] },
+          );
+        }
+      }
       const r = await tx.query(
-        "UPDATE custom_project_leads SET status=$2,source_ownership=$3,reusable_modules=$4,contract_terms=$5,quote_idr=$6,delivery_status=$7 WHERE id=$1 RETURNING id",
+        "UPDATE custom_project_leads SET store_id=$8,status=$2,source_ownership=$3,reusable_modules=$4,contract_terms=$5,quote_idr=$6,delivery_status=$7 WHERE id=$1 RETURNING id",
         [
           lead[1],
           c.status,
@@ -565,6 +710,7 @@ export async function billingRoutes(
           c.contract_terms,
           c.quote_idr,
           c.delivery_status,
+          c.store_id,
         ],
       );
       assert(r[0], 404, "Brief tidak ditemukan.");
@@ -607,7 +753,7 @@ export async function billingCycle(db: DB) {
       `SELECT * FROM store_subscriptions WHERE status IN ('trial','active','past_due','grace') AND current_period_end<now()+interval '7 days' ORDER BY id LIMIT 100 FOR UPDATE SKIP LOCKED`,
     );
     for (const s of rows) {
-      await issueInvoice(tx, s.id);
+      if (s.billing_mode !== "internal") await issueInvoice(tx, s.id);
       const end = new Date(s.current_period_end).getTime(),
         grace = end + (s.status === "trial" ? 0 : s.grace_days * 86400000);
       if (Date.now() > grace)

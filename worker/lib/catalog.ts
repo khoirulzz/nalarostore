@@ -108,8 +108,10 @@ export async function catalogRoutes(
     requireUser(user);
     return json({
       stores: await db.query(
-        `SELECT s.*,m.role FROM stores s JOIN merchant_memberships m ON m.merchant_id=s.merchant_id WHERE m.user_id=$1 ORDER BY s.created_at`,
-        [user.id],
+        user.admin
+          ? `SELECT s.*,'owner' AS role FROM stores s ORDER BY s.created_at`
+          : `SELECT s.*,m.role FROM stores s JOIN merchant_memberships m ON m.merchant_id=s.merchant_id WHERE m.user_id=$1 ORDER BY s.created_at`,
+        user.admin ? [] : [user.id],
       ),
     });
   }
@@ -219,7 +221,16 @@ export async function catalogRoutes(
   if (resource === "publish" && request.method === "POST") {
     const c = await body(request, z.object({ publish: z.boolean() }));
     await db.tx(async (tx) => {
-      await tx.query("SELECT id FROM stores WHERE id=$1 FOR UPDATE", [sid]);
+      const locked = (
+        await tx.query("SELECT status FROM stores WHERE id=$1 FOR UPDATE", [
+          sid,
+        ])
+      )[0];
+      assert(
+        locked && (user.admin || locked.status !== "suspended"),
+        423,
+        "Toko dinonaktifkan admin.",
+      );
       if (c.publish) {
         const settings = (
           await tx.query("SELECT * FROM store_settings WHERE store_id=$1", [

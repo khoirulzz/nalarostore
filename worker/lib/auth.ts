@@ -118,11 +118,28 @@ export async function storeAccess(
   write = false,
 ) {
   requireUser(user);
+  if (user.admin) {
+    const store = (
+      await db.query("SELECT s.*,'owner' AS role FROM stores s WHERE id=$1", [
+        storeId,
+      ])
+    )[0];
+    assert(store, 404, "Toko tidak ditemukan.");
+    if (!write)
+      await audit(db, user.id, storeId, "admin.store.view", "store", storeId);
+    return store;
+  }
   const rows = await db.query(
     `SELECT s.*,m.role FROM stores s JOIN merchant_memberships m ON m.merchant_id=s.merchant_id WHERE s.id=$1 AND m.user_id=$2`,
     [storeId, user.id],
   );
   assert(rows[0], 404, "Toko tidak ditemukan.");
+  if (write)
+    assert(
+      rows[0].status !== "suspended",
+      423,
+      "Toko dinonaktifkan admin. Hubungi pengelola platform.",
+    );
   if (write)
     assert(
       ["owner", "manager"].includes(rows[0].role),

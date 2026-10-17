@@ -85,6 +85,9 @@ export type User = {
 };
 export type Store = {
   pilot_until?: string | null;
+  umkm_activated_at?: string | null;
+  owner_email?: string;
+  plan_name?: string;
   id: string;
   slug: string;
   name: string;
@@ -195,6 +198,33 @@ export type Invoice = {
 export const label = (status: string) =>
   (
     ({
+      products: "Jumlah produk",
+      orders: "Pesanan",
+      media_bytes: "Unggahan gambar (byte)",
+      verified: "Terverifikasi",
+      sent: "Terkirim",
+      "admin.store.view": "Toko diakses admin",
+      "admin.store.status": "Status toko diubah admin",
+      "admin.store.delete": "Toko dihapus admin",
+      "admin.subscription.assign": "Paket ditetapkan admin",
+      "product.create": "Produk ditambahkan",
+      "product.update": "Produk diperbarui",
+      "product.archive": "Produk diarsipkan",
+      "media.upload": "Foto diunggah",
+      "data.export": "Data diekspor",
+      "domain.verify": "Domain diverifikasi",
+      "custom.update": "Pengajuan diperbarui",
+      "email.retry": "Pengiriman email diulang",
+      "billing.policy.update": "Aturan pembayaran diperbarui",
+      void: "Dibatalkan",
+      "store.create": "Toko dibuat",
+      "store.publish": "Toko diterbitkan",
+      "store.pause": "Toko dijeda",
+      "settings.update": "Pengaturan diperbarui",
+      "plan.save": "Paket disimpan",
+      "pilot.update": "Akses pilot diperbarui",
+      "subscription.request": "Paket diajukan",
+      "subscription.payment.verify": "Pembayaran langganan diverifikasi",
       draft: "Draft",
       published: "Terbit",
       paused: "Dijeda",
