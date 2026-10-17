@@ -11,20 +11,28 @@ export async function api<T>(
   path: string,
   method = "GET",
   data?: unknown,
+  extraHeaders: Record<string, string> = {},
 ): Promise<T> {
+  const needsAuth =
+    /^\/api\/(merchant|admin|auth|customer)\//.test(path) ||
+    /\/(checkout|conversations)(?:$|\?)/.test(path) ||
+    path.startsWith("/api/public/chat/");
+  const firebase = needsAuth ? await import("../lib/firebase") : null;
+  if (firebase) await firebase.authReady;
+  const identity = firebase?.auth?.currentUser?.uid;
   const response = await fetch(path, {
     method,
     credentials: "same-origin",
     headers: {
       ...(data ? { "content-type": "application/json" } : {}),
-      ...(path.startsWith("/api/merchant/") ||
-      path.startsWith("/api/admin/") ||
-      path.startsWith("/api/auth/")
-        ? await (await import("../lib/firebase")).authorizationHeaders()
-        : {}),
+      ...(firebase ? await firebase.authorizationHeaders() : {}),
+      ...adminContextHeaders(path),
+      ...extraHeaders,
     },
     body: data ? JSON.stringify(data) : undefined,
   });
+  if (firebase && identity !== firebase.auth?.currentUser?.uid)
+    throw new APIError("Akun berubah. Muat ulang data untuk akun aktif.", 401);
   let result: T & { error?: string };
   try {
     result = await response.json();
@@ -41,14 +49,22 @@ export async function api<T>(
     );
   return result;
 }
+export function adminContextHeaders(path: string): Record<string, string> {
+  const sid = new URLSearchParams(window.location.search).get("adminStore");
+  return sid && path.startsWith(`/api/merchant/stores/${sid}/`)
+    ? { "x-nalaro-admin-store": sid }
+    : {};
+}
 export function useData<T>(path: string | null, revision = 0) {
   const [value, setValue] = useState<T | null>(null),
+    [loadedPath, setLoadedPath] = useState<string | null>(null),
     [error, setError] = useState(""),
     [loading, setLoading] = useState(true);
   useEffect(() => {
     let current = true;
     setLoading(true);
     setError("");
+    setValue(null);
     if (!path) {
       setLoading(false);
       return () => {
@@ -57,7 +73,10 @@ export function useData<T>(path: string | null, revision = 0) {
     }
     api<T>(path)
       .then((v) => {
-        if (current) setValue(v);
+        if (current) {
+          setLoadedPath(path);
+          setValue(v);
+        }
       })
       .catch((e) => {
         if (current) setError(e.message);
@@ -69,7 +88,7 @@ export function useData<T>(path: string | null, revision = 0) {
       current = false;
     };
   }, [path, revision]);
-  return { value, error, loading };
+  return { value: loadedPath === path ? value : null, error, loading };
 }
 export const rupiah = (v: number | string) =>
   new Intl.NumberFormat("id-ID", {

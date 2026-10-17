@@ -18,6 +18,12 @@ import { cleanup, deliverOutbox } from "./lib/jobs";
 import { operationRoutes } from "./lib/operations";
 import { storeHTML } from "./lib/seo";
 import { pagesResponse } from "./lib/pages";
+import {
+  adminWorkspace,
+  engagementRoutes,
+  createConversation,
+  publicChat,
+} from "./lib/engagement";
 // Deployment bindings are optional until provisioned. Generated base Env comes from wrangler types.
 export type RuntimeEnv = Env & {
   HYPERDRIVE?: Hyperdrive;
@@ -80,6 +86,32 @@ export async function handleAPI(
       subscriptionBilling: true,
       customInquiry: true,
     });
+  const newChat = path.match(
+    /^\/api\/public\/(?:stores\/([a-z0-9-]+)|store)\/conversations$/,
+  );
+  if (newChat && request.method === "POST") {
+    assert(platform || !newChat[1], 404, "Toko tidak ditemukan.");
+    const store = await publicStore(
+      db,
+      newChat[1] || null,
+      url.hostname,
+      env.ROOT_DOMAIN,
+    );
+    return createConversation(
+      db,
+      request,
+      store.id,
+      await identity(db, request, env),
+    );
+  }
+  if (path.startsWith("/api/public/chat/")) {
+    const response = await publicChat(
+      db,
+      request,
+      await identity(db, request, env),
+    );
+    if (response) return response;
+  }
   const m = path.match(
     /^\/api\/public\/(?:stores\/([a-z0-9-]+)|store)(?:\/(products|checkout|track)(?:\/([a-f0-9]{64})(?:\/(qris))?)?)?$/,
   );
@@ -120,7 +152,13 @@ export async function handleAPI(
         30,
       );
       return json(
-        await checkout(db, store.id, await body(request, checkoutSchema), env),
+        await checkout(
+          db,
+          store.id,
+          await body(request, checkoutSchema),
+          env,
+          await identity(db, request, env),
+        ),
         201,
       );
     }
@@ -211,6 +249,8 @@ export async function handleAPI(
   }
   assert(platform, 404, "Halaman tidak ditemukan.");
   const user = await identity(db, request, env);
+  const workspace = await adminWorkspace(db, request, user);
+  if (workspace) return workspace;
   const auth = await authRoutes(db, request, env, user, path);
   if (auth) return auth;
   const domainPost = path.match(
@@ -224,6 +264,7 @@ export async function handleAPI(
   if (mediaPost && request.method === "POST")
     return upload(db, request, user, mediaPost[1], env.MEDIA);
   for (const route of [
+    () => engagementRoutes(db, request, user),
     () => adminStoreRoutes(db, request, user, path),
     () => operationRoutes(db, request, user),
     () => catalogRoutes(db, request, user, path, env.ROOT_DOMAIN),
@@ -382,7 +423,7 @@ export default {
       );
       const path = new URL(request.url).pathname;
       if (
-        /^\/(app|admin|login|register|verify|forgot-password|auth|preview|demo)(?:\/|$)/.test(
+        /^\/(app|admin|account|buyer|login|register|verify|forgot-password|auth|preview|demo)(?:\/|$)/.test(
           path,
         ) ||
         /\/(cart|checkout|track)(?:\/|$)/.test(path)

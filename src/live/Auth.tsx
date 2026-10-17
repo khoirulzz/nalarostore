@@ -151,7 +151,19 @@ async function checkPassword(password: string) {
       "Kata sandi belum memenuhi persyaratan. Lengkapi kriteria di bawah.",
     );
 }
-export function Auth({ register = false }: { register?: boolean }) {
+export function Auth({
+  register = false,
+  buyer = false,
+}: {
+  register?: boolean;
+  buyer?: boolean;
+}) {
+  const [search] = useSearchParams();
+  const next = search.get("next") || "/account";
+  const destination =
+    next.startsWith("/") && !next.startsWith("//") && !next.includes("\\")
+      ? next
+      : "/account";
   const [error, setError] = useState(""),
     [busy, setBusy] = useState(false),
     [password, setPassword] = useState("");
@@ -176,16 +188,24 @@ export function Auth({ register = false }: { register?: boolean }) {
         );
         try {
           await sendEmailVerification(user, {
-            url: window.location.origin + "/verify",
+            url: window.location.origin + "/verify" + (buyer ? "?buyer=1" : ""),
           });
         } catch (mailError) {
-          navigate("/verify");
+          navigate(buyer ? "/verify?buyer=1" : "/verify");
           throw mailError;
         }
-        navigate("/verify");
+        navigate(buyer ? "/verify?buyer=1" : "/verify");
       } else {
         await signInWithEmailAndPassword(a, email, password);
-        navigate(await dashboardRoute(), { replace: true });
+        const route = await dashboardRoute();
+        navigate(
+          buyer
+            ? route === "/verify"
+              ? "/verify?buyer=1"
+              : destination
+            : route,
+          { replace: true },
+        );
       }
     } catch (e) {
       setError(authError(e));
@@ -196,12 +216,28 @@ export function Auth({ register = false }: { register?: boolean }) {
   return (
     <Frame
       title={
-        register ? "Mulai toko atas nama bisnismu." : "Kembali ke workspace."
+        buyer
+          ? register
+            ? "Satu akun untuk belanja di Nalaro."
+            : "Selamat datang kembali."
+          : register
+            ? "Mulai toko atas nama bisnismu."
+            : "Kembali ke workspace."
       }
-      description="Produk, stok, dan pesanan dikelola dalam satu tempat. Pelanggan tetap bisa berbelanja tanpa membuat akun."
+      description={
+        buyer
+          ? "Simpan alamat, lihat pesanan lintas toko, dan lanjutkan percakapan. Belanja tanpa akun tetap tersedia."
+          : "Produk, stok, dan pesanan dikelola dalam satu tempat. Pelanggan tetap bisa berbelanja tanpa membuat akun."
+      }
     >
       <form className="live-form" onSubmit={submit}>
-        <h2>{register ? "Buat akun merchant" : "Masuk ke akun"}</h2>
+        <h2>
+          {register
+            ? buyer
+              ? "Buat akun Nalaro"
+              : "Buat akun merchant"
+            : "Masuk ke akun"}
+        </h2>
         <label>
           Email
           <input
@@ -234,7 +270,13 @@ export function Auth({ register = false }: { register?: boolean }) {
         {!register && <Link to="/forgot-password">Lupa kata sandi?</Link>}
         <p>
           {register ? "Sudah punya akun?" : "Belum punya akun?"}{" "}
-          <Link to={register ? "/login" : "/register"}>
+          <Link
+            to={
+              (buyer ? "/buyer" : "") +
+              (register ? "/login" : "/register") +
+              (buyer ? "?next=" + encodeURIComponent(destination) : "")
+            }
+          >
             {register ? "Masuk" : "Daftar"}
           </Link>
         </p>
@@ -294,7 +336,7 @@ export function ForgotPassword() {
     </Frame>
   );
 }
-export function Verify() {
+export function Verify({ buyer = false }: { buyer?: boolean } = {}) {
   const [search] = useSearchParams(),
     [message, setMessage] = useState(""),
     [busy, setBusy] = useState(false),
@@ -314,7 +356,20 @@ export function Verify() {
       }
       if (a.currentUser?.emailVerified) {
         const route = await dashboardRoute();
-        setDestination(route);
+        const continueURL = search.get("continueUrl");
+        let buyerReturn = buyer || search.get("buyer") === "1";
+        if (continueURL) {
+          try {
+            const url = new URL(continueURL);
+            buyerReturn ||=
+              url.origin === window.location.origin &&
+              url.pathname === "/verify" &&
+              url.searchParams.get("buyer") === "1";
+          } catch {
+            /* Ignore an invalid continuation. */
+          }
+        }
+        setDestination(buyerReturn ? "/account" : route);
         setVerified(true);
         setMessage("Email berhasil diverifikasi. Akunmu siap digunakan.");
       } else
@@ -370,23 +425,43 @@ export function Verify() {
           <strong>{auth?.currentUser?.email || "Belum masuk"}</strong>
         </div>
         {message && (
-          <p className={`verify-message ${verified ? "is-success" : ""}`} role="status">
+          <p
+            className={`verify-message ${verified ? "is-success" : ""}`}
+            role="status"
+          >
             {message}
           </p>
         )}
         {!verified ? (
           <div className="verify-actions">
-            <button className="button button-dark" onClick={verify} disabled={busy}>
-              {busy ? "Memproses..." : search.get("oobCode") ? "Konfirmasi email" : "Saya sudah memverifikasi email"}
+            <button
+              className="button button-dark"
+              onClick={verify}
+              disabled={busy}
+            >
+              {busy
+                ? "Memproses..."
+                : search.get("oobCode")
+                  ? "Konfirmasi email"
+                  : "Saya sudah memverifikasi email"}
             </button>
-            <button className="verify-secondary" onClick={resend} disabled={busy}>
+            <button
+              className="verify-secondary"
+              onClick={resend}
+              disabled={busy}
+            >
               Kirim ulang tautan
             </button>
             <Link to="/login">Masuk dengan akun lain</Link>
           </div>
         ) : (
           <Link className="button button-dark verify-primary" to={destination}>
-            {destination === "/admin" ? "Buka dashboard admin" : "Buka workspace"} ↗
+            {destination === "/admin"
+              ? "Buka dashboard admin"
+              : destination === "/account"
+                ? "Buka akun pembeli"
+                : "Buka workspace"}{" "}
+            ↗
           </Link>
         )}
       </section>
@@ -534,9 +609,11 @@ export function AccountSecurity() {
 export function RequireAuth({
   children,
   admin = false,
+  buyer = false,
 }: {
   children: ReactNode;
   admin?: boolean;
+  buyer?: boolean;
 }) {
   const [user, setUser] = useState<User | null>(null),
     [error, setError] = useState(""),
@@ -547,22 +624,25 @@ export function RequireAuth({
       setLoading(false);
       return;
     }
-    let active = true;
+    let active = true,
+      generation = 0;
     const unsubscribe = onIdTokenChanged(auth, async (firebaseUser) => {
+      const current = ++generation;
+      setUser(null);
       setLoading(true);
       setError("");
       try {
         const r = firebaseUser
           ? await api<{ user: User | null }>("/api/auth/me")
           : { user: null };
-        if (active) setUser(r.user);
+        if (active && current === generation) setUser(r.user);
       } catch (e) {
-        if (active) {
+        if (active && current === generation) {
           setUser(null);
           setError(authError(e));
         }
       } finally {
-        if (active) setLoading(false);
+        if (active && current === generation) setLoading(false);
       }
     });
     return () => {
@@ -587,8 +667,8 @@ export function RequireAuth({
         </button>
       </main>
     );
-  if (!user) return <Auth />;
-  if (!user.verified) return <Verify />;
+  if (!user) return <Auth buyer={buyer} />;
+  if (!user.verified) return <Verify buyer={buyer} />;
   if (admin && !user.admin)
     return (
       <main className="auth-page">
@@ -596,5 +676,5 @@ export function RequireAuth({
         <Link to="/app">Kembali ke toko</Link>
       </main>
     );
-  return <>{children}</>;
+  return <div key={user.id}>{children}</div>;
 }

@@ -2,6 +2,7 @@ import { z } from "zod";
 import type { DB } from "./db";
 import { assert, json, HttpError, calendarDate } from "./security";
 import { audit, storeAccess, type Identity } from "./auth";
+import { salesAnalytics } from "./sales-analytics";
 
 export function csv(rows: Record<string, unknown>[], columns: string[]) {
   const cell = (value: unknown) => {
@@ -24,9 +25,16 @@ export function csv(rows: Record<string, unknown>[], columns: string[]) {
     ].join("\r\n")
   );
 }
-export function dateRange(url: URL) {
-  const today = new Date().toISOString().slice(0, 10),
-    from = new Date(Date.now() - 29 * 86400000).toISOString().slice(0, 10);
+export function dateRange(url: URL, timezone = "Asia/Jakarta") {
+  const today = new Intl.DateTimeFormat("en-CA", {
+      timeZone: timezone,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).format(new Date()),
+    from = new Date(Date.parse(today) - 29 * 86400000)
+      .toISOString()
+      .slice(0, 10);
   const parsed = z.object({ from: calendarDate, to: calendarDate }).safeParse({
     from: url.searchParams.get("from") || from,
     to: url.searchParams.get("to") || today,
@@ -77,18 +85,7 @@ export async function operationRoutes(
     });
   }
   if (resource === "analytics") {
-    const { from, to } = dateRange(url);
-    const summary = (
-      await db.query(
-        `SELECT count(*)::int AS orders, count(*) FILTER(WHERE payment_status='paid')::int AS paid_orders, count(*) FILTER(WHERE order_status='canceled')::int AS canceled_orders, COALESCE(sum(total_idr) FILTER(WHERE payment_status='paid'),0) AS revenue FROM orders WHERE store_id=$1 AND created_at >= $2::date AND created_at < $3::date+interval '1 day'`,
-        [sid, from, to],
-      )
-    )[0];
-    const daily = await db.query(
-      `SELECT to_char(created_at AT TIME ZONE 'UTC','YYYY-MM-DD') AS day, count(*)::int AS orders, COALESCE(sum(total_idr) FILTER(WHERE payment_status='paid'),0) AS revenue FROM orders WHERE store_id=$1 AND created_at >= $2::date AND created_at < $3::date+interval '1 day' GROUP BY 1 ORDER BY 1`,
-      [sid, from, to],
-    );
-    return json({ summary, daily, from, to, timezone: "UTC" });
+    return salesAnalytics(db, sid, url);
   }
   const kind = url.searchParams.get("resource") || "orders",
     page = Number(url.searchParams.get("page") || 1);

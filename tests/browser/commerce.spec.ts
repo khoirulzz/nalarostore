@@ -10,7 +10,7 @@ test("merchant → product → guest checkout → manual verification → comple
   await page.getByLabel("Kata sandi", { exact: true }).fill("LocalTest123");
   await page.getByRole("button", { name: "Masuk", exact: true }).click();
   await expect(page).toHaveURL(/admin$/);
-  await page.goto("/app");
+  await page.goto("/app/new");
   await expect(
     page.getByRole("heading", { name: "Buat toko pertamamu." }),
   ).toBeVisible();
@@ -23,6 +23,7 @@ test("merchant → product → guest checkout → manual verification → comple
   await expect(
     page.getByRole("heading", { name: "Ringkasan toko" }),
   ).toBeVisible();
+  await page.getByRole('dialog').getByRole('button',{name:'Lewati',exact:true}).click();
   await page.goto("/app/customers");
   await expect(page.getByLabel("Cari nama, email atau telepon")).toBeVisible();
   await expect(page.getByRole("heading", { name: "Belum ada pelanggan" })).toBeVisible();
@@ -226,6 +227,7 @@ test("Firebase signup, verified access, password reset and password change", asy
   await expect(
     page.getByRole("heading", { name: "Ringkasan toko" }),
   ).toBeVisible();
+  await page.getByRole('dialog').getByRole('button',{name:'Lewati',exact:true}).click();
   await page.goto("/forgot-password");
   await page.getByLabel("Email", { exact: true }).fill("merchant@local.test");
   await page.getByRole("button", { name: "Kirim tautan pemulihan" }).click();

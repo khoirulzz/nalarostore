@@ -22,7 +22,7 @@
     "OWNER_EMAIL": "admin@nalaro.digital",
     "FIREBASE_PROJECT_ID": "nalarostore",
     "FIREBASE_API_KEY": "AIzaSyAymTQU-0lwS_p7yLe0JgsFlNkZPpUo8ow",
-    "ENABLE_LIVE_CHECKOUT": "false",
+    "ENABLE_LIVE_CHECKOUT": "true",
     "EMAIL_FROM": "hello@nalaro.digital",
   },
   "secrets": { "required": ["TOKEN_SECRET"] },

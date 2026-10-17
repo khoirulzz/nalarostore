@@ -108,10 +108,8 @@ export async function catalogRoutes(
     requireUser(user);
     return json({
       stores: await db.query(
-        user.admin
-          ? `SELECT s.*,'owner' AS role FROM stores s ORDER BY s.created_at`
-          : `SELECT s.*,m.role FROM stores s JOIN merchant_memberships m ON m.merchant_id=s.merchant_id WHERE m.user_id=$1 ORDER BY s.created_at`,
-        user.admin ? [] : [user.id],
+        `SELECT s.*,m.role FROM stores s JOIN merchant_memberships m ON m.merchant_id=s.merchant_id WHERE m.user_id=$1 ORDER BY s.created_at`,
+        [user.id],
       ),
     });
   }
@@ -227,7 +225,7 @@ export async function catalogRoutes(
         ])
       )[0];
       assert(
-        locked && (user.admin || locked.status !== "suspended"),
+        locked && ((user.admin && user.actingStoreId===sid) || locked.status !== "suspended"),
         423,
         "Toko dinonaktifkan admin.",
       );
@@ -458,7 +456,7 @@ export async function catalogRoutes(
     return json({
       summary: (
         await db.query(
-          `SELECT count(*)::int AS orders,COALESCE(sum(total_idr) FILTER(WHERE payment_status='paid'),0) AS revenue,count(*) FILTER(WHERE order_status='pending')::int AS pending FROM orders WHERE store_id=$1 AND created_at>now()-interval '30 days'`,
+          `SELECT count(*)::int AS orders,COALESCE(sum(subtotal_idr) FILTER(WHERE payment_status='paid' AND order_status NOT IN ('canceled','expired')),0) AS revenue,count(*) FILTER(WHERE order_status='pending')::int AS pending FROM orders WHERE store_id=$1 AND created_at>now()-interval '30 days'`,
           [sid],
         )
       )[0],

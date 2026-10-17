@@ -57,6 +57,7 @@ const LiveStore = lazy(() =>
 const Admin = lazy(() =>
   import("./live/Admin").then((m) => ({ default: m.Admin })),
 );
+const BuyerAccount = lazy(() => import("./live/BuyerAccount").then(m=>({default:m.BuyerAccount})));
 
 type CartLine = { id: string; size: string; quantity: number };
 type CartAPI = {
@@ -1599,6 +1600,9 @@ function App() {
           <Route path="/legal/:document" element={<LegalRoute />} />
           <Route path="/login" element={<Auth />} />
           <Route path="/register" element={<Auth register />} />
+          <Route path="/buyer/login" element={<Auth buyer />} />
+          <Route path="/buyer/register" element={<Auth buyer register />} />
+          <Route path="/account" element={<BuyerAccount />} />
           <Route path="/verify" element={<Verify />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/auth/action" element={<AuthAction />} />

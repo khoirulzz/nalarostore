@@ -7,9 +7,12 @@ import { RequireAuth, AccountSecurity } from "./Auth";
 import { authorizationHeaders, requireFirebase } from "../lib/firebase";
 import { signOut } from "firebase/auth";
 import { Customers, Analytics, ExportButton } from "./Operations";
+import { ResponsibleProfile, Conversations, Notifications } from "./Engagement";
+import { SellerGuide } from "./SellerGuide";
 import {
   api,
   APIError,
+  adminContextHeaders,
   useData,
   rupiah,
   label,
@@ -29,6 +32,9 @@ const menus: { key: string; label: string; icon: IconName }[] = [
   { key: "products", label: "Produk", icon: "box" },
   { key: "inventory", label: "Stok", icon: "chart" },
   { key: "customers", label: "Pelanggan", icon: "users" },
+  { key: "chat", label: "Chat pelanggan", icon: "mail" },
+  { key: "notifications", label: "Notifikasi", icon: "alert" },
+  { key: "responsible", label: "Penanggung jawab", icon: "shield" },
   { key: "analytics", label: "Analitik", icon: "chart" },
   { key: "settings", label: "Tampilan & pengaturan", icon: "palette" },
   { key: "billing", label: "Langganan", icon: "credit-card" },
@@ -55,17 +61,22 @@ export function Merchant() {
 }
 function Workspace() {
   const [rev, setRev] = useState(0);
+  const [guideReplay, setGuideReplay] = useState(0);
+  const location = useLocation(),
+    navigate = useNavigate();
+  const adminStore = new URLSearchParams(location.search).get("adminStore");
+  const contextQuery = adminStore
+    ? "?adminStore=" + encodeURIComponent(adminStore)
+    : "";
   const { value, error, loading } = useData<{ stores: Store[] }>(
-    "/api/merchant/stores",
+    adminStore
+      ? `/api/admin/workspace/stores/${adminStore}`
+      : "/api/merchant/stores",
     rev,
   );
   const account = useData<{ user: User }>("/api/auth/me");
-  const [selected, setSelected] = useState(
-      () => localStorage.getItem("nalaro-selected-store") || "",
-    ),
+  const [selected, setSelected] = useState(""),
     [drawer, setDrawer] = useState(false);
-  const location = useLocation(),
-    navigate = useNavigate();
   const requestedStore = new URLSearchParams(location.search).get("store");
   const chosenStore = requestedStore || selected;
   const sid = value?.stores.some((s) => s.id === chosenStore)
@@ -73,11 +84,34 @@ function Workspace() {
     : value?.stores[0]?.id || "";
   const store = value?.stores.find((s) => s.id === sid);
   useEffect(() => {
+    if (account.value?.user.id)
+      setSelected(
+        localStorage.getItem(
+          "nalaro-selected-store:" + account.value.user.id,
+        ) || "",
+      );
+  }, [account.value?.user.id]);
+  useEffect(() => {
+    if (
+      !loading &&
+      value &&
+      !value.stores.length &&
+      account.value?.user.admin &&
+      !adminStore &&
+      location.pathname !== "/app/new"
+    )
+      navigate("/admin", { replace: true });
+  }, [loading, value, account.value, adminStore, navigate, location.pathname]);
+  useEffect(() => {
     if (requestedStore && value?.stores.some((s) => s.id === requestedStore)) {
       setSelected(requestedStore);
-      localStorage.setItem("nalaro-selected-store", requestedStore);
+      if (account.value?.user.id)
+        localStorage.setItem(
+          "nalaro-selected-store:" + account.value.user.id,
+          requestedStore,
+        );
     }
-  }, [requestedStore, value]);
+  }, [requestedStore, value, account.value?.user.id]);
   const section =
     location.pathname.slice("/app".length).split("/").filter(Boolean)[0] || "";
   useEffect(() => {
@@ -96,7 +130,11 @@ function Workspace() {
   function select(id: string) {
     setDrawer(false);
     setSelected(id);
-    localStorage.setItem("nalaro-selected-store", id);
+    if (account.value?.user.id)
+      localStorage.setItem(
+        "nalaro-selected-store:" + account.value.user.id,
+        id,
+      );
     navigate("/app");
   }
   return (
@@ -138,7 +176,7 @@ function Workspace() {
               key={m.key}
               className={section === m.key ? "active" : ""}
               onClick={() => setDrawer(false)}
-              to={"/app" + (m.key ? "/" + m.key : "")}
+              to={"/app" + (m.key ? "/" + m.key : "") + contextQuery}
             >
               <Icon name={m.icon} />
               {m.label}
@@ -167,6 +205,9 @@ function Workspace() {
       </aside>
       <div className="workspace-main">
         <header className="workspace-topbar">
+          <button type="button" onClick={() => setGuideReplay((r) => r + 1)}>
+            Panduan
+          </button>
           <button
             className="mobile-menu"
             onClick={() => setDrawer(true)}
@@ -191,9 +232,12 @@ function Workspace() {
           )}
         </header>
         <main className="workspace-content">
-          {account.value?.user.admin && store && (
+          {adminStore && account.value?.user.admin && store && (
             <div className="admin-workspace-banner">
-              <span>Anda mengelola toko sebagai admin platform.</span>
+              <span>
+                Mode admin · {store.name} · Pemilik {store.owner_email}. Akses
+                ini dicatat.
+              </span>
               <Link to={`/admin?tab=overview&store=${sid}`}>
                 Kembali ke detail admin <Icon name="arrow-right" size={15} />
               </Link>
@@ -206,19 +250,31 @@ function Workspace() {
             </p>
           )}
           <Notice error={error} />
-          {loading && !value ? (
+          {(loading && !value) || account.loading ? (
             <p aria-busy="true">Memuat toko…</p>
           ) : section === "new" || !sid ? (
             <NewStore
-              onCreated={() => {
+              onCreated={(id) => {
+                setSelected(id);
+                if (account.value?.user.id)
+                  localStorage.setItem(
+                    "nalaro-selected-store:" + account.value.user.id,
+                    id,
+                  );
                 setRev((r) => r + 1);
                 navigate("/app");
               }}
             />
           ) : (
-            <div key={sid}>
+            <div key={(account.value?.user.id || "") + ":" + sid}>
               {section === "account" ? (
                 <AccountSecurity />
+              ) : section === "chat" ? (
+                <Conversations sid={sid} />
+              ) : section === "notifications" ? (
+                <Notifications sid={sid} />
+              ) : section === "responsible" ? (
+                <ResponsibleProfile sid={sid} />
               ) : section === "customers" ? (
                 <Customers sid={sid} />
               ) : section === "analytics" ? (
@@ -248,7 +304,7 @@ function Workspace() {
         {menus.slice(0, 3).map((m) => (
           <Link
             key={m.key}
-            to={"/app" + (m.key ? "/" + m.key : "")}
+            to={"/app" + (m.key ? "/" + m.key : "") + contextQuery}
             className={section === m.key ? "active" : ""}
             aria-current={section === m.key ? "page" : undefined}
           >
@@ -277,6 +333,9 @@ function Workspace() {
           onClick={() => setDrawer(false)}
         />
       )}
+      {store && account.value?.user.id && !adminStore && (
+        <SellerGuide userId={account.value.user.id} replay={guideReplay} />
+      )}
     </div>
   );
 }
@@ -293,7 +352,7 @@ function storeSlug(value: string): string {
 const validStoreSlug = (value: string) =>
   /^[a-z0-9][a-z0-9-]{1,46}[a-z0-9]$/.test(value);
 
-function NewStore({ onCreated }: { onCreated: () => void }) {
+function NewStore({ onCreated }: { onCreated: (id: string) => void }) {
   const [error, setError] = useState(""),
     [busy, setBusy] = useState(false);
   const [name, setName] = useState(""),
@@ -334,11 +393,15 @@ function NewStore({ onCreated }: { onCreated: () => void }) {
     setBusy(true);
     setError("");
     try {
-      await api("/api/merchant/stores", "POST", {
-        name: name.trim(),
-        slug,
-      });
-      onCreated();
+      const created = await api<{ id: string }>(
+        "/api/merchant/stores",
+        "POST",
+        {
+          name: name.trim(),
+          slug,
+        },
+      );
+      onCreated(created.id);
     } catch (e) {
       const message = (e as Error).message || "";
       setError(
@@ -802,6 +865,7 @@ function ProductEditor({
         headers: {
           "content-type": file.type,
           ...(await authorizationHeaders()),
+          ...adminContextHeaders(`/api/merchant/stores/${sid}/media`),
         },
         body: file,
       });
@@ -1695,6 +1759,7 @@ function StoreSettings({
         headers: {
           "content-type": file.type,
           ...(await authorizationHeaders()),
+          ...adminContextHeaders(`/api/merchant/stores/${sid}/media`),
         },
         body: file,
       });

@@ -248,11 +248,11 @@ export function AdminStore({
           </p>
         )}
         <div className="admin-record-actions">
-          <Link className="admin-action-primary" to={`/preview/${sid}?admin=1`}>
+          <Link className="admin-action-primary" to={`/preview/${sid}?adminStore=${sid}`}>
             <Icon name="eye" size={16} /> Pratinjau toko
           </Link>
           <Link
-            to={`/app?store=${sid}`}
+                  to={`/app?adminStore=${sid}`}
             onClick={() => localStorage.setItem("nalaro-selected-store", sid)}
           >
             <Icon name="edit" size={16} /> Kelola isi toko

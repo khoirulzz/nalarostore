@@ -1,4 +1,6 @@
 import { MediaImage } from "../components/MediaImage";
+import { StoreChat } from "./Engagement";
+import { CheckoutAccount, useBuyerSession } from "./BuyerAccount";
 import { useEffect, useState, type FormEvent } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { Icon } from "../components/Icon";
@@ -27,6 +29,7 @@ export function LiveStore({
     location = useLocation(),
     navigate = useNavigate();
   const slug = params.slug || "";
+  const buyer = useBuyerSession();
   const base = preview
       ? "/preview/" + params.sid
       : hostname
@@ -182,7 +185,7 @@ export function LiveStore({
           Pratinjau toko · Pesanan tidak dapat dibuat di sini.{" "}
           <Link
             to={
-              new URLSearchParams(window.location.search).has("admin")
+              new URLSearchParams(window.location.search).has("adminStore")
                 ? `/admin?tab=overview&store=${params.sid}`
                 : "/app/settings"
             }
@@ -231,6 +234,7 @@ export function LiveStore({
           />
         ) : path === "/checkout" ? (
           <LiveCheckout
+            key={endpoint + ":" + (buyer?.uid || "guest")}
             endpoint={endpoint}
             base={base}
             items={items}
@@ -385,6 +389,13 @@ export function LiveStore({
         )}
       </main>
       <footer className="store-footer">
+        {!preview && (
+          <StoreChat
+            key={endpoint + ":" + (buyer?.uid || "guest")}
+            endpoint={endpoint}
+            accountURL="https://store.nalaro.digital/account"
+          />
+        )}
         <div className="store-shell store-footer-grid">
           <div>
             <h2>{store.name}</h2>
@@ -747,7 +758,8 @@ function LiveCheckout({
   const subtotal = items.reduce((a, i) => a + i.price * i.quantity, 0),
     shipping = method === "pickup" ? 0 : Number(s.shipping_fee_idr),
     total = subtotal + shipping;
-  const storageKey = "checkout-v1:" + endpoint;
+  const buyer = useBuyerSession();
+  const storageKey = "checkout-v1:" + endpoint + ":" + (buyer?.uid || "guest");
   const [idempotency] = useState(() => {
     let key: string | null = null;
     try {
@@ -807,6 +819,7 @@ function LiveCheckout({
       </Link>
       <h1>Selesaikan pemesanan.</h1>
       <p>Bayar melalui rekening atau QRIS toko setelah pesanan diterima.</p>
+      <CheckoutAccount />
       {!enabled && (
         <p className="notice">
           Pemesanan belum dibuka. Hubungi toko untuk informasi.

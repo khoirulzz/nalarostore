@@ -54,9 +54,12 @@ export async function checkout(
   sid: string,
   c: z.infer<typeof checkoutSchema>,
   env: AuthConfig,
+  buyer: Identity | null = null,
 ) {
+  if(buyer) requireUser(buyer);
   const canonical = {
     ...c,
+    ...(buyer ? { buyer_user_id: buyer.id } : {}),
     items: [...c.items].sort((a, b) =>
       a.variant_id.localeCompare(b.variant_id),
     ),
@@ -174,6 +177,7 @@ export async function checkout(
         sealed,
       ],
     );
+    if(buyer) await tx.query("UPDATE orders SET buyer_user_id=$1 WHERE id=$2 AND store_id=$3",[buyer.id,oid,sid]);
     for (const item of c.items) {
       const v = variants.find((v) => v.id === item.variant_id)!;
       const price = Number(v.price_override_idr ?? v.price_idr);
