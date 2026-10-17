@@ -1,4 +1,6 @@
 import { MediaImage } from "../components/MediaImage";
+import { StoreChat } from "./Engagement";
+import { CheckoutAccount, useBuyerSession } from "./BuyerAccount";
 import { useEffect, useState, type FormEvent } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { Icon } from "../components/Icon";
@@ -27,6 +29,7 @@ export function LiveStore({
     location = useLocation(),
     navigate = useNavigate();
   const slug = params.slug || "";
+  const buyer = useBuyerSession();
   const base = preview
       ? "/preview/" + params.sid
       : hostname
@@ -182,7 +185,7 @@ export function LiveStore({
           Pratinjau toko · Pesanan tidak dapat dibuat di sini.{" "}
           <Link
             to={
-              new URLSearchParams(window.location.search).has("admin")
+              new URLSearchParams(window.location.search).has("adminStore")
                 ? `/admin?tab=overview&store=${params.sid}`
                 : "/app/settings"
             }
@@ -203,14 +206,27 @@ export function LiveStore({
               store.name
             )}
           </Link>
-          <Link
-            className="store-bag"
-            to={base + "/cart"}
-            aria-label={"Keranjang " + count + " item"}
-          >
-            <Icon name="bag" />
-            {count > 0 && <span>{count}</span>}
-          </Link>
+          <div className="store-account-tools">
+            {!preview && (
+              <a
+                className="store-account-link"
+                href={
+                  hostname ? "https://store.nalaro.digital/account" : "/account"
+                }
+                aria-label="Akun pembeli"
+              >
+                <Icon name="users" size={20} />
+              </a>
+            )}
+            <Link
+              className="store-bag"
+              to={base + "/cart"}
+              aria-label={"Keranjang " + count + " item"}
+            >
+              <Icon name="bag" />
+              {count > 0 && <span>{count}</span>}
+            </Link>
+          </div>
         </div>
       </header>
       <main>
@@ -231,6 +247,7 @@ export function LiveStore({
           />
         ) : path === "/checkout" ? (
           <LiveCheckout
+            key={endpoint + ":" + (buyer?.uid || "guest")}
             endpoint={endpoint}
             base={base}
             items={items}
@@ -385,6 +402,13 @@ export function LiveStore({
         )}
       </main>
       <footer className="store-footer">
+        {!preview && (
+          <StoreChat
+            key={endpoint + ":" + (buyer?.uid || "guest")}
+            endpoint={endpoint}
+            accountURL="https://store.nalaro.digital/account"
+          />
+        )}
         <div className="store-shell store-footer-grid">
           <div>
             <h2>{store.name}</h2>
@@ -747,7 +771,14 @@ function LiveCheckout({
   const subtotal = items.reduce((a, i) => a + i.price * i.quantity, 0),
     shipping = method === "pickup" ? 0 : Number(s.shipping_fee_idr),
     total = subtotal + shipping;
-  const storageKey = "checkout-v1:" + endpoint;
+  const buyer = useBuyerSession();
+  const storageKey = "checkout-v1:" + endpoint + ":" + (buyer?.uid || "guest");
+  const [contact, setContact] = useState({
+    name: "",
+    phone: "",
+    email: buyer?.email || "",
+    address: "",
+  });
   const [idempotency] = useState(() => {
     let key: string | null = null;
     try {
@@ -807,6 +838,16 @@ function LiveCheckout({
       </Link>
       <h1>Selesaikan pemesanan.</h1>
       <p>Bayar melalui rekening atau QRIS toko setelah pesanan diterima.</p>
+      <CheckoutAccount
+        onAddress={(a) =>
+          setContact({
+            name: a.recipient_name,
+            phone: a.contact_phone,
+            email: buyer?.email || "",
+            address: a.address,
+          })
+        }
+      />
       {!enabled && (
         <p className="notice">
           Pemesanan belum dibuka. Hubungi toko untuk informasi.
@@ -826,6 +867,10 @@ function LiveCheckout({
               <input
                 required
                 name="name"
+                value={contact.name}
+                onChange={(e) =>
+                  setContact((c) => ({ ...c, name: e.target.value }))
+                }
                 minLength={2}
                 maxLength={120}
                 autoComplete="name"
@@ -836,6 +881,10 @@ function LiveCheckout({
               <input
                 required
                 name="phone"
+                value={contact.phone}
+                onChange={(e) =>
+                  setContact((c) => ({ ...c, phone: e.target.value }))
+                }
                 type="tel"
                 pattern="[+0-9 ()-]{8,25}"
                 autoComplete="tel"
@@ -843,8 +892,19 @@ function LiveCheckout({
             </label>
             <label>
               Email (opsional)
-              <input name="email" type="email" autoComplete="email" />
-              <small>Email digunakan untuk pembaruan pesanan.</small>
+              <input
+                name="email"
+                type="email"
+                autoComplete="email"
+                value={contact.email}
+                onChange={(e) =>
+                  setContact((c) => ({ ...c, email: e.target.value }))
+                }
+              />
+              <small>
+                Email dicantumkan pada pesanan. Status tersedia melalui tautan
+                pelacakan.
+              </small>
             </label>
           </fieldset>
           <fieldset>
@@ -871,6 +931,10 @@ function LiveCheckout({
                 <textarea
                   required
                   name="address"
+                  value={contact.address}
+                  onChange={(e) =>
+                    setContact((c) => ({ ...c, address: e.target.value }))
+                  }
                   minLength={12}
                   maxLength={2000}
                   autoComplete="street-address"

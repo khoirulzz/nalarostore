@@ -10,32 +10,50 @@ test("merchant → product → guest checkout → manual verification → comple
   await page.getByLabel("Kata sandi", { exact: true }).fill("LocalTest123");
   await page.getByRole("button", { name: "Masuk", exact: true }).click();
   await expect(page).toHaveURL(/admin$/);
-  await page.goto("/app");
+  await page.goto("/app/new");
   await expect(
     page.getByRole("heading", { name: "Buat toko pertamamu." }),
   ).toBeVisible();
   await page.getByLabel("Nama toko").fill("Toko Browser");
   await page.getByLabel("Link toko").fill("toko browser");
   await expect(page.getByLabel("Link toko")).toHaveValue("toko-browser");
-  await expect(page.getByText("store.nalaro.digital/s/toko-browser")).toBeVisible();
-  await expect(page.getByText(/Invalid string: must match pattern/)).toHaveCount(0);
+  await expect(
+    page.getByText("store.nalaro.digital/s/toko-browser"),
+  ).toBeVisible();
+  await expect(
+    page.getByText(/Invalid string: must match pattern/),
+  ).toHaveCount(0);
   await page.getByRole("button", { name: "Buat toko", exact: true }).click();
   await expect(
     page.getByRole("heading", { name: "Ringkasan toko" }),
   ).toBeVisible();
+  await page
+    .getByRole("dialog")
+    .getByRole("button", { name: "Lewati", exact: true })
+    .click();
   await page.goto("/app/customers");
   await expect(page.getByLabel("Cari nama, email atau telepon")).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Belum ada pelanggan" })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Belum ada pelanggan" }),
+  ).toBeVisible();
   await expect(page.locator(".seller-export-button .icon")).toBeVisible();
   await page.getByRole("button", { name: "Buka menu" }).click();
   await expect(page.locator(".workspace-sidebar .logout .icon")).toBeVisible();
   await page.locator(".seller-drawer-close").click();
   await page.goto("/app/billing");
-  await expect(page.getByRole("heading", { name: "Langganan toko" })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Langganan toko" }),
+  ).toBeVisible();
   await expect(page.getByRole("heading", { name: "Tagihan" })).toBeVisible();
-  await expect(page.getByText("Instruksi pembayaran belum ditetapkan admin.")).toHaveCount(0);
+  await expect(
+    page.getByText("Instruksi pembayaran belum ditetapkan admin."),
+  ).toHaveCount(0);
   await page.goto("/admin");
-  await page.getByRole("button", { name: "Atur pilot" }).click();
+  await page
+    .locator(".admin-record")
+    .filter({ hasText: "Toko Browser" })
+    .getByRole("button", { name: "Atur pilot" })
+    .click();
   await page.getByLabel("Lama pilot (hari)").fill("7");
   const pilot = page.waitForResponse(
     (r) => r.url().includes("/pilot") && r.request().method() === "POST",
@@ -52,10 +70,18 @@ test("merchant → product → guest checkout → manual verification → comple
   await page.getByRole("button", { name: "Hapus foto galeri 1" }).click();
   await expect(page.getByLabel("Link foto 1")).toHaveCount(0);
   await page.getByRole("button", { name: "Tambah varian" }).click();
-  await expect(page.getByRole("button", { name: "Hapus varian 2" })).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Hapus varian 2" }),
+  ).toBeVisible();
   await page.getByRole("button", { name: "Hapus varian 2" }).click();
-  await expect(page.getByRole("button", { name: "Hapus varian 2" })).toHaveCount(0);
-  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  await expect(
+    page.getByRole("button", { name: "Hapus varian 2" }),
+  ).toHaveCount(0);
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= window.innerWidth,
+    ),
+  ).toBe(true);
   await page.getByLabel("Nama produk").fill("Kaos Browser");
   await page.getByLabel("Link produk").fill("kaos-browser");
   await page.getByLabel("Harga (Rp)", { exact: true }).fill("120000");
@@ -71,9 +97,9 @@ test("merchant → product → guest checkout → manual verification → comple
   await expect(page.getByRole("heading", { name: "Link toko" })).toBeVisible();
   await page.evaluate(() => window.scrollTo(0, 750));
   expect(
-    await page.locator(".workspace-topbar").evaluate(
-      (header) => Math.abs(header.getBoundingClientRect().top) < 2,
-    ),
+    await page
+      .locator(".workspace-topbar")
+      .evaluate((header) => Math.abs(header.getBoundingClientRect().top) < 2),
   ).toBe(true);
   await page
     .getByLabel("Alamat pengambilan")
@@ -226,6 +252,10 @@ test("Firebase signup, verified access, password reset and password change", asy
   await expect(
     page.getByRole("heading", { name: "Ringkasan toko" }),
   ).toBeVisible();
+  await page
+    .getByRole("dialog")
+    .getByRole("button", { name: "Lewati", exact: true })
+    .click();
   await page.goto("/forgot-password");
   await page.getByLabel("Email", { exact: true }).fill("merchant@local.test");
   await page.getByRole("button", { name: "Kirim tautan pemulihan" }).click();
@@ -273,45 +303,84 @@ test("owner activates and ends the six-month UMKM access", async ({ page }) => {
   await page.getByLabel("Kata sandi", { exact: true }).fill("LocalTest123");
   await page.getByRole("button", { name: "Masuk", exact: true }).click();
   await expect(page).toHaveURL(/admin$/);
-  const row = page.locator(".admin-record").filter({hasText: "toko-browser"});
-  await row.getByRole("button", {name: "UMKM 6 bulan"}).click();
-  const activation = page.waitForResponse(r => r.url().endsWith("/pilot") && r.request().method() === "POST");
-  await page.getByRole("button", {name: "Aktifkan akses"}).click();
+  const row = page.locator(".admin-record").filter({ hasText: "toko-browser" });
+  await row.getByRole("button", { name: "UMKM 6 bulan" }).click();
+  const activation = page.waitForResponse(
+    (r) => r.url().endsWith("/pilot") && r.request().method() === "POST",
+  );
+  await page.getByRole("button", { name: "Aktifkan akses" }).click();
   expect((await activation).ok()).toBe(true);
   await expect(row.getByText(/Pilot sampai/)).toBeVisible();
-  await row.getByRole("button", {name: "Atur pilot"}).click();
+  await row.getByRole("button", { name: "Atur pilot" }).click();
   await page.getByLabel("Lama pilot (hari)").fill("0");
-  const ending = page.waitForResponse(r => r.url().endsWith("/pilot") && r.request().method() === "POST");
-  await page.getByRole("button", {name: "Simpan perubahan"}).click();
+  const ending = page.waitForResponse(
+    (r) => r.url().endsWith("/pilot") && r.request().method() === "POST",
+  );
+  await page.getByRole("button", { name: "Simpan perubahan" }).click();
   expect((await ending).ok()).toBe(true);
   await expect(row.getByText(/Pilot sampai/)).toHaveCount(0);
 });
 
-test("Seller Center motion fits phones and desktop, respects reduced motion and exposes honest app access", async ({ page }) => {
-  await page.emulateMedia({reducedMotion: "reduce"});
+test("Seller Center motion fits phones and desktop, respects reduced motion and exposes honest app access", async ({
+  page,
+}) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
   for (const width of [320, 390, 768, 1024, 1440]) {
-    await page.setViewportSize({width, height: 900});
+    await page.setViewportSize({ width, height: 900 });
     await page.goto("/");
     const section = page.locator("#seller-center");
     await section.scrollIntoViewIfNeeded();
-    await expect(section.getByRole("heading", {name: /Tokomu ikut jalan/})).toBeVisible();
+    await expect(
+      section.getByRole("heading", { name: /Tokomu ikut jalan/ }),
+    ).toBeVisible();
     await expect(section.locator("#omzet")).toBeVisible();
     await expect(section.getByRole("button")).toHaveCount(0);
     await expect(section.locator("#omzet")).toHaveText("Rp4.650.000");
     const host = section.locator(".seller-center-motion");
-    expect(await host.evaluate(el => el.shadowRoot!.querySelector(".motion-stage")!.classList.contains("motion-static"))).toBe(true);
-    const contained = await host.evaluate(el => {
-      const phone = el.shadowRoot!.querySelector(".phone")!.getBoundingClientRect();
+    expect(
+      await host.evaluate((el) =>
+        el
+          .shadowRoot!.querySelector(".motion-stage")!
+          .classList.contains("motion-static"),
+      ),
+    ).toBe(true);
+    const contained = await host.evaluate((el) => {
+      const phone = el
+        .shadowRoot!.querySelector(".phone")!
+        .getBoundingClientRect();
       const stage = el.getBoundingClientRect();
-      return phone.left >= stage.left && phone.right <= stage.right && phone.top >= stage.top && phone.bottom <= stage.bottom;
+      return (
+        phone.left >= stage.left &&
+        phone.right <= stage.right &&
+        phone.top >= stage.top &&
+        phone.bottom <= stage.bottom
+      );
     });
     expect(contained).toBe(true);
-    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
-    await expect(section.getByRole("link", {name: /Dapatkan app Android/})).toHaveAttribute("href", /^https:\/\/wa\.me\/6285771298582\?text=/);
-    await expect(section.getByRole("link", {name: /Daftar lewat web/})).toHaveAttribute("href", "/register");
-    await section.screenshot({path: `test-results/seller-center-${width}.png`});
-    await page.emulateMedia({reducedMotion: "no-preference"});
-    await expect.poll(() => host.evaluate(el => el.shadowRoot!.querySelector(".motion-stage")!.classList.contains("motion-static"))).toBe(false);
-    await page.emulateMedia({reducedMotion: "reduce"});
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= window.innerWidth,
+      ),
+    ).toBe(true);
+    await expect(
+      section.getByRole("link", { name: /Dapatkan app Android/ }),
+    ).toHaveAttribute("href", /^https:\/\/wa\.me\/6285771298582\?text=/);
+    await expect(
+      section.getByRole("link", { name: /Daftar lewat web/ }),
+    ).toHaveAttribute("href", "/register");
+    await section.screenshot({
+      path: `test-results/seller-center-${width}.png`,
+    });
+    await page.emulateMedia({ reducedMotion: "no-preference" });
+    await expect
+      .poll(() =>
+        host.evaluate((el) =>
+          el
+            .shadowRoot!.querySelector(".motion-stage")!
+            .classList.contains("motion-static"),
+        ),
+      )
+      .toBe(false);
+    await page.emulateMedia({ reducedMotion: "reduce" });
   }
 });

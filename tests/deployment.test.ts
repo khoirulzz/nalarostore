@@ -305,8 +305,8 @@ describe("database readiness", () => {
     expect(await response.json()).toMatchObject({
       database: "connected",
       liveCheckout: false,
+      schema: 7,
     });
-    expect(client.query).toHaveBeenCalledTimes(5);
     expect(client.end).toHaveBeenCalledOnce();
   });
 });

@@ -6,6 +6,8 @@ export type Identity = {
   email: string;
   verified: boolean;
   admin: boolean;
+  /** Set only after an explicit, authorized admin workspace request. */
+  actingStoreId?: string;
 };
 export type AuthConfig = FirebaseConfig & {
   APP_ORIGIN: string;
@@ -118,7 +120,7 @@ export async function storeAccess(
   write = false,
 ) {
   requireUser(user);
-  if (user.admin) {
+  if (user.admin && user.actingStoreId === storeId) {
     const store = (
       await db.query("SELECT s.*,'owner' AS role FROM stores s WHERE id=$1", [
         storeId,

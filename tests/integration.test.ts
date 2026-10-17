@@ -45,6 +45,7 @@ async function request(
   data?: unknown,
   cookie = "",
   origin = "http://localhost",
+  extraHeaders: Record<string, string> = {},
 ) {
   const req = new Request("http://localhost" + path, {
     method,
@@ -52,6 +53,7 @@ async function request(
       origin,
       ...(cookie ? { authorization: "Bearer " + cookie } : {}),
       "content-type": "application/json",
+      ...extraHeaders,
     },
     body: data === undefined ? undefined : JSON.stringify(data),
   });
@@ -1023,7 +1025,7 @@ it("scopes draft preview, customer summaries, analytics and exports to authorize
   );
   const expected = (
     await db.query(
-      "SELECT COALESCE(sum(total_idr) FILTER(WHERE payment_status='paid'),0) AS revenue FROM orders WHERE store_id=$1 AND created_at >= $2::date AND created_at < $3::date+interval '1 day'",
+      "SELECT COALESCE(sum(subtotal_idr) FILTER(WHERE payment_status='paid' AND order_status NOT IN ('canceled','expired')),0) AS revenue FROM orders WHERE store_id=$1 AND created_at >= ($2::date::timestamp AT TIME ZONE 'Asia/Jakarta') AND created_at < (($3::date+1)::timestamp AT TIME ZONE 'Asia/Jakarta')",
       [storeA, analytics.body.from, analytics.body.to],
     )
   )[0];
@@ -1244,6 +1246,8 @@ describe("admin store lifecycle and replacement packages", () => {
           "GET",
           undefined,
           cookieAdmin,
+          "http://localhost",
+          { "x-nalaro-admin-store": sid },
         )
       ).status,
     ).toBe(200);
@@ -1866,5 +1870,534 @@ describe("admin store lifecycle and replacement packages", () => {
         )
       )[0],
     ).toBeUndefined();
+  });
+});
+
+describe("seller and buyer workspace isolation", () => {
+  let sid = "",
+    pid = "",
+    vid = "",
+    slug = "",
+    buyer: { u: string; cookie: string },
+    other: { u: string; cookie: string };
+  beforeAll(async () => {
+    buyer = await account("buyer-workspace@test.invalid");
+    other = await account("other-buyer@test.invalid");
+    slug = "workspace-" + crypto.randomUUID().slice(0, 8);
+    sid = (
+      await request(
+        "/api/merchant/stores",
+        "POST",
+        { name: "Toko Workspace", slug },
+        cookieA,
+      )
+    ).body.id;
+    await db.query(
+      "UPDATE stores SET status='published',pilot_until=now()+interval '7 days' WHERE id=$1",
+      [sid],
+    );
+    await db.query(
+      "UPDATE store_settings SET pickup_enabled=true,bank_details='Rekening uji',pickup_address='Alamat toko pengujian lengkap',low_stock_threshold=3 WHERE store_id=$1",
+      [sid],
+    );
+    pid = (
+      await request(
+        `/api/merchant/stores/${sid}/products`,
+        "POST",
+        {
+          name: "Produk Workspace",
+          slug: "produk-workspace",
+          price_idr: 100000,
+          status: "active",
+          variants: [{ sku: "WORKSPACE-1", option_label: "M", stock_qty: 100 }],
+        },
+        cookieA,
+      )
+    ).body.id;
+    vid = (
+      await db.query("SELECT id FROM product_variants WHERE product_id=$1", [
+        pid,
+      ])
+    )[0].id;
+  });
+  it("never treats platform-admin access as seller membership", async () => {
+    const stores = await request(
+      "/api/merchant/stores",
+      "GET",
+      undefined,
+      cookieAdmin,
+    );
+    expect(stores.body.stores.some((s: { id: string }) => s.id === sid)).toBe(
+      false,
+    );
+    expect(
+      (
+        await request(
+          `/api/merchant/stores/${sid}/settings`,
+          "GET",
+          undefined,
+          cookieAdmin,
+        )
+      ).status,
+    ).toBe(404);
+    const context = await request(
+      `/api/admin/workspace/stores/${sid}`,
+      "GET",
+      undefined,
+      cookieAdmin,
+    );
+    expect(context.status).toBe(200);
+    expect(context.body.stores[0].access_mode).toBe("admin");
+    expect(
+      (
+        await request(
+          `/api/merchant/stores/${sid}/settings`,
+          "GET",
+          undefined,
+          cookieAdmin,
+          "http://localhost",
+          { "x-nalaro-admin-store": sid },
+        )
+      ).status,
+    ).toBe(200);
+    expect(
+      (
+        await request(
+          `/api/merchant/stores/${storeB}/settings`,
+          "GET",
+          undefined,
+          cookieAdmin,
+          "http://localhost",
+          { "x-nalaro-admin-store": sid },
+        )
+      ).status,
+    ).toBe(403);
+    expect(
+      (
+        await request(
+          `/api/merchant/stores/${sid}/settings`,
+          "GET",
+          undefined,
+          cookieB,
+          "http://localhost",
+          { "x-nalaro-admin-store": sid },
+        )
+      ).status,
+    ).toBe(403);
+  });
+  it("keeps responsible-person information private and rejects future birth dates", async () => {
+    const p = {
+      full_name: "Pemilik Workspace",
+      position: "Pemilik",
+      contact_phone: "081234567899",
+      contact_email: "private@test.invalid",
+      birth_date: "1995-01-01",
+      operational_address: "Alamat operasional pribadi",
+    };
+    expect(
+      (await request(`/api/merchant/stores/${sid}/profile`, "PUT", p, cookieA))
+        .status,
+    ).toBe(200);
+    const own = await request(
+      `/api/merchant/stores/${sid}/profile`,
+      "GET",
+      undefined,
+      cookieA,
+    );
+    expect(own.body.profile.full_name).toBe(p.full_name);
+    expect(own.body.profile.age).toBeGreaterThan(25);
+    expect(
+      (
+        await request(
+          `/api/merchant/stores/${sid}/profile`,
+          "GET",
+          undefined,
+          cookieB,
+        )
+      ).status,
+    ).toBe(404);
+    const publicResponse = await request(`/api/public/stores/${slug}`);
+    expect(JSON.stringify(publicResponse.body)).not.toContain(p.contact_email);
+    expect(
+      (
+        await request(
+          `/api/merchant/stores/${sid}/profile`,
+          "PUT",
+          { ...p, birth_date: "2999-01-01" },
+          cookieA,
+        )
+      ).status,
+    ).toBe(400);
+  });
+  it("scopes guest chat tokens and idempotent messages to one conversation", async () => {
+    const created = await request(
+      `/api/public/stores/${slug}/conversations`,
+      "POST",
+      { customer_name: "Tamu Workspace", product_id: pid },
+    );
+    expect(created.status).toBe(201);
+    const cid = created.body.id,
+      headers = { "x-chat-token": created.body.chat_token },
+      path = "/api/public/chat/" + cid;
+    const wrong = await request(
+      `/api/public/stores/${slug}/conversations`,
+      "POST",
+      { customer_name: "Tamu Lain" },
+    );
+    expect((await request(path, "GET")).status).toBe(404);
+    expect(
+      (
+        await request(
+          "/api/public/chat/" + wrong.body.id,
+          "GET",
+          undefined,
+          "",
+          "http://localhost",
+          headers,
+        )
+      ).status,
+    ).toBe(404);
+    const client_message_id = crypto.randomUUID();
+    const msg = { body: "Apakah ukuran M tersedia?", client_message_id };
+    const sent = await request(
+      path,
+      "POST",
+      msg,
+      "",
+      "http://localhost",
+      headers,
+    );
+    expect(sent.status).toBe(201);
+    expect(
+      (await request(path, "POST", msg, "", "http://localhost", headers)).body
+        .message.id,
+    ).toBe(sent.body.message.id);
+    expect(
+      (
+        await request(
+          path,
+          "POST",
+          { ...msg, body: "Pesan berbeda" },
+          "",
+          "http://localhost",
+          headers,
+        )
+      ).status,
+    ).toBe(409);
+    expect(
+      (
+        await request(
+          `/api/merchant/stores/${storeB}/conversations/${cid}`,
+          "GET",
+          undefined,
+          cookieB,
+        )
+      ).status,
+    ).toBe(404);
+    const list = await request(
+      `/api/merchant/stores/${sid}/conversations`,
+      "GET",
+      undefined,
+      cookieA,
+    );
+    expect(
+      list.body.conversations.find((c: { id: string }) => c.id === cid).unread,
+    ).toBe(1);
+    const sellerPath = `/api/merchant/stores/${sid}/conversations/${cid}`;
+    expect(
+      (
+        await request(
+          sellerPath + "/read",
+          "POST",
+          { last_message_id: sent.body.message.id },
+          cookieA,
+        )
+      ).status,
+    ).toBe(200);
+    const notifications = await request(
+      `/api/merchant/stores/${sid}/notifications`,
+      "GET",
+      undefined,
+      cookieA,
+    );
+    expect(notifications.status).toBe(200);
+    expect(
+      (
+        await request(
+          sellerPath,
+          "POST",
+          {
+            body: "Tersedia, silakan pesan.",
+            client_message_id: crypto.randomUUID(),
+          },
+          cookieA,
+        )
+      ).status,
+    ).toBe(201);
+    const history = await request(
+      path,
+      "GET",
+      undefined,
+      "",
+      "http://localhost",
+      headers,
+    );
+    expect(history.body.messages).toHaveLength(2);
+    expect(history.body.messages[1].sender_kind).toBe("seller");
+    await request(
+      path,
+      "POST",
+      { body: "Terima kasih", client_message_id: crypto.randomUUID() },
+      "",
+      "http://localhost",
+      headers,
+    );
+    const next = await request(
+      `/api/merchant/stores/${sid}/conversations`,
+      "GET",
+      undefined,
+      cookieA,
+    );
+    expect(
+      next.body.conversations.find((c: { id: string }) => c.id === cid).unread,
+    ).toBe(1);
+    const events = await request(
+      `/api/merchant/stores/${sid}/notifications`,
+      "GET",
+      undefined,
+      cookieA,
+    );
+    expect(events.body.unread).toBeGreaterThan(0);
+    expect(
+      (
+        await request(
+          `/api/merchant/stores/${sid}/notifications/read`,
+          "POST",
+          {
+            keys: events.body.notifications.map((n: { key: string }) => n.key),
+          },
+          cookieA,
+        )
+      ).status,
+    ).toBe(200);
+    expect(
+      (
+        await request(
+          `/api/merchant/stores/${sid}/notifications`,
+          "GET",
+          undefined,
+          cookieA,
+        )
+      ).body.unread,
+    ).toBe(0);
+  });
+  it("limits authenticated conversations and saved addresses to their buyer", async () => {
+    const created = await request(
+      `/api/public/stores/${slug}/conversations`,
+      "POST",
+      { customer_name: "Pembeli Akun" },
+      buyer.cookie,
+    );
+    expect(created.status).toBe(201);
+    expect(
+      (
+        await request(
+          "/api/public/chat/" + created.body.id,
+          "GET",
+          undefined,
+          other.cookie,
+        )
+      ).status,
+    ).toBe(404);
+    expect(
+      (
+        await request(
+          "/api/public/chat/" + created.body.id,
+          "GET",
+          undefined,
+          "",
+          "http://localhost",
+          { "x-chat-token": created.body.chat_token },
+        )
+      ).status,
+    ).toBe(404);
+    expect(
+      (
+        await request(
+          "/api/customer/conversations",
+          "GET",
+          undefined,
+          buyer.cookie,
+        )
+      ).body.conversations.some(
+        (c: { id: string }) => c.id === created.body.id,
+      ),
+    ).toBe(true);
+    const a = {
+      label: "Rumah",
+      recipient_name: "Pembeli Akun",
+      contact_phone: "081234567899",
+      address: "Jalan Pengujian Alamat Nomor 1",
+      is_default: true,
+    };
+    const first = await request(
+      "/api/customer/addresses",
+      "POST",
+      a,
+      buyer.cookie,
+    );
+    expect(first.status).toBe(200);
+    expect(
+      (
+        await request(
+          "/api/customer/addresses/" + first.body.id,
+          "PUT",
+          a,
+          other.cookie,
+        )
+      ).status,
+    ).toBe(404);
+    await request(
+      "/api/customer/addresses",
+      "POST",
+      { ...a, label: "Kantor" },
+      buyer.cookie,
+    );
+    expect(
+      (
+        await request("/api/customer/addresses", "GET", undefined, buyer.cookie)
+      ).body.addresses.filter((x: { is_default: boolean }) => x.is_default),
+    ).toHaveLength(1);
+    expect(
+      (await request("/api/customer/addresses", "GET", undefined, other.cookie))
+        .body.addresses,
+    ).toHaveLength(0);
+  });
+  it("retains guest checkout and links history only with ownership proof", async () => {
+    const p = {
+      ...payload(),
+      items: [{ variant_id: vid, quantity: 1, expected_unit_price: 100000 }],
+      expected_total: 100000,
+    };
+    const guest = await request(
+      `/api/public/stores/${slug}/checkout`,
+      "POST",
+      p,
+    );
+    expect(guest.status).toBe(201);
+    expect(
+      (await request("/api/customer/orders", "GET", undefined, buyer.cookie))
+        .body.orders,
+    ).toHaveLength(0);
+    expect(
+      (
+        await request(
+          "/api/customer/orders/claim",
+          "POST",
+          { store_slug: slug, tracking_token: token() },
+          buyer.cookie,
+        )
+      ).status,
+    ).toBe(404);
+    expect(
+      (
+        await request(
+          "/api/customer/orders/claim",
+          "POST",
+          { store_slug: slug, tracking_token: guest.body.tracking_token },
+          buyer.cookie,
+        )
+      ).status,
+    ).toBe(200);
+    expect(
+      (
+        await request(
+          "/api/customer/orders/claim",
+          "POST",
+          { store_slug: slug, tracking_token: guest.body.tracking_token },
+          other.cookie,
+        )
+      ).status,
+    ).toBe(404);
+    const own = await request(
+      "/api/customer/orders",
+      "GET",
+      undefined,
+      buyer.cookie,
+    );
+    expect(own.body.orders).toHaveLength(1);
+    const oid = own.body.orders[0].id;
+    expect(
+      (
+        await request(
+          "/api/customer/orders/" + oid,
+          "GET",
+          undefined,
+          other.cookie,
+        )
+      ).status,
+    ).toBe(404);
+    const detail = await request(
+      "/api/customer/orders/" + oid,
+      "GET",
+      undefined,
+      buyer.cookie,
+    );
+    expect(detail.body.order.tracking_token_hash).toBeUndefined();
+    expect(detail.body.items).toHaveLength(1);
+    const signed = await request(
+      `/api/public/stores/${slug}/checkout`,
+      "POST",
+      { ...p, idempotency_key: crypto.randomUUID() },
+      buyer.cookie,
+    );
+    expect(signed.status).toBe(201);
+    expect(
+      (await request("/api/customer/orders", "GET", undefined, buyer.cookie))
+        .body.orders,
+    ).toHaveLength(2);
+    // A buyer change cannot replay a previous account's idempotency key.
+    expect(
+      (
+        await request(
+          `/api/public/stores/${slug}/checkout`,
+          "POST",
+          p,
+          other.cookie,
+        )
+      ).status,
+    ).toBe(409);
+  });
+  it("ranks paid products, excludes shipping and groups local midnight correctly", async () => {
+    const rows = await db.query(
+      "SELECT id FROM orders WHERE store_id=$1 ORDER BY created_at,id",
+      [sid],
+    );
+    await db.query(
+      "UPDATE orders SET payment_status='paid',order_status='confirmed',shipping_idr=15000,total_idr=subtotal_idr+15000,created_at='2026-10-17T18:00:00Z' WHERE id=$1",
+      [rows[0].id],
+    );
+    const result = await request(
+      `/api/merchant/stores/${sid}/analytics?from=2026-10-18&to=2026-10-18&timezone=Asia/Jakarta`,
+      "GET",
+      undefined,
+      cookieA,
+    );
+    expect(result.status).toBe(200);
+    expect(Number(result.body.summary.revenue)).toBe(100000);
+    expect(Number(result.body.summary.shipping_revenue)).toBe(15000);
+    expect(Number(result.body.summary.total_collected)).toBe(115000);
+    expect(Number(result.body.summary.units_sold)).toBe(1);
+    expect(result.body.daily).toHaveLength(1);
+    expect(result.body.daily[0].day).toBe("2026-10-18");
+    expect(result.body.top_products[0].name).toBe("Produk Workspace");
+    expect(result.body.top_variants[0].variant).toBe("M");
+    const utc = await request(
+      `/api/merchant/stores/${sid}/analytics?from=2026-10-18&to=2026-10-18&timezone=UTC`,
+      "GET",
+      undefined,
+      cookieA,
+    );
+    expect(Number(utc.body.summary.revenue)).toBe(0);
   });
 });

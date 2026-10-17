@@ -71,6 +71,7 @@ test("admin creates an internal package, previews drafts, manages access and del
   await expect(
     page.getByRole("heading", { name: "Siapkan toko, lalu mulai berjualan." }),
   ).toBeVisible();
+  await page.getByRole('dialog').getByRole('button',{name:'Lewati',exact:true}).click();
   await page.screenshot({
     path: "test-results/store-setup-mobile.png",
     fullPage: true,
