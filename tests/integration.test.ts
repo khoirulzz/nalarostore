@@ -1,3 +1,4 @@
+import { adminStoreRoutes, deleteStoreMedia } from "../worker/lib/admin-stores";
 import { execFileSync } from "node:child_process";
 import { createCipheriv, createDecipheriv, randomBytes } from "node:crypto";
 import { beforeAll, afterAll, describe, it, expect, vi } from "vitest";
@@ -654,7 +655,7 @@ describe("Phase 3 subscription and custom workflow", () => {
           cookieA,
         )
       ).status,
-    ).toBe(409);
+    ).toBe(201); // Preparation remains available while the first invoice awaits approval.
   });
   it("verifies subscription invoice retry-safe and extends a calendar billing period", async () => {
     for (let i = 0; i < 2; i++)
@@ -1146,5 +1147,724 @@ it("grants six calendar months only through explicit owner approval and records 
   );
   await expect(entitlement(db, storeB, "storefront")).rejects.toMatchObject({
     status: 423,
+  });
+});
+
+describe("admin store lifecycle and replacement packages", () => {
+  let sid = "",
+    owner = "",
+    internalPrice = "",
+    publicPrice = "",
+    firstInvoice = "";
+  async function createPlan(code: string, isPublic: boolean, limit: number) {
+    const created = await request(
+      "/api/admin/plans",
+      "POST",
+      {
+        code,
+        name: code,
+        description: "Program pengujian",
+        status: "active",
+        is_public: isPublic,
+        prices: [{ billing_interval: "monthly", amount_idr: 50000 }],
+        entitlements: [
+          { feature_code: "products", allowed: true, limit_value: limit },
+          { feature_code: "orders", allowed: true, limit_value: 30 },
+          { feature_code: "storefront", allowed: true, limit_value: null },
+        ],
+      },
+      cookieAdmin,
+    );
+    expect(created.status).toBe(200);
+    return (
+      await db.query(
+        "SELECT id FROM plan_prices WHERE plan_id=$1 AND is_active",
+        [created.body.id],
+      )
+    )[0].id;
+  }
+  it("normalizes plan codes and gives friendly validation and duplicate errors", async () => {
+    publicPrice = await createPlan("  Bisnis Uji Premium  ", true, 5);
+    expect(
+      (
+        await db.query(
+          "SELECT code FROM plans WHERE id=(SELECT plan_id FROM plan_prices WHERE id=$1)",
+          [publicPrice],
+        )
+      )[0].code,
+    ).toBe("bisnis-uji-premium");
+    const duplicate = await request(
+      "/api/admin/plans",
+      "POST",
+      {
+        code: "BISNIS UJI PREMIUM",
+        name: "Duplicate",
+        status: "active",
+        is_public: true,
+        prices: [{ billing_interval: "monthly", amount_idr: 0 }],
+        entitlements: [],
+      },
+      cookieAdmin,
+    );
+    expect(duplicate.status).toBe(409);
+    expect(duplicate.body.error).toContain("sudah digunakan");
+    internalPrice = await createPlan("internal-partner", false, 1);
+    const publicPlans = await request("/api/public/plans");
+    expect(
+      publicPlans.body.plans.some((p: any) => p.code === "internal-partner"),
+    ).toBe(false);
+    expect(
+      publicPlans.body.plans.find((p: any) => p.code === "bisnis-uji-premium")
+        .entitlements,
+    ).toHaveLength(3);
+    const accountResult = await account("lifecycle@test.invalid");
+    owner = accountResult.cookie;
+    sid = (
+      await request(
+        "/api/merchant/stores",
+        "POST",
+        { name: "Toko Siklus", slug: "toko-siklus" },
+        owner,
+      )
+    ).body.id;
+  });
+  it("allows platform admins to inspect and prepare another merchant's draft without exposing it publicly", async () => {
+    expect(
+      (await request(`/api/admin/stores/${sid}`, "GET", undefined, owner))
+        .status,
+    ).toBe(403);
+    expect(
+      (await request(`/api/admin/stores/${sid}`, "GET", undefined, cookieAdmin))
+        .body.store.owner_email,
+    ).toBe("lifecycle@test.invalid");
+    expect(
+      (
+        await request(
+          `/api/merchant/stores/${sid}/preview`,
+          "GET",
+          undefined,
+          cookieAdmin,
+        )
+      ).status,
+    ).toBe(200);
+    expect(
+      (
+        await request(
+          `/api/merchant/stores/${sid}/preview`,
+          "GET",
+          undefined,
+          cookieB,
+        )
+      ).status,
+    ).toBe(404);
+    expect((await request(`/api/public/stores/toko-siklus`)).status).toBe(404);
+    expect(
+      (
+        await request(
+          `/api/merchant/stores/${sid}/billing`,
+          "GET",
+          undefined,
+          owner,
+        )
+      ).body.accessAvailable,
+    ).toBe(false);
+  });
+  it("prevents seller writes and publishing while suspended, and restores only to draft", async () => {
+    expect(
+      (
+        await request(
+          `/api/admin/stores/${sid}/status`,
+          "PUT",
+          { status: "suspended", reason: "Pemeriksaan pengajuan" },
+          cookieAdmin,
+        )
+      ).status,
+    ).toBe(200);
+    expect(
+      (
+        await request(
+          `/api/merchant/stores/${sid}/publish`,
+          "POST",
+          { publish: true },
+          owner,
+        )
+      ).status,
+    ).toBe(423);
+    expect(
+      (await request(`/api/merchant/stores/${sid}/settings`, "PUT", {}, owner))
+        .status,
+    ).toBe(423);
+    expect(
+      (
+        await request(
+          `/api/merchant/stores/${sid}/billing`,
+          "POST",
+          { plan_price_id: publicPrice },
+          owner,
+        )
+      ).status,
+    ).toBe(423);
+    expect(
+      (
+        await request(
+          `/api/admin/stores/${sid}/status`,
+          "PUT",
+          { status: "draft", reason: "Pemeriksaan selesai" },
+          cookieAdmin,
+        )
+      ).status,
+    ).toBe(200);
+    expect(
+      (await db.query("SELECT status FROM stores WHERE id=$1", [sid]))[0]
+        .status,
+    ).toBe("draft");
+  });
+  it("does not grant access on purchase request and rejects private packages from the merchant API", async () => {
+    expect(
+      (
+        await request(
+          `/api/merchant/stores/${sid}/billing`,
+          "POST",
+          { plan_price_id: internalPrice },
+          owner,
+        )
+      ).status,
+    ).toBe(404);
+    expect(
+      (
+        await request(
+          `/api/merchant/stores/${sid}/billing`,
+          "POST",
+          { plan_price_id: publicPrice },
+          owner,
+        )
+      ).status,
+    ).toBe(201);
+    expect(
+      (
+        await request(
+          `/api/merchant/stores/${sid}/billing`,
+          "POST",
+          { plan_price_id: publicPrice },
+          owner,
+        )
+      ).status,
+    ).toBe(409);
+    await expect(entitlement(db, sid, "storefront")).rejects.toMatchObject({
+      status: 423,
+    });
+    firstInvoice = (
+      await db.query(
+        "SELECT i.id FROM subscription_invoices i JOIN store_subscriptions s ON s.id=i.subscription_id WHERE s.store_id=$1",
+        [sid],
+      )
+    )[0].id;
+    expect(
+      (
+        await request(
+          `/api/admin/invoices/${firstInvoice}/verify`,
+          "POST",
+          {},
+          cookieAdmin,
+        )
+      ).status,
+    ).toBe(200);
+    await expect(entitlement(db, sid, "storefront")).resolves.toBeUndefined();
+  });
+  it("keeps old rights until upgrade payment, then replaces them and invalidates stale invoices", async () => {
+    const upgradePrice = await createPlan("upgrade-merchant", true, 2);
+    expect(
+      (
+        await request(
+          `/api/merchant/stores/${sid}/billing`,
+          "POST",
+          { plan_price_id: upgradePrice },
+          owner,
+        )
+      ).status,
+    ).toBe(409);
+    expect(
+      (
+        await request(
+          `/api/merchant/stores/${sid}/billing`,
+          "POST",
+          { plan_price_id: upgradePrice, confirm_replace: true },
+          owner,
+        )
+      ).status,
+    ).toBe(201);
+    const old = (
+      await db.query(
+        "SELECT id FROM store_subscriptions WHERE store_id=$1 AND status='active'",
+        [sid],
+      )
+    )[0];
+    await db.query(
+      "UPDATE store_subscriptions SET current_period_end=now()+interval '1 day' WHERE id=$1",
+      [old.id],
+    );
+    await billingCycle(db);
+    const upgrade = (
+      await db.query(
+        "SELECT i.id,s.id AS subscription_id FROM subscription_invoices i JOIN store_subscriptions s ON s.id=i.subscription_id WHERE s.store_id=$1 AND s.status='pending'",
+        [sid],
+      )
+    )[0];
+    const renewal = (
+      await db.query(
+        "SELECT id FROM subscription_invoices WHERE subscription_id=$1 AND status='unpaid'",
+        [old.id],
+      )
+    )[0];
+    expect(
+      (
+        await request(
+          `/api/admin/invoices/${renewal.id}/verify`,
+          "POST",
+          {},
+          cookieAdmin,
+        )
+      ).status,
+    ).toBe(200);
+    expect(
+      (
+        await db.query("SELECT status FROM store_subscriptions WHERE id=$1", [
+          upgrade.subscription_id,
+        ])
+      )[0].status,
+    ).toBe("pending");
+    expect(
+      (
+        await db.query(
+          "SELECT count(*)::int AS n FROM store_subscriptions WHERE store_id=$1 AND status='active'",
+          [sid],
+        )
+      )[0].n,
+    ).toBe(1);
+    expect(
+      (
+        await request(
+          `/api/admin/invoices/${upgrade.id}/verify`,
+          "POST",
+          {},
+          cookieAdmin,
+        )
+      ).status,
+    ).toBe(200);
+    expect(
+      (
+        await db.query("SELECT status FROM store_subscriptions WHERE id=$1", [
+          old.id,
+        ])
+      )[0].status,
+    ).toBe("canceled");
+    expect(
+      (
+        await db.query(
+          "SELECT count(*)::int AS n FROM subscription_invoices WHERE subscription_id=$1 AND status IN ('unpaid','overdue')",
+          [old.id],
+        )
+      )[0].n,
+    ).toBe(0);
+    // Re-verifying an already paid older invoice cannot reactivate its canceled subscription.
+    expect(
+      (
+        await request(
+          `/api/admin/invoices/${firstInvoice}/verify`,
+          "POST",
+          {},
+          cookieAdmin,
+        )
+      ).status,
+    ).toBe(200);
+    expect(
+      (
+        await db.query(
+          "SELECT id FROM store_subscriptions WHERE store_id=$1 AND status='active'",
+          [sid],
+        )
+      )[0].id,
+    ).toBe(upgrade.subscription_id);
+  });
+  it("assigns private internal access immediately, enforces only its limits, and never renews it automatically", async () => {
+    expect(
+      (
+        await request(
+          `/api/admin/stores/${sid}/subscription`,
+          "PUT",
+          {
+            plan_price_id: internalPrice,
+            duration_days: 180,
+            reason: "Program mitra internal",
+          },
+          owner,
+        )
+      ).status,
+    ).toBe(403);
+    expect(
+      (
+        await request(
+          `/api/admin/stores/${sid}/subscription`,
+          "PUT",
+          {
+            plan_price_id: internalPrice,
+            duration_days: 180,
+            reason: "Program mitra internal",
+          },
+          cookieAdmin,
+        )
+      ).status,
+    ).toBe(200);
+    const sub = (
+      await db.query(
+        "SELECT * FROM store_subscriptions WHERE store_id=$1 AND status='active'",
+        [sid],
+      )
+    )[0];
+    expect(sub.billing_mode).toBe("internal");
+    expect(Number(sub.grace_days)).toBe(0);
+    expect(
+      (
+        await db.query(
+          "SELECT count(*)::int AS n FROM subscription_invoices WHERE subscription_id=$1",
+          [sub.id],
+        )
+      )[0].n,
+    ).toBe(0);
+    const created = await request(
+      `/api/merchant/stores/${sid}/products`,
+      "POST",
+      {
+        slug: "produk-siklus",
+        name: "Produk Siklus",
+        price_idr: 100,
+        status: "active",
+        variants: [{ sku: "SIKLUS-1", option_label: "Satu", stock_qty: 5 }],
+      },
+      owner,
+    );
+    expect(created.status).toBe(201);
+    await expect(entitlement(db, sid, "products", 1)).rejects.toMatchObject({
+      status: 409,
+    });
+    await db.query(
+      "UPDATE store_subscriptions SET current_period_end=now()-interval '1 hour' WHERE id=$1",
+      [sub.id],
+    );
+    await billingCycle(db);
+    expect(
+      (
+        await db.query("SELECT status FROM store_subscriptions WHERE id=$1", [
+          sub.id,
+        ])
+      )[0].status,
+    ).toBe("expired");
+    expect(
+      (
+        await db.query(
+          "SELECT count(*)::int AS n FROM subscription_invoices WHERE subscription_id=$1",
+          [sub.id],
+        )
+      )[0].n,
+    ).toBe(0);
+    await expect(entitlement(db, sid, "storefront")).rejects.toMatchObject({
+      status: 423,
+    });
+    await expect(entitlement(db, sid, "products", 1)).resolves.toBeUndefined();
+  });
+  it("approves UMKM applications without custom-project contracts, links the store and never extends twice", async () => {
+    const leadid = crypto.randomUUID();
+    await db.query(
+      "INSERT INTO custom_project_leads(id,business_name,contact_email,project_brief) VALUES($1,$2,$3,$4)",
+      [
+        leadid,
+        "Toko Siklus",
+        "lifecycle@test.invalid",
+        "[PENGAJUAN PROGRAM UMKM] Tolong tinjau pengajuan toko kami.",
+      ],
+    );
+    const approved = {
+      store_id: sid,
+      status: "accepted",
+      source_ownership: "pending",
+      reusable_modules: "",
+      contract_terms: "",
+      quote_idr: null,
+      delivery_status: "not_started",
+    };
+    expect(
+      (
+        await request(
+          `/api/admin/leads/${leadid}`,
+          "PUT",
+          approved,
+          cookieAdmin,
+        )
+      ).status,
+    ).toBe(200);
+    const before = (
+      await db.query(
+        "SELECT pilot_until,umkm_activated_at FROM stores WHERE id=$1",
+        [sid],
+      )
+    )[0];
+    expect(before.umkm_activated_at).toBeTruthy();
+    expect(
+      (
+        await request(
+          `/api/admin/stores/${sid}/pilot`,
+          "POST",
+          { months: 6 },
+          cookieAdmin,
+        )
+      ).status,
+    ).toBe(200);
+    expect(
+      (
+        await request(
+          `/api/admin/leads/${leadid}`,
+          "PUT",
+          approved,
+          cookieAdmin,
+        )
+      ).status,
+    ).toBe(200);
+    expect(
+      (
+        await db.query(
+          "SELECT pilot_until,umkm_activated_at FROM stores WHERE id=$1",
+          [sid],
+        )
+      )[0],
+    ).toEqual(before);
+    await expect(entitlement(db, sid, "storefront")).resolves.toBeUndefined();
+  });
+  it("requires all three deletion stages, exact store name and actor-bound unexpired tokens", async () => {
+    const path = `/api/admin/stores/${sid}/deletion`;
+    expect(
+      (await request(path, "POST", { step: 1, confirmed: true }, owner)).status,
+    ).toBe(403);
+    expect(
+      (
+        await request(
+          path,
+          "POST",
+          { step: 3, token: crypto.randomUUID(), irreversible: true },
+          cookieAdmin,
+        )
+      ).status,
+    ).toBe(409);
+    const token = (
+      await request(path, "POST", { step: 1, confirmed: true }, cookieAdmin)
+    ).body.token;
+    expect(
+      (
+        await request(
+          path,
+          "POST",
+          { step: 3, token, irreversible: true },
+          cookieAdmin,
+        )
+      ).status,
+    ).toBe(409);
+    expect(
+      (
+        await request(
+          path,
+          "POST",
+          { step: 2, token, store_name: "toko siklus" },
+          cookieAdmin,
+        )
+      ).status,
+    ).toBe(400);
+    const anotherAdmin = await account("admin-two@test.invalid");
+    await db.query("INSERT INTO platform_admins(user_id) VALUES($1)", [
+      anotherAdmin.u,
+    ]);
+    await expect(
+      adminStoreRoutes(
+        db,
+        new Request("http://localhost" + path, {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ step: 2, token, store_name: "Toko Siklus" }),
+        }),
+        {
+          id: anotherAdmin.u,
+          email: "admin-two@test.invalid",
+          verified: true,
+          admin: true,
+        },
+        path,
+      ),
+    ).rejects.toMatchObject({ status: 409 });
+    await db.query(
+      "UPDATE store_deletion_confirmations SET expires_at=now()-interval '1 minute' WHERE token=$1",
+      [token],
+    );
+    expect(
+      (
+        await request(
+          path,
+          "POST",
+          { step: 2, token, store_name: "Toko Siklus" },
+          cookieAdmin,
+        )
+      ).status,
+    ).toBe(409);
+    const newToken = (
+      await request(path, "POST", { step: 1, confirmed: true }, cookieAdmin)
+    ).body.token;
+    expect(
+      (
+        await request(
+          path,
+          "POST",
+          { step: 2, token: newToken, store_name: "Toko Siklus" },
+          cookieAdmin,
+        )
+      ).status,
+    ).toBe(200);
+    // Populate real order dependencies before deletion to verify FK-safe, transactional removal.
+    await db.query("UPDATE stores SET status='published' WHERE id=$1", [sid]);
+    await db.query(
+      "UPDATE store_settings SET bank_details='Bank Uji 123',pickup_address='Alamat Uji',contact_phone='08123456789' WHERE store_id=$1",
+      [sid],
+    );
+    const v = (
+      await db.query("SELECT id FROM product_variants WHERE store_id=$1", [sid])
+    )[0].id;
+    const checkout = await request(
+      "/api/public/stores/toko-siklus/checkout",
+      "POST",
+      {
+        ...payload(),
+        items: [{ variant_id: v, quantity: 1, expected_unit_price: 100 }],
+        expected_total: 100,
+      },
+    );
+    expect(checkout.status).toBe(201);
+    expect(
+      (
+        await request(
+          path,
+          "POST",
+          { step: 3, token: newToken, irreversible: true },
+          cookieAdmin,
+        )
+      ).status,
+    ).toBe(200);
+    for (const table of [
+      "stores",
+      "products",
+      "orders",
+      "store_subscriptions",
+      "store_domains",
+      "store_deletion_confirmations",
+    ]) {
+      const rows = await db.query(
+        `SELECT count(*)::int AS n FROM ${table} WHERE ${table === "stores" ? "id" : "store_id"}=$1`,
+        [sid],
+      );
+      expect(rows[0].n).toBe(0);
+    }
+    expect(
+      (
+        await db.query("SELECT count(*)::int AS n FROM stores WHERE id=$1", [
+          storeB,
+        ])
+      )[0].n,
+    ).toBe(1);
+    expect(
+      (
+        await db.query(
+          "SELECT count(*)::int AS n FROM media_deletion_jobs WHERE store_id=$1",
+          [sid],
+        )
+      )[0].n,
+    ).toBe(1);
+    expect(
+      (
+        await db.query(
+          "SELECT count(*)::int AS n FROM audit_logs WHERE store_id=$1 AND action='admin.store.delete'",
+          [sid],
+        )
+      )[0].n,
+    ).toBe(1);
+    expect(
+      (
+        await request(
+          path,
+          "POST",
+          { step: 3, token: newToken, irreversible: true },
+          cookieAdmin,
+        )
+      ).status,
+    ).toBe(404);
+  });
+  it("deletes only the removed store's media, retaining cleanup jobs on failure", async () => {
+    const queued = (
+      await db.query(
+        "SELECT store_id FROM media_deletion_jobs WHERE store_id=$1",
+        [sid],
+      )
+    )[0];
+    expect(queued).toBeTruthy();
+    const list = vi
+      .fn()
+      .mockResolvedValueOnce({
+        objects: [{ key: sid + "/one.png" }],
+        truncated: true,
+        cursor: "next-page",
+      })
+      .mockResolvedValueOnce({
+        objects: [{ key: sid + "/two.png" }],
+        truncated: false,
+      });
+    const remove = vi.fn().mockRejectedValueOnce(new Error("R2 unavailable"));
+    await expect(
+      deleteStoreMedia(db, { list, delete: remove } as unknown as R2Bucket),
+    ).rejects.toThrow("R2 unavailable");
+    expect(
+      (
+        await db.query(
+          "SELECT store_id FROM media_deletion_jobs WHERE store_id=$1",
+          [sid],
+        )
+      )[0],
+    ).toBeTruthy();
+    list
+      .mockReset()
+      .mockResolvedValueOnce({
+        objects: [{ key: sid + "/one.png" }],
+        truncated: true,
+        cursor: "next-page",
+      })
+      .mockResolvedValueOnce({
+        objects: [{ key: sid + "/two.png" }],
+        truncated: false,
+      });
+    remove.mockReset().mockResolvedValue(undefined);
+    await deleteStoreMedia(db, { list, delete: remove } as unknown as R2Bucket);
+    expect(list).toHaveBeenNthCalledWith(1, {
+      prefix: sid + "/",
+      limit: 1000,
+      cursor: undefined,
+    });
+    expect(list).toHaveBeenNthCalledWith(2, {
+      prefix: sid + "/",
+      limit: 1000,
+      cursor: "next-page",
+    });
+    expect(remove).toHaveBeenNthCalledWith(1, [sid + "/one.png"]);
+    expect(remove).toHaveBeenNthCalledWith(2, [sid + "/two.png"]);
+    expect(
+      (
+        await db.query(
+          "SELECT store_id FROM media_deletion_jobs WHERE store_id=$1",
+          [sid],
+        )
+      )[0],
+    ).toBeUndefined();
   });
 });

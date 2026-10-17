@@ -306,7 +306,7 @@ describe("database readiness", () => {
       database: "connected",
       liveCheckout: false,
     });
-    expect(client.query).toHaveBeenCalledTimes(4);
+    expect(client.query).toHaveBeenCalledTimes(5);
     expect(client.end).toHaveBeenCalledOnce();
   });
 });

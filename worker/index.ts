@@ -1,3 +1,4 @@
+import { adminStoreRoutes, deleteStoreMedia } from "./lib/admin-stores";
 import { connect, type DB } from "./lib/db";
 import { assert, HttpError, json } from "./lib/security";
 import { authRoutes, identity, rateLimit } from "./lib/auth";
@@ -58,7 +59,8 @@ export async function handleAPI(
   if (path === "/api/health") {
     await db.query("SELECT firebase_uid FROM users LIMIT 0");
     await db.query("SELECT gallery FROM products LIMIT 0");
-    await db.query("SELECT pilot_until FROM stores LIMIT 0");
+    await db.query("SELECT pilot_until,umkm_activated_at FROM stores LIMIT 0");
+    await db.query("SELECT billing_mode FROM store_subscriptions LIMIT 0");
     await db.query("SELECT id FROM platform_settings WHERE id=true");
     return json({
       status: "ok",
@@ -186,7 +188,15 @@ export async function handleAPI(
         `SELECT m.user_id FROM stores s JOIN merchant_memberships m ON m.merchant_id=s.merchant_id WHERE s.id=$1 AND m.user_id=$2`,
         [media[1], user?.id || null],
       );
-      assert(access[0], 404, "Gambar tidak ditemukan.");
+      assert(
+        access[0] ||
+          (user?.admin &&
+            (
+              await db.query("SELECT id FROM stores WHERE id=$1", [media[1]])
+            )[0]),
+        404,
+        "Gambar tidak ditemukan.",
+      );
     }
     const obj = await env.MEDIA.get(path.slice("/api/media/".length));
     assert(obj, 404, "Gambar tidak ditemukan.");
@@ -214,6 +224,7 @@ export async function handleAPI(
   if (mediaPost && request.method === "POST")
     return upload(db, request, user, mediaPost[1], env.MEDIA);
   for (const route of [
+    () => adminStoreRoutes(db, request, user, path),
     () => operationRoutes(db, request, user),
     () => catalogRoutes(db, request, user, path, env.ROOT_DOMAIN),
     () => orderRoutes(db, request, user, path),
@@ -345,6 +356,7 @@ const handler = {
       await billingCycle(db);
       await deliverOutbox(db, env.EMAIL, env.EMAIL_FROM);
       await cleanup(db);
+      await deleteStoreMedia(db, env.MEDIA);
     } finally {
       await db.client.end();
     }

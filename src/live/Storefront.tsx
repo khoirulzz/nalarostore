@@ -180,7 +180,15 @@ export function LiveStore({
       {preview && (
         <div className="preview-banner">
           Pratinjau toko · Pesanan tidak dapat dibuat di sini.{" "}
-          <Link to="/app/settings">Kembali ke pengaturan</Link>
+          <Link
+            to={
+              new URLSearchParams(window.location.search).has("admin")
+                ? `/admin?tab=overview&store=${params.sid}`
+                : "/app/settings"
+            }
+          >
+            Kembali ke pengaturan
+          </Link>
         </div>
       )}
       <header className="store-header">
@@ -674,14 +682,26 @@ function LiveProduct({
         <button
           className="live-mobile-cart"
           aria-label="Tambah ke keranjang"
-          disabled={!v || stock < 1 || quantity < 1 || quantity > stock || !Number.isInteger(quantity)}
+          disabled={
+            !v ||
+            stock < 1 ||
+            quantity < 1 ||
+            quantity > stock ||
+            !Number.isInteger(quantity)
+          }
           onClick={() => v && add(v, quantity)}
         >
           <Icon name="bag" size={21} />
         </button>
         <button
           className="live-mobile-checkout"
-          disabled={!v || stock < 1 || quantity < 1 || quantity > stock || !Number.isInteger(quantity)}
+          disabled={
+            !v ||
+            stock < 1 ||
+            quantity < 1 ||
+            quantity > stock ||
+            !Number.isInteger(quantity)
+          }
           onClick={() => {
             if (v) {
               add(v, quantity);
