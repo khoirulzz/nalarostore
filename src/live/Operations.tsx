@@ -239,6 +239,14 @@ export function Analytics({ sid }: { sid: string }) {
     setDailyPage(1);
   };
   const firstPublished = pagination?.first_published_date;
+  // Older API versions return every day; keep the UI paginated while the
+  // Worker rolls forward, without inventing days before the first sale.
+  const legacyDaily = pagination ? [] : (data.value?.daily || [])
+    .filter((day) => day.orders > 0 || Number(day.revenue) > 0).slice().reverse();
+  const dailyRows = pagination ? (data.value?.daily || [])
+    : legacyDaily.slice((dailyPage - 1) * 7, dailyPage * 7);
+  const dailyTotal = pagination?.total_days ?? legacyDaily.length;
+  const dailyPages = pagination?.total_pages ?? Math.ceil(legacyDaily.length / 7);
   const formatDay = (day: string) => new Date(day + "T12:00:00Z").toLocaleDateString(
     "id-ID", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" },
   );
@@ -343,28 +351,28 @@ export function Analytics({ sid }: { sid: string }) {
                 <h2>Penjualan per hari</h2>
                 <p>{firstPublished ? `Riwayat tersedia sejak toko dipublikasikan pada ${formatDay(firstPublished)}.` : "Riwayat dimulai setelah toko pertama kali dipublikasikan."}</p>
               </div>
-              <span>{pagination?.total_days || 0} hari</span>
+              <span>{dailyTotal} hari</span>
             </div>
-            {data.value?.daily.map((d) => (
+            {dailyRows.map((d) => (
               <div className="analytics-daily-row" key={d.day}>
                 <div><strong>{formatDay(d.day)}</strong><small>{d.orders} pesanan masuk</small></div>
                 <b>{rupiah(d.revenue)}</b>
               </div>
             ))}
-            {!data.value?.daily.length && (
+            {!dailyRows.length && (
               <div className="analytics-inline-empty">
                 <Icon name="calendar" size={22} />
                 <span>Belum ada hari penjualan pada periode ini.</span>
               </div>
             )}
-            {(pagination?.total_pages || 0) > 1 && (
+            {dailyPages > 1 && (
               <nav className="analytics-pagination" aria-label="Halaman penjualan harian">
                 <button type="button" disabled={dailyPage <= 1 || data.loading}
                   onClick={() => setDailyPage((v) => Math.max(1, v - 1))}>
                   <Icon name="chevron-left" size={17} /> Lebih baru
                 </button>
-                <span>Halaman {dailyPage} dari {pagination?.total_pages}</span>
-                <button type="button" disabled={dailyPage >= (pagination?.total_pages || 1) || data.loading}
+                <span>Halaman {dailyPage} dari {dailyPages}</span>
+                <button type="button" disabled={dailyPage >= dailyPages || data.loading}
                   onClick={() => setDailyPage((v) => v + 1)}>
                   Lebih lama <Icon name="chevron-right" size={17} />
                 </button>
