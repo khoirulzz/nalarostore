@@ -31,6 +31,16 @@ test("merchant → product → guest checkout → manual verification → comple
     .getByRole("dialog")
     .getByRole("button", { name: "Lewati", exact: true })
     .click();
+  for (const width of [320, 390, 768, 1440]) {
+    await page.setViewportSize({ width, height: 900 });
+    for (const route of ["/app", "/app/chat", "/app/notifications", "/app/inventory"]) {
+      await page.goto(route);
+      await expect(page.locator(".workspace-current-store strong")).toHaveText("Toko Browser");
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+      if (route === "/app") await expect(page.locator(".work-numbers > div")).toHaveCount(2);
+    }
+  }
+  await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/app/customers");
   await expect(page.getByLabel("Cari nama, email atau telepon")).toBeVisible();
   await expect(
