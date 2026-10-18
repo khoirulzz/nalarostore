@@ -8,6 +8,7 @@ type Conversation = {
   id: string;
   customer_name: string;
   store_name: string;
+  store_slug?: string;
   product_name?: string;
   last_message: string;
   unread: number;
@@ -418,6 +419,12 @@ export function Conversations({ sid }: { sid?: string }) {
   const data = usePoll<{ conversations: Conversation[] }>(path);
   const [selected, setSelected] = useState("");
   const conversations = data.value?.conversations || [];
+  const selectedConversation = conversations.find((conversation) => conversation.id === selected);
+  const availableProducts = useData<{ products: Product[] }>(
+    !sid && selectedConversation?.store_slug
+      ? "/api/public/stores/" + selectedConversation.store_slug + "/products"
+      : null,
+  );
   return (
     <>
       <div className="seller-page-heading">
@@ -463,6 +470,7 @@ export function Conversations({ sid }: { sid?: string }) {
               key={selected}
               path={sid ? path + "/" + selected : "/api/public/chat/" + selected}
               seller={!!sid}
+              products={!sid ? (availableProducts.value?.products || []) : []}
             />
           </div>
         ) : conversations.length > 0 ? (
