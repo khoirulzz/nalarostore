@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
+import { Icon } from "../components/Icon";
 import {
   onIdTokenChanged,
   signOut,
@@ -154,29 +155,26 @@ function Account() {
   }
   return (
     <div className="buyer-account workspace">
-      <header className="workspace-topbar">
-        <Link to="/" className="brand">
-          Nalaro
-        </Link>
+      <header className="workspace-topbar buyer-topbar">
+        <Link to="/" className="buyer-back-home"><Icon name="arrow-left" size={19} /><span>Nalaro Store</span></Link>
         <strong>Akun pembeli</strong>
-        <button onClick={() => void signOut(requireFirebase())}>Keluar</button>
+        <button type="button" className="buyer-signout" onClick={() => void signOut(requireFirebase())}><Icon name="logout" size={17} /> Keluar</button>
       </header>
-      <main className="workspace-content">
-        <h1>Semua belanjamu, satu akun.</h1>
-        <p>{user?.email}</p>
-        <nav className="buyer-tabs" aria-label="Menu akun">
-          {[
-            ["orders", "Pesanan"],
-            ["chat", "Chat"],
-            ["addresses", "Alamat"],
-            ["profile", "Profil"],
-          ].map(([key, name]) => (
-            <button
-              key={key}
-              className={tab === key ? "active" : ""}
-              onClick={() => setTab(key)}
-            >
-              {name}
+      <main className="workspace-content buyer-content">
+        <div className="buyer-hero">
+          <span className="buyer-avatar" aria-hidden="true">{(user?.email || "B").charAt(0).toUpperCase()}</span>
+          <div><small>AKUN NALARO</small><h1>Aktivitas belanjamu</h1><p>{user?.email}</p></div>
+        </div>
+        <nav className="buyer-tabs buyer-primary-tabs" aria-label="Menu akun">
+          {([
+            ["orders", "Pesanan", "bag"],
+            ["chat", "Chat", "mail"],
+            ["addresses", "Alamat", "map-pin"],
+            ["profile", "Profil", "users"],
+          ] as const).map(([key, name, icon]) => (
+            <button type="button" key={key} aria-current={tab === key ? "page" : undefined}
+              className={tab === key ? "active" : ""} onClick={() => setTab(key)}>
+              <Icon name={icon} size={19} /><span>{name}</span>
             </button>
           ))}
         </nav>
@@ -192,22 +190,26 @@ function Account() {
             <h2>Riwayat lintas toko</h2>
             {orders.error && <p role="alert">{orders.error}</p>}
             {orders.value?.orders.map((o) => (
-              <article className="work-section" key={o.id}>
-                <h3>
-                  {o.store_name} · {o.order_number}
-                </h3>
-                <p>
-                  {rupiah(o.total_idr)} · {label(o.payment_status)} ·{" "}
-                  {label(o.fulfillment_status)}
-                </p>
-                <button onClick={() => setDetail(o.id)}>Detail pesanan</button>
-                <Link to={"/s/" + o.store_slug}>Kunjungi toko</Link>
+              <article className="work-section buyer-order-card" key={o.id}>
+                <header><span className="buyer-order-store"><Icon name="box" size={17} /> {o.store_name}</span>
+                  <span className="buyer-order-number">{o.order_number}</span></header>
+                <div className="buyer-order-summary">
+                  <div><small>Total pesanan</small><strong>{rupiah(o.total_idr)}</strong></div>
+                  <div className="buyer-order-status">
+                    <span className={o.payment_status === "paid" ? "paid" : ""}>{label(o.payment_status)}</span>
+                    <small>{label(o.fulfillment_status)}</small>
+                  </div>
+                </div>
+                <footer>
+                  <button type="button" className="buyer-primary-action" onClick={() => setDetail(o.id)}>Lihat rincian <Icon name="arrow-right" size={16} /></button>
+                  <Link to={"/s/" + o.store_slug}>Kunjungi toko <Icon name="arrow-up-right" size={15} /></Link>
+                </footer>
               </article>
             ))}
             {orders.value && !orders.value.orders.length && (
               <p>Belum ada pesanan yang tertaut ke akun ini.</p>
             )}
-            <div className="buyer-tabs">
+            <div className="buyer-pagination">
               <button
                 disabled={page === 1}
                 onClick={() => setPage((p) => p - 1)}
@@ -223,8 +225,8 @@ function Account() {
               </button>
             </div>
             {detail && (
-              <section className="work-section">
-                <button onClick={() => setDetail("")}>Tutup detail</button>
+              <section className="work-section buyer-order-detail">
+                <button type="button" onClick={() => setDetail("")}><Icon name="close" size={16} /> Tutup rincian</button>
                 {order.error && <p role="alert">{order.error}</p>}
                 {order.value && (
                   <>
@@ -256,7 +258,7 @@ function Account() {
                 )}
               </section>
             )}
-            <form className="work-section live-form" onSubmit={claim}>
+            <form className="work-section live-form buyer-account-form" onSubmit={claim}>
               <h3>Tautkan pesanan tamu</h3>
               <p>
                 Gunakan slug toko dan token dari tautan pelacakan milikmu. Token
@@ -288,7 +290,7 @@ function Account() {
             <h2>Alamat tersimpan</h2>
             {addresses.error && <p role="alert">{addresses.error}</p>}
             {addresses.value?.addresses.map((a) => (
-              <article className="work-section" key={a.id}>
+              <article className="work-section buyer-address-card" key={a.id}>
                 <h3>
                   {a.label}
                   {a.is_default ? " · Utama" : ""}
@@ -320,7 +322,7 @@ function Account() {
                 )}
               </article>
             ))}
-            <form className="work-section live-form" onSubmit={saveAddress}>
+            <form className="work-section live-form buyer-account-form" onSubmit={saveAddress}>
               <h3>Tambah alamat</h3>
               <label>
                 Label
@@ -369,7 +371,7 @@ function Account() {
           <>
             {profile.error && <p role="alert">{profile.error}</p>}
             {profile.value && (
-              <form className="work-section live-form" onSubmit={saveProfile}>
+              <form className="work-section live-form buyer-account-form" onSubmit={saveProfile}>
                 <h2>Profil pembeli</h2>
                 <label>
                   Nama lengkap
