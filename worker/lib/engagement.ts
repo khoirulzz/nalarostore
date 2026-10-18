@@ -501,7 +501,7 @@ async function conversationMessages(
       );
       assert(!!available[0], 404, "Produk tidak lagi tersedia untuk dilampirkan.");
     }
-    const sentBody = (p.product_id ? `[[nalaro-product:${p.product_id}]]\\n` : "") + p.body;
+    const sentBody = (p.product_id ? `[[nalaro-product:${p.product_id}]]\n` : "") + p.body;
     const result = await db.tx(async (tx) => {
       await tx.query(
         "SELECT id FROM customer_conversations WHERE id=$1 FOR UPDATE",
@@ -530,7 +530,7 @@ async function conversationMessages(
             kind,
             user?.id || null,
             p.client_message_id,
-            p.body,
+            sentBody,
           ],
         )
       )[0];
@@ -553,13 +553,31 @@ async function conversationMessages(
     "SELECT id,sender_kind,body,created_at FROM customer_messages WHERE conversation_id=$1 AND ($2::uuid IS NULL OR (created_at,id)<(SELECT created_at,id FROM customer_messages WHERE id=$2 AND conversation_id=$1)) ORDER BY created_at DESC,id DESC LIMIT 51",
     [cid, before],
   );
+  const pageRows = rows.slice(0, 50);
+  const referencedIds = [...new Set([
+    ...pageRows.map((r) => String(r.body || "").match(productMarker)?.[1]).filter((x): x is string => !!x),
+    ...(c.product_id ? [c.product_id] : []),
+  ])];
+  const productRows = referencedIds.length ? await db.query(
+    "SELECT p.id,p.name,p.slug,p.primary_image_url,p.price_idr,p.status,s.slug AS store_slug FROM products p JOIN stores s ON s.id=p.store_id WHERE p.store_id=$1 AND p.id=ANY($2::uuid[])",
+    [c.store_id, referencedIds],
+  ) : [];
+  const products = new Map(productRows.map((row) => [row.id, row]));
   return json({
     conversation: {
       id: cid,
       customer_name: c.customer_name,
       product_id: c.product_id,
+      product: c.product_id ? products.get(c.product_id) || null : null,
     },
-    messages: rows.slice(0, 50).reverse(),
+    messages: pageRows.reverse().map((row) => {
+      const attachedId = String(row.body || "").match(productMarker)?.[1];
+      return {
+        ...row,
+        body: attachedId ? String(row.body).replace(productMarker, "") : row.body,
+        product: attachedId ? products.get(attachedId) || null : null,
+      };
+    }),
     hasMore: rows.length > 50,
   });
 }
