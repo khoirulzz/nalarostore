@@ -156,7 +156,7 @@ test("guest chat, private seller profile and common buyer account share the same
     .click();
   await page.getByRole("link", { name: "Buka akun pembeli" }).click();
   await expect(
-    page.getByRole("heading", { name: "Semua belanjamu, satu akun." }),
+    page.getByRole("heading", { name: "Aktivitas belanjamu" }),
   ).toBeVisible();
   await expect(page.getByText("Buat toko pertamamu.")).toHaveCount(0);
   await page.getByRole("button", { name: "Alamat", exact: true }).click();
