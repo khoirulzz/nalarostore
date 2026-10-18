@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
-import { api, useData } from "./api";
+import { api, useData, rupiah, type Product } from "./api";
 import { auth } from "../lib/firebase";
 import { Icon } from "../components/Icon";
 
@@ -12,11 +12,21 @@ type Conversation = {
   last_message: string;
   unread: number;
 };
+type ChatProduct = {
+  id: string;
+  name: string;
+  slug: string;
+  primary_image_url: string | null;
+  price_idr: number;
+  store_slug: string;
+  status: string;
+};
 type Message = {
   id: string;
   sender_kind: string;
   body: string;
   created_at: string;
+  product?: ChatProduct | null;
 };
 function usePoll<T>(
   path: string | null,
@@ -181,10 +191,14 @@ export function ChatThread({
   path,
   chatToken = "",
   seller = false,
+  products = [],
+  initialProduct = null,
 }: {
   path: string;
   chatToken?: string;
   seller?: boolean;
+  products?: Product[];
+  initialProduct?: Product | null;
 }) {
   const headers: Record<string, string> = chatToken
     ? { "x-chat-token": chatToken }
@@ -193,11 +207,13 @@ export function ChatThread({
     [text, setText] = useState(""),
     [busy, setBusy] = useState(false),
     [error, setError] = useState(""),
-    [pending, setPending] = useState<{ body: string; id: string } | null>(null);
+    [pending, setPending] = useState<{ body: string; id: string; product_id?: string } | null>(null),
+    [chosenProduct, setChosenProduct] = useState<Product | null>(initialProduct),
+    [pickerOpen, setPickerOpen] = useState(false);
   const data = usePoll<{
     messages: Message[];
     hasMore: boolean;
-    conversation: { customer_name: string };
+    conversation: { customer_name: string; product?: ChatProduct | null };
   }>(path, headers, revision);
   const [older, setOlder] = useState<Message[]>([]),
     [more, setMore] = useState<boolean | null>(null),
@@ -208,7 +224,12 @@ export function ChatThread({
     setText("");
     setPending(null);
     setError("");
+    setChosenProduct(initialProduct);
+    setPickerOpen(false);
   }, [path]);
+  useEffect(() => {
+    if (initialProduct) setChosenProduct(initialProduct);
+  }, [initialProduct]);
   const messages = [...older, ...(data.value?.messages || [])].filter(
     (m, index, all) => all.findIndex((a) => a.id === m.id) === index,
   );
