@@ -38,7 +38,7 @@ const menus: { key: string; label: string; icon: IconName }[] = [
   { key: "inventory", label: "Stok", icon: "chart" },
   { key: "customers", label: "Pelanggan", icon: "users" },
   { key: "chat", label: "Chat pelanggan", icon: "mail" },
-  { key: "notifications", label: "Notifikasi", icon: "alert" },
+  { key: "notifications", label: "Notifikasi", icon: "bell" },
   { key: "responsible", label: "Penanggung jawab", icon: "shield" },
   { key: "analytics", label: "Analitik", icon: "chart" },
   { key: "settings", label: "Tampilan & pengaturan", icon: "palette" },
@@ -226,12 +226,17 @@ function Workspace() {
           >
             <Icon name="menu" />
           </button>
-          <span
-            className="workspace-current-store"
-            title={store?.name || "Workspace"}
-          >
-            {store?.name || "Workspace"}
-          </span>
+          <div className="workspace-store-identity">
+            <span className="workspace-store-monogram" aria-hidden="true">
+              {(store?.name || "N").trim().charAt(0).toUpperCase()}
+            </span>
+            <span className="workspace-store-copy">
+              <small className="workspace-store-context">Toko aktif</small>
+              <span className="workspace-current-store" title={store?.name || "Workspace"}>
+                <strong>{store?.name || "Workspace"}</strong>
+              </span>
+            </span>
+          </div>
           <button
             className="seller-guide-replay"
             type="button"
@@ -634,21 +639,27 @@ function Overview({ sid, store }: { sid: string; store: Store }) {
       ) : (
         value && (
           <>
-            <section className="work-priorities">
+            <section className={"work-priorities " + (!value.summary.pending && !value.lowStock.length ? "is-clear" : "")}>
               <div className="work-priority-title">
-                <Icon name="alert" />
-                <span>Perlu perhatian</span>
+                <Icon name={!value.summary.pending && !value.lowStock.length ? "check" : "alert"} />
+                <span>{!value.summary.pending && !value.lowStock.length ? "Operasional aman" : "Perlu perhatian"}</span>
               </div>
-              <div className="priority-columns">
-                <Link to="/app/orders">
-                  <strong>{value.summary.pending}</strong>
-                  <span>Pesanan menunggu konfirmasi</span>
-                </Link>
-                <Link to="/app/products">
-                  <strong>{value.lowStock.length}</strong>
-                  <span>Varian stok rendah</span>
-                </Link>
-              </div>
+              {!value.summary.pending && !value.lowStock.length ? (
+                <p className="work-priority-empty">
+                  Tidak ada pesanan yang menunggu konfirmasi atau stok rendah saat ini.
+                </p>
+              ) : (
+                <div className="priority-columns">
+                  <Link to="/app/orders">
+                    <strong>{value.summary.pending}</strong>
+                    <span>Pesanan menunggu konfirmasi</span>
+                  </Link>
+                  <Link to="/app/products">
+                    <strong>{value.lowStock.length}</strong>
+                    <span>Varian stok rendah</span>
+                  </Link>
+                </div>
+              )}
             </section>
             <div className="work-numbers">
               <div>
@@ -2163,18 +2174,39 @@ function Inventory({ sid }: { sid: string }) {
   }>(`/api/merchant/stores/${sid}/inventory`);
   return (
     <>
-      <h1>Riwayat stok</h1>
-      <Notice error={error} />
-      <p>Stok awal, penyesuaian, reservasi dan penjualan tercatat terpisah.</p>
-      {value?.movements.map((m) => (
-        <div className="live-order-row" key={m.id}>
-          <strong>{m.name}</strong>
-          <span>{m.option_label}</span>
-          <span>{label(m.kind)}</span>
-          <b>{m.quantity_delta}</b>
-          <span>{new Date(m.created_at).toLocaleString("id-ID")}</span>
+      <div className="seller-page-heading">
+        <div>
+          <h1>Riwayat stok</h1>
+          <p>Setiap perubahan stok tercatat, mulai dari stok awal hingga penjualan.</p>
         </div>
-      ))}
+      </div>
+      <Notice error={error} />
+      {value && !value.movements.length ? (
+        <section className="work-section seller-empty-state">
+          <Icon name="box" size={25} />
+          <strong>Belum ada riwayat stok</strong>
+          <p>Perubahan stok akan muncul di sini setelah kamu mengelola produk.</p>
+        </section>
+      ) : (
+        <section className="work-section seller-inventory-panel" aria-label="Daftar perubahan stok">
+          {value?.movements.map((m) => (
+            <article className="seller-inventory-row" key={m.id}>
+              <div className="seller-inventory-product">
+                <strong>{m.name}</strong>
+                {m.option_label && <small>Varian: {m.option_label}</small>}
+              </div>
+              <div className="seller-inventory-kind">
+                <span>{label(m.kind)}</span>
+                <small>{new Date(m.created_at).toLocaleString("id-ID")}</small>
+              </div>
+              <strong className={`seller-stock-delta ${m.quantity_delta >= 0 ? "positive" : "negative"}`} aria-label={`Perubahan stok ${m.quantity_delta}`}>
+                {m.quantity_delta > 0 ? "+" : ""}{m.quantity_delta}
+              </strong>
+            </article>
+          ))}
+          {!value && <p className="seller-list-loading" aria-busy="true">Memuat riwayat stok…</p>}
+        </section>
+      )}
     </>
   );
 }

@@ -345,42 +345,61 @@ export function Conversations({ sid }: { sid?: string }) {
     : "/api/customer/conversations";
   const data = usePoll<{ conversations: Conversation[] }>(path);
   const [selected, setSelected] = useState("");
+  const conversations = data.value?.conversations || [];
   return (
     <>
-      <h1>Chat {sid ? "pelanggan" : "toko"}</h1>
-      <p className="seller-section-lead">
-        Percakapan tersimpan terpisah untuk setiap toko.
-      </p>
-      {data.error && <p role="alert">{data.error}</p>}
-      <div className="chat-layout">
+      <div className="seller-page-heading">
+        <div>
+          <h1>Chat {sid ? "pelanggan" : "toko"}</h1>
+          <p>Percakapan tersimpan terpisah untuk setiap toko.</p>
+        </div>
+      </div>
+      {data.error && <p role="alert" className="live-error">{data.error}</p>}
+      <div className={`chat-layout ${!conversations.length ? "chat-layout-empty" : ""} ${selected ? "has-selection" : ""}`}>
         <nav className="work-section chat-list" aria-label="Daftar percakapan">
-          {data.value?.conversations.map((c) => (
+          {conversations.map((c) => (
             <button
+              type="button"
               key={c.id}
               className={selected === c.id ? "active" : ""}
+              aria-current={selected === c.id ? "true" : undefined}
               onClick={() => setSelected(c.id)}
             >
               <strong>{sid ? c.customer_name : c.store_name}</strong>
               {c.product_name && <small>{c.product_name}</small>}
-              <span>{c.last_message || "Percakapan baru"}</span>
+              {selected !== c.id && <span>{c.last_message || "Percakapan baru"}</span>}
               {c.unread > 0 && <b>{c.unread} baru</b>}
             </button>
           ))}
-          {data.value && !data.value.conversations.length && (
-            <p>Belum ada percakapan.</p>
+          {data.value && !conversations.length && (
+            <div className="seller-empty-state chat-empty-state">
+              <Icon name="mail" size={25} />
+              <strong>Belum ada percakapan</strong>
+              <p>Pesan baru dari pelanggan akan muncul di sini.</p>
+            </div>
+          )}
+          {!data.value && !data.error && (
+            <p className="seller-list-loading" aria-busy="true">Memuat percakapan…</p>
           )}
         </nav>
         {selected ? (
-          <ChatThread
-            key={selected}
-            path={sid ? path + "/" + selected : "/api/public/chat/" + selected}
-            seller={!!sid}
-          />
-        ) : (
-          <section className="work-section">
-            <p>Pilih percakapan untuk membaca dan membalas pesan.</p>
+          <div className="chat-thread-frame">
+            <button type="button" className="chat-back-button" onClick={() => setSelected("")}>
+              <Icon name="arrow-left" size={17} /> Kembali ke percakapan
+            </button>
+            <ChatThread
+              key={selected}
+              path={sid ? path + "/" + selected : "/api/public/chat/" + selected}
+              seller={!!sid}
+            />
+          </div>
+        ) : conversations.length > 0 ? (
+          <section className="work-section chat-select-prompt">
+            <Icon name="mail" size={25} />
+            <strong>Pilih percakapan</strong>
+            <p>Baca dan balas pesan melalui daftar di samping.</p>
           </section>
-        )}
+        ) : null}
       </div>
     </>
   );
@@ -490,8 +509,9 @@ export function StoreChat({
   );
 }
 export function Notifications({ sid }: { sid: string }) {
-  const [revision, setRevision] = useState(0),
-    [error, setError] = useState("");
+  const [revision, setRevision] = useState(0);
+  const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
   const data = usePoll<{
     notifications: {
       key: string;
@@ -504,37 +524,66 @@ export function Notifications({ sid }: { sid: string }) {
     unread: number;
   }>(`/api/merchant/stores/${sid}/notifications`, {}, revision);
   async function read() {
+    if (busy || !data.value?.unread) return;
+    setBusy(true);
+    setError("");
     try {
       await api(`/api/merchant/stores/${sid}/notifications/read`, "POST", {
-        keys: data.value?.notifications.map((n) => n.key) || [],
+        keys: data.value.notifications.filter((n) => !n.is_read).map((n) => n.key),
       });
       setRevision((r) => r + 1);
     } catch (e) {
       setError((e as Error).message);
+    } finally {
+      setBusy(false);
     }
   }
   const context = new URLSearchParams(window.location.search).get("adminStore");
+  const notifications = data.value?.notifications || [];
+  const unread = data.value?.unread || 0;
   return (
     <>
-      <h1>Notifikasi</h1>
-      <p>{data.value?.unread || 0} belum dibaca</p>
-      <button onClick={() => void read()}>Tandai semua dibaca</button>
-      {(error || data.error) && <p role="alert">{error || data.error}</p>}
-      {data.value?.notifications.map((n) => (
-        <Link
-          className={
-            "work-section notification-row " + (n.is_read ? "" : "unread")
-          }
-          key={n.key}
-          to={"/app/" + n.route + (context ? "?adminStore=" + context : "")}
-        >
-          <strong>{n.title}</strong>
-          <span>{n.body}</span>
-          <small>{new Date(n.created_at).toLocaleString("id-ID")}</small>
-        </Link>
-      ))}
-      {data.value && !data.value.notifications.length && (
-        <p>Belum ada notifikasi operasional.</p>
+      <div className="seller-page-heading seller-notification-heading">
+        <div>
+          <h1>Notifikasi</h1>
+          <p>{unread ? `${unread} notifikasi belum dibaca` : "Kabar terbaru tentang aktivitas tokomu."}</p>
+        </div>
+        {unread > 0 ? (
+          <button type="button" className="button button-dark seller-read-all" onClick={() => void read()} disabled={busy}>
+            <Icon name="check" size={16} /> {busy ? "Menyimpan…" : "Tandai semua dibaca"}
+          </button>
+        ) : data.value ? (
+          <span className="seller-all-read"><Icon name="check" size={16} /> Semua dibaca</span>
+        ) : null}
+      </div>
+      {(error || data.error) && <p role="alert" className="live-error">{error || data.error}</p>}
+      {data.value && !notifications.length ? (
+        <section className="work-section seller-empty-state">
+          <Icon name="bell" size={25} />
+          <strong>Belum ada notifikasi</strong>
+          <p>Informasi pesanan dan aktivitas toko akan muncul di sini.</p>
+        </section>
+      ) : (
+        <div className="seller-notification-list">
+          {notifications.map((n) => (
+            <Link
+              className={`work-section notification-row ${n.is_read ? "" : "unread"}`}
+              key={n.key}
+              to={"/app/" + n.route + (context ? "?adminStore=" + context : "")}
+            >
+              <span className="seller-notification-mark" aria-hidden="true"><Icon name="bell" size={17} /></span>
+              <span className="seller-notification-copy">
+                <strong>{n.title}</strong>
+                <span>{n.body}</span>
+                <small>{new Date(n.created_at).toLocaleString("id-ID")}</small>
+              </span>
+              <Icon name="chevron-right" size={16} />
+            </Link>
+          ))}
+          {!data.value && !data.error && (
+            <p className="seller-list-loading" aria-busy="true">Memuat notifikasi…</p>
+          )}
+        </div>
       )}
     </>
   );
@@ -560,7 +609,7 @@ export function NotificationBell({
       to={"/app/notifications" + contextQuery}
       aria-label={`Notifikasi${unread ? ", " + unread + " belum dibaca" : ""}`}
     >
-      <Icon name="alert" size={20} />
+      <Icon name="bell" size={20} />
       {unread > 0 && <b>{unread > 99 ? "99+" : unread}</b>}
     </Link>
   );

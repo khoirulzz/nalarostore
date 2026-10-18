@@ -40,6 +40,7 @@ export type IconName =
   | "eye"
   | "info"
   | "alert"
+  | "bell"
   | "upload"
   | "edit"
   | "sliders"

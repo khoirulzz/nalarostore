@@ -31,6 +31,18 @@ test("merchant → product → guest checkout → manual verification → comple
     .getByRole("dialog")
     .getByRole("button", { name: "Lewati", exact: true })
     .click();
+  // Change viewport without re-fetching the same merchant data sixteen times:
+  // the test server intentionally rate-limits authenticated API requests.
+  for (const route of ["/app", "/app/chat", "/app/notifications", "/app/inventory"]) {
+    await page.goto(route);
+    await expect(page.locator(".workspace-current-store strong")).toHaveText("Toko Browser");
+    if (route === "/app") await expect(page.locator(".work-numbers > div")).toHaveCount(2);
+    for (const width of [320, 390, 768, 1440]) {
+      await page.setViewportSize({ width, height: 900 });
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+    }
+  }
+  await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/app/customers");
   await expect(page.getByLabel("Cari nama, email atau telepon")).toBeVisible();
   await expect(
@@ -309,7 +321,8 @@ test("owner activates and ends the six-month UMKM access", async ({ page }) => {
     (r) => r.url().endsWith("/pilot") && r.request().method() === "POST",
   );
   await page.getByRole("button", { name: "Aktifkan akses" }).click();
-  expect((await activation).ok()).toBe(true);
+  const activationResponse = await activation;
+  expect(activationResponse.ok(), `Activation HTTP ${activationResponse.status()}: ${await activationResponse.text()}`).toBe(true);
   await expect(row.getByText(/Pilot sampai/)).toBeVisible();
   await row.getByRole("button", { name: "Atur pilot" }).click();
   await page.getByLabel("Lama pilot (hari)").fill("0");
@@ -317,7 +330,8 @@ test("owner activates and ends the six-month UMKM access", async ({ page }) => {
     (r) => r.url().endsWith("/pilot") && r.request().method() === "POST",
   );
   await page.getByRole("button", { name: "Simpan perubahan" }).click();
-  expect((await ending).ok()).toBe(true);
+  const endingResponse = await ending;
+  expect(endingResponse.ok(), `Ending HTTP ${endingResponse.status()}: ${await endingResponse.text()}`).toBe(true);
   await expect(row.getByText(/Pilot sampai/)).toHaveCount(0);
 });
 

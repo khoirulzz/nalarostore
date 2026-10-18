@@ -4122,3 +4122,650 @@ textarea:focus-visible {
   min-width: 40px;
   min-height: 44px;
 }
+
+/* Seller workspace refinement — October 2026.
+   A consistent header, responsive metrics, and purposeful content states. */
+.workspace {
+  --seller-edge: #e5e8ec;
+  --seller-secondary: #737a82;
+  --seller-ink: #232a2b;
+}
+.workspace .workspace-main,
+.workspace .workspace-content,
+.workspace .workspace-content > div {
+  min-width: 0;
+}
+.workspace .workspace-topbar {
+  background: linear-gradient(108deg, #ab0e42 0%, #c7104a 54%, #df1853 100%);
+  color: #fff;
+  border: 0;
+  border-radius: 0;
+  padding-inline: clamp(20px, 2.5vw, 34px);
+  box-shadow: 0 5px 18px rgba(106, 13, 48, 0.11);
+  gap: 10px;
+}
+.workspace .workspace-topbar .workspace-store-identity {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  flex: 1;
+  min-width: 0;
+  margin-right: auto;
+}
+.workspace .workspace-topbar .workspace-store-monogram {
+  display: grid;
+  place-items: center;
+  flex: 0 0 36px;
+  width: 36px;
+  height: 36px;
+  border-radius: 11px;
+  background: rgba(255, 255, 255, 0.16);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #fff;
+  font: 760 15px "Manrope", sans-serif;
+}
+.workspace .workspace-topbar .workspace-store-copy {
+  display: grid;
+  align-content: center;
+  flex: 1;
+  gap: 2px;
+  min-width: 0;
+}
+.workspace .workspace-topbar .workspace-store-context {
+  color: rgba(255, 255, 255, 0.81);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.025em;
+}
+.workspace .workspace-topbar .workspace-current-store {
+  display: grid;
+  align-content: center;
+  gap: 2px;
+  flex: 1;
+  max-width: none;
+  min-width: 0;
+  line-height: 1.25;
+  color: #fff;
+}
+.workspace .workspace-topbar .workspace-current-store small {
+  color: rgba(255, 255, 255, 0.81);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.025em;
+}
+.workspace .workspace-topbar .workspace-current-store strong {
+  color: #fff;
+  font: 740 14px "Manrope", sans-serif;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  letter-spacing: -0.025em;
+}
+.workspace .workspace-topbar :is(.mobile-menu, .seller-guide-replay, .seller-notification-bell) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 43px;
+  height: 43px;
+  min-width: 43px;
+  min-height: 43px;
+  padding: 9px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  color: #fff;
+  position: relative;
+}
+.workspace .workspace-topbar :is(.mobile-menu, .seller-guide-replay, .seller-notification-bell, .work-view-store):hover {
+  background: rgba(255, 255, 255, 0.14);
+}
+.workspace .workspace-topbar :is(.mobile-menu, .seller-guide-replay, .seller-notification-bell, .work-view-store):focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+.workspace .workspace-topbar .mobile-menu {
+  display: none;
+}
+.workspace .workspace-topbar .work-view-store {
+  flex-shrink: 0;
+  color: #fff;
+  padding: 10px 12px;
+  border-radius: 11px;
+  border: 1px solid rgba(255, 255, 255, 0.27);
+  font-size: 12px;
+}
+.workspace .workspace-topbar .seller-notification-bell b {
+  position: absolute;
+  top: 1px;
+  right: 0;
+  min-width: 17px;
+  padding: 2px 4px;
+  border: 2px solid #bc1048;
+  background: #fff;
+  color: #b40c41;
+  font-size: 9px;
+  line-height: 1.15;
+  text-align: center;
+}
+.workspace .workspace-content {
+  max-width: 1280px;
+}
+.workspace .workspace-content > div > h1,
+.workspace .seller-page-heading h1 {
+  margin: 0;
+  font: 750 clamp(28px, 3vw, 37px) "Manrope", sans-serif;
+  letter-spacing: -0.052em;
+  line-height: 1.2;
+  color: var(--seller-ink);
+}
+.workspace .workspace-content > div > h1 + p {
+  margin: 13px 0 27px;
+  font-size: 13px;
+  line-height: 1.65;
+  color: var(--seller-secondary);
+}
+.workspace .workspace-heading {
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 23px;
+}
+.workspace .workspace-heading h1 {
+  margin: 0 0 8px;
+  letter-spacing: -0.052em;
+  line-height: 1.17;
+}
+.workspace .workspace-heading p {
+  font-size: 13px;
+  line-height: 1.6;
+}
+.workspace .work-priorities {
+  padding: 23px 25px;
+  margin-bottom: 16px;
+  border: 1px solid #e1e8e2;
+  border-left: 3px solid #647f6a;
+  border-radius: 16px;
+  background: #f7f9f6;
+}
+.workspace .work-priorities.is-clear {
+  border-left-color: #6b9175;
+}
+.workspace .work-priority-title {
+  margin-bottom: 14px;
+  font-size: 14px;
+  gap: 10px;
+}
+.workspace .work-priorities.is-clear .work-priority-title {
+  margin-bottom: 7px;
+}
+.workspace .work-priority-empty {
+  margin: 0 0 0 31px;
+  color: #64766a;
+  font-size: 13px;
+  line-height: 1.6;
+}
+.workspace .priority-columns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0;
+}
+.workspace .priority-columns a,
+.workspace .priority-columns a + a {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 15px;
+  min-width: 0;
+  padding: 9px 0;
+}
+.workspace .priority-columns a + a {
+  padding-left: 25px;
+  border-left: 1px solid #dce5dc;
+}
+.workspace .priority-columns strong {
+  flex-shrink: 0;
+  font-size: 30px;
+}
+.workspace .priority-columns span {
+  max-width: none;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.workspace .work-numbers {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  background: transparent;
+  border: 0;
+  margin-bottom: 23px;
+}
+.workspace .work-numbers > div,
+.workspace .work-numbers > div + div,
+.workspace .work-numbers > div:last-child {
+  min-width: 0;
+  grid-column: auto;
+  border: 1px solid var(--seller-edge);
+  border-radius: 16px;
+  padding: 22px 24px;
+  box-shadow: 0 3px 14px rgba(18, 30, 33, 0.025);
+}
+.workspace .work-numbers span {
+  color: var(--seller-secondary);
+  font-size: 12px;
+}
+.workspace .work-numbers strong {
+  font: 750 clamp(23px, 2.6vw, 30px) "Manrope", sans-serif;
+  letter-spacing: -0.052em;
+  overflow-wrap: anywhere;
+}
+.workspace .seller-stock-panel {
+  overflow: hidden;
+  border-radius: 16px;
+}
+.workspace .seller-panel-heading {
+  gap: 10px;
+  padding: 19px 23px;
+}
+.workspace .seller-panel-heading h2 {
+  min-width: 0;
+  flex: 1;
+}
+.workspace .seller-panel-heading a {
+  margin-left: 4px;
+}
+.workspace .seller-page-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 15px;
+  margin-bottom: 25px;
+}
+.workspace .seller-page-heading > div {
+  min-width: 0;
+}
+.workspace .seller-page-heading p {
+  margin: 10px 0 0;
+  color: var(--seller-secondary);
+  font-size: 13px;
+  line-height: 1.65;
+  max-width: 660px;
+}
+.workspace .seller-empty-state {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 11px;
+  min-height: 210px;
+  padding: 34px 22px;
+  text-align: center;
+  border-radius: 16px;
+}
+.workspace .seller-empty-state > .icon {
+  box-sizing: content-box;
+  color: #ba164b;
+  padding: 15px;
+  background: #fff0f5;
+  border-radius: 16px;
+}
+.workspace .seller-empty-state strong {
+  color: var(--seller-ink);
+  font: 740 17px "Manrope", sans-serif;
+  letter-spacing: -0.025em;
+}
+.workspace .seller-empty-state p {
+  margin: 0;
+  max-width: 360px;
+  color: var(--seller-secondary);
+  font-size: 13px;
+  line-height: 1.6;
+}
+.workspace .seller-list-loading {
+  margin: 0;
+  padding: 25px;
+  color: var(--seller-secondary);
+  font-size: 13px;
+}
+.workspace .seller-inventory-panel {
+  overflow: hidden;
+  padding: 0;
+}
+.workspace .seller-inventory-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: 24px;
+  row-gap: 10px;
+  padding: 20px 23px;
+  border-bottom: 1px solid #ebedf0;
+}
+.workspace .seller-inventory-row:last-child {
+  border-bottom: 0;
+}
+.workspace .seller-inventory-row > div {
+  min-width: 0;
+}
+.workspace .seller-inventory-product,
+.workspace .seller-inventory-kind {
+  display: grid;
+  gap: 6px;
+}
+.workspace .seller-inventory-product strong {
+  font: 730 14px "Manrope", sans-serif;
+  color: var(--seller-ink);
+  overflow-wrap: anywhere;
+}
+.workspace .seller-inventory-kind span {
+  font-size: 13px;
+  color: #35413b;
+  font-weight: 670;
+}
+.workspace .seller-inventory-row small {
+  font-size: 12px;
+  color: var(--seller-secondary);
+  line-height: 1.5;
+}
+.workspace .seller-stock-delta {
+  align-self: center;
+  text-align: right;
+  font: 750 17px "Manrope", sans-serif;
+  white-space: nowrap;
+  color: #9c4b34;
+}
+.workspace .seller-stock-delta.positive {
+  color: #35704b;
+}
+.workspace .chat-layout {
+  min-width: 0;
+  gap: 16px;
+}
+.workspace .chat-layout-empty {
+  grid-template-columns: minmax(0, 1fr);
+}
+.workspace .chat-list {
+  min-width: 0;
+  margin-bottom: 0;
+}
+.workspace .chat-layout-empty .chat-list {
+  max-height: none;
+  padding: 0;
+}
+.workspace .chat-layout-empty .chat-empty-state {
+  border: 0;
+  width: 100%;
+  min-height: 260px;
+}
+.workspace .chat-thread-frame {
+  min-width: 0;
+}
+.workspace .chat-thread-frame .chat-thread {
+  margin-bottom: 0;
+  padding: 20px;
+}
+.workspace .chat-select-prompt {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 280px;
+  padding: 25px;
+  gap: 11px;
+  color: #657078;
+  text-align: center;
+}
+.workspace .chat-select-prompt strong {
+  color: var(--seller-ink);
+  font-size: 15px;
+}
+.workspace .chat-select-prompt p {
+  font-size: 13px;
+  line-height: 1.6;
+  margin: 0;
+}
+.workspace .chat-back-button {
+  display: none;
+}
+.workspace .seller-all-read {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 10px 12px;
+  border: 1px solid #d9e5dc;
+  border-radius: 10px;
+  color: #3a6e4c;
+  background: #f0f7f1;
+  font-size: 12px;
+  font-weight: 700;
+}
+.workspace .seller-read-all {
+  gap: 8px;
+  white-space: nowrap;
+}
+.workspace .seller-read-all:disabled {
+  cursor: wait;
+  opacity: 0.7;
+}
+.workspace .seller-notification-list {
+  display: grid;
+  gap: 12px;
+}
+.workspace .seller-notification-list .notification-row {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) 20px;
+  align-items: start;
+  gap: 13px;
+  padding: 20px;
+  margin: 0;
+  color: var(--seller-ink);
+  border-left: 1px solid var(--seller-edge);
+}
+.workspace .seller-notification-list .notification-row.unread {
+  border-left: 3px solid #bf1250;
+  background: #fffafb;
+}
+.workspace .seller-notification-mark {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 11px;
+  color: #b9184e;
+  background: #fff0f5;
+}
+.workspace .seller-notification-copy {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+.workspace .seller-notification-copy strong {
+  font: 730 14px "Manrope", sans-serif;
+  line-height: 1.4;
+}
+.workspace .seller-notification-copy > span {
+  color: #59626a;
+  font-size: 13px;
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+}
+.workspace .seller-notification-copy small {
+  color: var(--seller-secondary);
+  font-size: 11px;
+}
+.workspace .notification-row > .icon:last-child {
+  color: #8f969e;
+  margin-top: 10px;
+}
+.workspace .seller-notification-list .notification-row:hover {
+  background: #fff6f9;
+}
+@media (max-width: 900px) {
+  .workspace .workspace-topbar .mobile-menu {
+    display: inline-flex;
+  }
+  .workspace .workspace-topbar {
+    border-radius: 0 0 14px 14px;
+    padding-inline: 16px;
+  }
+}
+@media (max-width: 700px) {
+  .workspace .workspace-content {
+    padding: 27px 16px calc(112px + env(safe-area-inset-bottom, 0px));
+  }
+  .workspace .workspace-topbar {
+    gap: 3px;
+    padding-inline: 11px;
+  }
+  .workspace .workspace-topbar .workspace-store-identity {
+    gap: 8px;
+  }
+  .workspace .workspace-topbar .workspace-store-monogram {
+    flex-basis: 32px;
+    width: 32px;
+    height: 32px;
+    font-size: 13px;
+    border-radius: 9px;
+  }
+  .workspace .workspace-topbar .workspace-store-context {
+    display: none;
+  }
+  .workspace .workspace-topbar .workspace-current-store strong {
+    font-size: 13px;
+  }
+  .workspace .workspace-topbar :is(.mobile-menu, .seller-guide-replay, .seller-notification-bell) {
+    width: 40px;
+    height: 40px;
+    min-width: 40px;
+    min-height: 40px;
+    padding: 9px;
+  }
+  .workspace .workspace-heading {
+    align-items: flex-start;
+    gap: 14px;
+  }
+  .workspace .workspace-heading h1 {
+    font-size: clamp(27px, 7.4vw, 34px);
+  }
+  .workspace .workspace-heading > .button {
+    margin-top: 4px;
+  }
+  .workspace .work-priorities {
+    padding: 19px 18px;
+    margin-bottom: 12px;
+  }
+  .workspace .work-priority-empty {
+    margin-left: 30px;
+    font-size: 12px;
+  }
+  .workspace .priority-columns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .workspace .priority-columns a,
+  .workspace .priority-columns a + a {
+    padding: 12px 0;
+    border-left: 0;
+  }
+  .workspace .priority-columns a + a {
+    border-top: 1px solid #dce5dc;
+  }
+  .workspace .priority-columns strong {
+    min-width: 35px;
+    font-size: 27px;
+  }
+  .workspace .work-numbers {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+  .workspace .work-numbers > div,
+  .workspace .work-numbers > div:last-child {
+    padding: 18px 15px;
+    grid-column: auto;
+    border: 1px solid var(--seller-edge);
+  }
+  .workspace .work-numbers strong {
+    font-size: clamp(19px, 5vw, 24px);
+  }
+  .workspace .seller-page-heading {
+    align-items: start;
+    margin-bottom: 21px;
+  }
+  .workspace .seller-page-heading h1 {
+    font-size: clamp(28px, 7.5vw, 33px);
+  }
+  .workspace .seller-page-heading p {
+    font-size: 12px;
+  }
+  .workspace .seller-panel-heading {
+    padding: 17px;
+  }
+  .workspace .seller-panel-heading h2 {
+    font-size: 13px;
+  }
+  .workspace .seller-inventory-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 12px;
+    padding: 17px;
+  }
+  .workspace .seller-inventory-kind {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 14px;
+  }
+  .workspace .seller-stock-delta {
+    grid-column: 2;
+    grid-row: 1;
+  }
+  .workspace .chat-layout {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+  }
+  .workspace .chat-layout.has-selection .chat-list {
+    display: none;
+  }
+  .workspace .chat-back-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    border: 0;
+    background: transparent;
+    color: #a81042;
+    font-weight: 750;
+    font-size: 12px;
+    padding: 12px 0;
+    margin-bottom: 5px;
+  }
+  .workspace .chat-thread-frame .chat-thread {
+    padding: 17px;
+  }
+  .workspace .chat-select-prompt {
+    display: none;
+  }
+  .workspace .seller-notification-list .notification-row {
+    grid-template-columns: 35px minmax(0, 1fr) 16px;
+    gap: 12px;
+    padding: 17px 14px;
+  }
+  .workspace .seller-notification-mark {
+    width: 35px;
+    height: 35px;
+  }
+  .workspace .seller-notification-copy strong {
+    font-size: 13px;
+  }
+}
+@media (max-width: 390px) {
+  .workspace .workspace-topbar .workspace-store-monogram {
+    display: none;
+  }
+  .workspace .work-numbers > div,
+  .workspace .work-numbers > div:last-child {
+    padding: 16px 12px;
+  }
+  .workspace .seller-notification-heading .seller-read-all {
+    width: 100%;
+  }
+}
