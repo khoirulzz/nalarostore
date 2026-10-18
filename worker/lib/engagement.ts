@@ -45,7 +45,7 @@ const address = z.object({
   address: z.string().trim().min(12).max(2000),
   is_default: z.boolean().default(false),
 });
-const productMarker = /^\\[\\[nalaro-product:([a-f0-9-]{36})\\]\\](?:\\n|$)/;
+const productMarker = /^\[\[nalaro-product:([a-f0-9-]{36})\]\](?:\n|$)/;
 const message = z.object({
   body: z.string().trim().max(3900),
   product_id: id.optional(),
