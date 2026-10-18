@@ -55,7 +55,7 @@ export function LiveStore({
       isTracking ? null : preview ? endpoint : endpoint + "/products",
       revision,
     ),
-    capabilities = useData<{ liveCheckout: boolean }>(
+    capabilities = useData<{ liveCheckout: boolean; productChatAttachments?: boolean }>(
       "/api/public/capabilities",
     );
   const key =
@@ -413,6 +413,7 @@ export function LiveStore({
             accountURL="https://store.nalaro.digital/account"
             products={all}
             request={chatRequest}
+            attachmentsEnabled={capabilities.value?.productChatAttachments === true}
           />
         )}
         <div className="store-shell store-footer-grid">
