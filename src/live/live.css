@@ -4164,6 +4164,19 @@ textarea:focus-visible {
   color: #fff;
   font: 760 15px "Manrope", sans-serif;
 }
+.workspace .workspace-topbar .workspace-store-copy {
+  display: grid;
+  align-content: center;
+  flex: 1;
+  gap: 2px;
+  min-width: 0;
+}
+.workspace .workspace-topbar .workspace-store-context {
+  color: rgba(255, 255, 255, 0.81);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.025em;
+}
 .workspace .workspace-topbar .workspace-current-store {
   display: grid;
   align-content: center;
@@ -4613,7 +4626,7 @@ textarea:focus-visible {
     font-size: 13px;
     border-radius: 9px;
   }
-  .workspace .workspace-topbar .workspace-current-store small {
+  .workspace .workspace-topbar .workspace-store-context {
     display: none;
   }
   .workspace .workspace-topbar .workspace-current-store strong {
