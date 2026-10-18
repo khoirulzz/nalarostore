@@ -367,7 +367,7 @@ export function Conversations({ sid }: { sid?: string }) {
             >
               <strong>{sid ? c.customer_name : c.store_name}</strong>
               {c.product_name && <small>{c.product_name}</small>}
-              <span>{c.last_message || "Percakapan baru"}</span>
+              {selected !== c.id && <span>{c.last_message || "Percakapan baru"}</span>}
               {c.unread > 0 && <b>{c.unread} baru</b>}
             </button>
           ))}
