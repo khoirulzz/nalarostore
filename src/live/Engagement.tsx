@@ -269,7 +269,7 @@ export function ChatThread({
     setBusy(true);
     setError("");
     const fallbackBody = chosenProduct && !attachmentsEnabled
-      ? [text.trim() || "Halo, saya ingin bertanya tentang produk ini.", "Produk: " + chosenProduct.name].join("\\n")
+      ? [text.trim() || "Halo, saya ingin bertanya tentang produk ini.", "Produk: " + chosenProduct.name].join("\n")
       : text.trim();
     const attachmentId = attachmentsEnabled ? chosenProduct?.id : undefined;
     const draft =
