@@ -12,6 +12,23 @@ export async function salesAnalytics(db: DB, sid: string, url: URL) {
     "Zona waktu tidak tersedia.",
   );
   const { from, to } = dateRange(url, timezone);
+  const dailyPage = Number(url.searchParams.get("daily_page") || 1);
+  assert(Number.isInteger(dailyPage) && dailyPage >= 1 && dailyPage <= 10000, 400, "Halaman penjualan tidak valid.");
+  const publishedRow = (await db.query(
+    "SELECT COALESCE((SELECT min(a.created_at) FROM audit_logs a WHERE a.store_id=s.id AND a.action='store.publish'), CASE WHEN s.status IN ('published','paused') THEN s.created_at ELSE NULL END) AS first_published_at FROM stores s WHERE s.id=$1",
+    [sid],
+  ))[0];
+  const publishedAt = publishedRow?.first_published_at;
+  const fmt = (date: Date) => new Intl.DateTimeFormat("en-CA", {
+    timeZone: timezone, year: "numeric", month: "2-digit", day: "2-digit",
+  }).format(date);
+  const firstPublishedDate = publishedAt ? fmt(new Date(publishedAt)) : null;
+  const dailyFrom = firstPublishedDate ? (firstPublishedDate > from ? firstPublishedDate : from) : null;
+  const today = fmt(new Date());
+  const dailyTo = to < today ? to : today;
+  const dailyTotal = dailyFrom && dailyFrom <= dailyTo
+    ? Math.floor((Date.parse(dailyTo) - Date.parse(dailyFrom)) / 86400000) + 1 : 0;
+  const dailyPageSize = 7;
   const days = Math.round((Date.parse(to) - Date.parse(from)) / 86400000) + 1;
   const previousFrom = new Date(Date.parse(from) - days * 86400000)
     .toISOString()
