@@ -92,6 +92,8 @@ export async function handleAPI(
       customInquiry: true,
       buyerAccounts: true,
       customerChat: true,
+      productChatAttachments: true,
+      dailySalesPagination: true,
       notifications: "foreground",
     });
   const newChat = path.match(

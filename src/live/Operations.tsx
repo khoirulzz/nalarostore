@@ -200,200 +200,188 @@ export function Customers({ sid }: { sid: string }) {
   );
 }
 export function Analytics({ sid }: { sid: string }) {
+  const today = () => new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Jakarta", year: "numeric", month: "2-digit", day: "2-digit",
+  }).format(new Date());
   const [from, setFrom] = useState(() =>
-      new Date(Date.now() - 29 * 86400000).toISOString().slice(0, 10),
-    ),
-    [to, setTo] = useState(() => new Date().toISOString().slice(0, 10)),
-    [timezone, setTimezone] = useState("Asia/Jakarta");
+    new Date(Date.parse(today()) - 29 * 86400000).toISOString().slice(0, 10),
+  );
+  const [to, setTo] = useState(today);
+  const [timezone, setTimezone] = useState("Asia/Jakarta");
+  const [dailyPage, setDailyPage] = useState(1);
   const data = useData<{
     summary: {
-      orders: number;
-      paid_orders: number;
-      canceled_orders: number;
-      revenue: number;
-      shipping_revenue: number;
-      total_collected: number;
-      units_sold: number;
-      average_order_value: number;
-      purchasing_customers: number;
-      returning_customers: number;
+      orders: number; paid_orders: number; canceled_orders: number;
+      revenue: number; shipping_revenue: number; total_collected: number;
+      units_sold: number; average_order_value: number;
+      purchasing_customers: number; returning_customers: number;
     };
     previous: { revenue: number; paid_orders: number; units_sold: number };
-    top_products: {
-      product_id: string;
-      name: string;
-      units: number;
-      revenue: number;
-    }[];
+    top_products: { product_id: string; name: string; units: number; revenue: number }[];
     top_variants: {
-      product_id: string;
-      variant_id: string;
-      name: string;
-      variant: string;
-      units: number;
-      revenue: number;
+      product_id: string; variant_id: string; name: string;
+      variant: string; units: number; revenue: number;
     }[];
     daily: { day: string; orders: number; revenue: number }[];
+    daily_pagination: {
+      page: number; page_size: number; total_days: number;
+      total_pages: number; first_published_date: string | null;
+    };
   }>(
-    `/api/merchant/stores/${sid}/analytics?from=${from}&to=${to}&timezone=${timezone}`,
+    `/api/merchant/stores/${sid}/analytics?from=${from}&to=${to}&timezone=${timezone}&daily_page=${dailyPage}`,
   );
   const s = data.value?.summary;
+  const pagination = data.value?.daily_pagination;
+  const setPeriod = (days: number) => {
+    const end = today();
+    setTo(end);
+    setFrom(new Date(Date.parse(end) - (days - 1) * 86400000).toISOString().slice(0, 10));
+    setDailyPage(1);
+  };
+  const firstPublished = pagination?.first_published_date;
+  // Older API versions return every day; keep the UI paginated while the
+  // Worker rolls forward, without inventing days before the first sale.
+  const legacyDaily = pagination ? [] : (data.value?.daily || [])
+    .filter((day) => day.orders > 0 || Number(day.revenue) > 0).slice().reverse();
+  const dailyRows = pagination ? (data.value?.daily || [])
+    : legacyDaily.slice((dailyPage - 1) * 7, dailyPage * 7);
+  const dailyTotal = pagination?.total_days ?? legacyDaily.length;
+  const dailyPages = pagination?.total_pages ?? Math.ceil(legacyDaily.length / 7);
+  const formatDay = (day: string) => new Date(day + "T12:00:00Z").toLocaleDateString(
+    "id-ID", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" },
+  );
   return (
-    <>
-      <h1>Analitik penjualan</h1>
-      <p className="seller-section-lead">
-        Pantau penjualan dan pesanan yang sudah dibayar dalam periode pilihanmu.
-      </p>
-      <div className="form-two seller-date-filters">
-        <label>
-          Dari tanggal
-          <input
-            type="date"
-            value={from}
-            max={to}
-            onChange={(e) => setFrom(e.target.value)}
-          />
-        </label>
-        <label>
-          Sampai tanggal
-          <input
-            type="date"
-            value={to}
-            min={from}
-            onChange={(e) => setTo(e.target.value)}
-          />
-        </label>
-      </div>
-      <label className="seller-date-filters">
-        Zona waktu
-        <select value={timezone} onChange={(e) => setTimezone(e.target.value)}>
-          {[
-            ["Asia/Jakarta", "WIB"],
-            ["Asia/Makassar", "WITA"],
-            ["Asia/Jayapura", "WIT"],
-            ["UTC", "UTC"],
-          ].map(([value, name]) => (
-            <option key={value} value={value}>
-              {name}
-            </option>
-          ))}
-        </select>
-      </label>
-      {data.error && (
-        <p role="alert" className="live-error">
-          {data.error}
-        </p>
-      )}
+    <div className="seller-analytics-page">
+      <header className="seller-page-heading">
+        <div>
+          <h1>Analitik penjualan</h1>
+          <p>Pantau performa toko, pesanan dibayar, dan produk yang diminati.</p>
+        </div>
+      </header>
+      <section className="work-section analytics-filters" aria-label="Filter analitik">
+        <div className="analytics-filter-header">
+          <div>
+            <strong>Periode laporan</strong>
+            <span>Atur rentang tanggal untuk melihat penjualan toko.</span>
+          </div>
+          <div className="analytics-presets">
+            {[7, 30, 90].map((days) => (
+              <button key={days} type="button"
+                className={from === new Date(Date.parse(today()) - (days - 1) * 86400000).toISOString().slice(0, 10) && to === today() ? "active" : ""}
+                onClick={() => setPeriod(days)}
+              >{days} hari</button>
+            ))}
+          </div>
+        </div>
+        <div className="analytics-filter-fields">
+          <label><span>Dari</span>
+            <input type="date" value={from} max={to} onChange={(e) => { if(e.target.value) { setFrom(e.target.value); setDailyPage(1); } }} />
+          </label>
+          <label><span>Sampai</span>
+            <input type="date" value={to} min={from} onChange={(e) => { if(e.target.value) { setTo(e.target.value); setDailyPage(1); } }} />
+          </label>
+          <label><span>Zona waktu</span>
+            <select value={timezone} onChange={(e) => { setTimezone(e.target.value); setDailyPage(1); }}>
+              {[
+                ["Asia/Jakarta", "WIB"],
+                ["Asia/Makassar", "WITA"],
+                ["Asia/Jayapura", "WIT"],
+                ["UTC", "UTC"],
+              ].map(([value, name]) => <option key={value} value={value}>{name}</option>)}
+            </select>
+          </label>
+        </div>
+      </section>
+      {data.error && <p role="alert" className="live-error">{data.error}</p>}
+      {data.loading && <p aria-busy="true" className="seller-list-loading">Memuat analitik…</p>}
       {s && (
         <>
-          <div className="work-numbers">
-            <div>
-              <span>Penjualan produk (tanpa ongkir)</span>
-              <strong>{rupiah(s.revenue)}</strong>
+          <section className="analytics-stats" aria-label="Ringkasan analitik">
+            {[
+              { label: "Penjualan produk", value: rupiah(s.revenue), hint: "Tanpa ongkir" },
+              { label: "Pesanan dibayar", value: `${s.paid_orders} / ${s.orders}`, hint: "Dibayar / seluruh pesanan" },
+              { label: "Rata-rata transaksi", value: rupiah(s.average_order_value), hint: "Dari pesanan dibayar" },
+              { label: "Unit terjual", value: String(s.units_sold), hint: "Total produk" },
+              { label: "Total pembayaran", value: rupiah(s.total_collected), hint: `Termasuk ongkir ${rupiah(s.shipping_revenue)}` },
+              { label: "Pelanggan kembali", value: `${s.returning_customers} / ${s.purchasing_customers}`, hint: "Pelanggan kembali / pembeli" },
+            ].map((metric) => (
+              <article className="work-section analytics-stat" key={metric.label}>
+                <span>{metric.label}</span><strong>{metric.value}</strong><small>{metric.hint}</small>
+              </article>
+            ))}
+          </section>
+          <section className="work-section analytics-comparison">
+            <div className="analytics-section-heading">
+              <div><h2>Periode sebelumnya</h2><p>Perbandingan dengan rentang tanggal yang sama panjang.</p></div>
+              <span className={Number(s.revenue) >= Number(data.value?.previous.revenue) ? "positive" : "negative"}>
+                {Number(data.value?.previous.revenue) > 0
+                  ? `${Number(s.revenue) >= Number(data.value?.previous.revenue) ? "+" : ""}${((Number(s.revenue) / Number(data.value?.previous.revenue) - 1) * 100).toFixed(1)}%`
+                  : "Belum ada pembanding"}
+              </span>
             </div>
-            <div>
-              <span>Pesanan dibayar / total</span>
-              <strong>
-                {s.paid_orders} / {s.orders}
-              </strong>
-            </div>
-            <div>
-              <span>Rata-rata pesanan dibayar</span>
-              <strong>
-                {rupiah(s.paid_orders ? Number(s.revenue) / s.paid_orders : 0)}
-              </strong>
-            </div>
+            <p>Penjualan {rupiah(data.value?.previous.revenue || 0)} · {data.value?.previous.paid_orders || 0} pesanan dibayar · {data.value?.previous.units_sold || 0} unit.</p>
+          </section>
+          <div className="analytics-two-columns">
+            <section className="work-section analytics-list">
+              <div className="analytics-section-heading"><h2>Produk terlaris</h2></div>
+              {data.value?.top_products.map((p, i) => (
+                <div className="analytics-ranked-row" key={p.product_id}>
+                  <span className="analytics-rank">{i + 1}</span>
+                  <span><strong>{p.name}</strong><small>{p.units} unit</small></span>
+                  <b>{rupiah(p.revenue)}</b>
+                </div>
+              ))}
+              {!data.value?.top_products.length && <div className="analytics-inline-empty"><Icon name="box" size={22} /><span>Belum ada produk terjual pada periode ini.</span></div>}
+            </section>
+            <section className="work-section analytics-list">
+              <div className="analytics-section-heading"><h2>Varian terlaris</h2></div>
+              {data.value?.top_variants.map((p, i) => (
+                <div className="analytics-ranked-row" key={p.variant_id}>
+                  <span className="analytics-rank">{i + 1}</span>
+                  <span><strong>{p.name}</strong><small>{p.variant} · {p.units} unit</small></span>
+                  <b>{rupiah(p.revenue)}</b>
+                </div>
+              ))}
+              {!data.value?.top_variants.length && <div className="analytics-inline-empty"><Icon name="box" size={22} /><span>Belum ada varian terjual.</span></div>}
+            </section>
           </div>
-          <div className="work-numbers">
-            <div>
-              <span>Unit terjual</span>
-              <strong>{s.units_sold}</strong>
+          <section className="work-section analytics-daily">
+            <div className="analytics-section-heading">
+              <div>
+                <h2>Penjualan per hari</h2>
+                <p>{firstPublished ? `Riwayat tersedia sejak toko dipublikasikan pada ${formatDay(firstPublished)}.` : "Riwayat dimulai setelah toko pertama kali dipublikasikan."}</p>
+              </div>
+              <span>{dailyTotal} hari</span>
             </div>
-            <div>
-              <span>Ongkir dibayar</span>
-              <strong>{rupiah(s.shipping_revenue)}</strong>
-            </div>
-            <div>
-              <span>Total pembayaran</span>
-              <strong>{rupiah(s.total_collected)}</strong>
-            </div>
-            <div>
-              <span>Pelanggan kembali / pembeli</span>
-              <strong>
-                {s.returning_customers} / {s.purchasing_customers}
-              </strong>
-            </div>
-          </div>
-          <section className="work-section">
-            <h2>Dibanding periode sebelumnya</h2>
-            <p>
-              Penjualan produk {rupiah(data.value?.previous.revenue || 0)} ·{" "}
-              {data.value?.previous.paid_orders || 0} pesanan dibayar ·{" "}
-              {data.value?.previous.units_sold || 0} unit.
-            </p>
-            {Number(data.value?.previous.revenue) > 0 && (
-              <p>
-                Perubahan penjualan{" "}
-                {(
-                  (Number(s.revenue) / Number(data.value?.previous.revenue) -
-                    1) *
-                  100
-                ).toFixed(1)}
-                %.
-              </p>
-            )}
-          </section>
-          <section className="work-section">
-            <h2>Produk terlaris</h2>
-            {data.value?.top_products.map((p, index) => (
-              <div className="checkout-line" key={p.product_id + ":" + p.name}>
-                <span>
-                  {index + 1}. {p.name} · {p.units} unit
-                </span>
-                <strong>{rupiah(p.revenue)}</strong>
+            {dailyRows.map((d) => (
+              <div className="analytics-daily-row" key={d.day}>
+                <div><strong>{formatDay(d.day)}</strong><small>{d.orders} pesanan masuk</small></div>
+                <b>{rupiah(d.revenue)}</b>
               </div>
             ))}
-            {!data.value?.top_products.length && (
-              <p>Belum ada produk terjual pada periode ini.</p>
-            )}
-          </section>
-          <section className="work-section">
-            <h2>Varian terlaris</h2>
-            {data.value?.top_variants.map((p) => (
-              <div
-                className="checkout-line"
-                key={p.variant_id + ":" + p.name + ":" + p.variant}
-              >
-                <span>
-                  {p.name} · {p.variant} · {p.units} unit
-                </span>
-                <strong>{rupiah(p.revenue)}</strong>
+            {!dailyRows.length && (
+              <div className="analytics-inline-empty">
+                <Icon name="calendar" size={22} />
+                <span>Belum ada hari penjualan pada periode ini.</span>
               </div>
-            ))}
-          </section>
-          <p className="seller-section-lead">
-            Perhitungan berdasarkan pesanan dibayar yang tidak dibatalkan atau
-            kedaluwarsa, dikelompokkan menurut tanggal pesanan. Pelanggan tamu
-            dikenali dari telepon yang dinormalisasi; laba dan konversi belum
-            dihitung.
-          </p>
-          <section className="work-section seller-analytics-panel">
-            <h2>Penjualan per hari</h2>
-            {data.value?.daily.map((d) => (
-              <div className="checkout-line" key={d.day}>
-                <span>
-                  {d.day} · {d.orders} pesanan
-                </span>
-                <strong>{rupiah(d.revenue)}</strong>
-              </div>
-            ))}
-            {!data.value?.daily.length && (
-              <p>Belum ada pesanan dalam rentang ini.</p>
             )}
-            <p>{s.canceled_orders} pesanan dibatalkan.</p>
+            {dailyPages > 1 && (
+              <nav className="analytics-pagination" aria-label="Halaman penjualan harian">
+                <button type="button" disabled={dailyPage <= 1 || data.loading}
+                  onClick={() => setDailyPage((v) => Math.max(1, v - 1))}>
+                  <Icon name="chevron-left" size={17} /> Lebih baru
+                </button>
+                <span>Halaman {dailyPage} dari {dailyPages}</span>
+                <button type="button" disabled={dailyPage >= dailyPages || data.loading}
+                  onClick={() => setDailyPage((v) => v + 1)}>
+                  Lebih lama <Icon name="chevron-right" size={17} />
+                </button>
+              </nav>
+            )}
+            <p className="analytics-footnote">{s.canceled_orders} pesanan dibatalkan. Nilai penjualan berdasarkan pembayaran terverifikasi, tanpa ongkir.</p>
           </section>
         </>
       )}
-    </>
+    </div>
   );
 }

@@ -12,6 +12,23 @@ export async function salesAnalytics(db: DB, sid: string, url: URL) {
     "Zona waktu tidak tersedia.",
   );
   const { from, to } = dateRange(url, timezone);
+  const dailyPage = Number(url.searchParams.get("daily_page") || 1);
+  assert(Number.isInteger(dailyPage) && dailyPage >= 1 && dailyPage <= 10000, 400, "Halaman penjualan tidak valid.");
+  const publishedRow = (await db.query(
+    "SELECT COALESCE((SELECT min(a.created_at) FROM audit_logs a WHERE a.store_id=s.id AND a.action='store.publish'), CASE WHEN s.status IN ('published','paused') THEN s.created_at ELSE NULL END) AS first_published_at FROM stores s WHERE s.id=$1",
+    [sid],
+  ))[0];
+  const publishedAt = publishedRow?.first_published_at;
+  const fmt = (date: Date) => new Intl.DateTimeFormat("en-CA", {
+    timeZone: timezone, year: "numeric", month: "2-digit", day: "2-digit",
+  }).format(date);
+  const firstPublishedDate = publishedAt ? fmt(new Date(publishedAt)) : null;
+  const dailyFrom = firstPublishedDate ? (firstPublishedDate > from ? firstPublishedDate : from) : null;
+  const today = fmt(new Date());
+  const dailyTo = to < today ? to : today;
+  const dailyTotal = dailyFrom && dailyFrom <= dailyTo
+    ? Math.floor((Date.parse(dailyTo) - Date.parse(dailyFrom)) / 86400000) + 1 : 0;
+  const dailyPageSize = 7;
   const days = Math.round((Date.parse(to) - Date.parse(from)) / 86400000) + 1;
   const previousFrom = new Date(Date.parse(from) - days * 86400000)
     .toISOString()
@@ -30,10 +47,15 @@ export async function salesAnalytics(db: DB, sid: string, url: URL) {
   const previous = (
     await db.query(summarySQL, [sid, previousFrom, previousTo, timezone])
   )[0];
-  const daily = await db.query(
-    `SELECT to_char(d.day,'YYYY-MM-DD') AS day,count(o.id)::int AS orders,COALESCE(sum(o.subtotal_idr) FILTER(WHERE o.${paid.replaceAll("order_status", "o.order_status")}),0) AS revenue FROM generate_series($2::date::timestamp,$3::date::timestamp,interval '1 day') d(day) LEFT JOIN orders o ON o.store_id=$1 AND o.created_at>=(d.day AT TIME ZONE $4) AND o.created_at<((d.day+interval '1 day') AT TIME ZONE $4) GROUP BY d.day ORDER BY d.day`,
-    [sid, from, to, timezone],
-  );
+  const daily = dailyTotal ? await db.query(
+    `SELECT to_char(d.day,'YYYY-MM-DD') AS day,count(o.id)::int AS orders,
+      COALESCE(sum(o.subtotal_idr) FILTER(WHERE o.${paid.replaceAll("order_status", "o.order_status")}),0) AS revenue
+    FROM generate_series($2::date::timestamp,$3::date::timestamp,interval '1 day') d(day)
+    LEFT JOIN orders o ON o.store_id=$1 AND o.created_at>=(d.day AT TIME ZONE $4)
+      AND o.created_at<((d.day+interval '1 day') AT TIME ZONE $4)
+    GROUP BY d.day ORDER BY d.day DESC LIMIT $5 OFFSET $6`,
+    [sid, dailyFrom, dailyTo, timezone, dailyPageSize, (dailyPage - 1) * dailyPageSize],
+  ) : [];
   const top = async (variants: boolean) =>
     db.query(
       `SELECT p.id AS product_id,${variants ? "v.id AS variant_id,v.option_label AS variant," : ""}p.name AS name,sum(i.quantity)::int AS units,sum(i.line_total_idr) AS revenue FROM order_items i JOIN orders o ON o.id=i.order_id AND o.store_id=i.store_id JOIN product_variants v ON v.id=i.variant_id AND v.store_id=i.store_id JOIN products p ON p.id=v.product_id AND p.store_id=v.store_id WHERE o.store_id=$1 AND o.${paid.replaceAll("order_status", "o.order_status")} AND o.created_at>=($2::date::timestamp AT TIME ZONE $4) AND o.created_at<(($3::date+1)::timestamp AT TIME ZONE $4) GROUP BY p.id${variants ? ",v.id" : ""} ORDER BY units DESC,revenue DESC,p.id LIMIT 20`,
@@ -53,6 +75,7 @@ export async function salesAnalytics(db: DB, sid: string, url: URL) {
     previous_from: previousFrom,
     previous_to: previousTo,
     daily,
+    daily_pagination: { page: dailyPage, page_size: dailyPageSize, total_days: dailyTotal, total_pages: Math.ceil(dailyTotal / dailyPageSize), first_published_date: firstPublishedDate },
     top_products,
     top_variants,
     from,

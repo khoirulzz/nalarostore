@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
-import { api, useData } from "./api";
+import { api, useData, rupiah, type Product } from "./api";
 import { auth } from "../lib/firebase";
 import { Icon } from "../components/Icon";
 
@@ -8,15 +8,26 @@ type Conversation = {
   id: string;
   customer_name: string;
   store_name: string;
+  store_slug?: string;
   product_name?: string;
   last_message: string;
   unread: number;
+};
+type ChatProduct = {
+  id: string;
+  name: string;
+  slug: string;
+  primary_image_url: string | null;
+  price_idr: number;
+  store_slug: string;
+  status: string;
 };
 type Message = {
   id: string;
   sender_kind: string;
   body: string;
   created_at: string;
+  product?: ChatProduct | null;
 };
 function usePoll<T>(
   path: string | null,
@@ -101,92 +112,113 @@ export function ResponsibleProfile({ sid }: { sid: string }) {
   }
   const p = data.value?.profile;
   return (
-    <>
-      <h1>Penanggung jawab toko</h1>
-      <p className="seller-section-lead">
-        Informasi pribadi untuk operasional toko. Data ini hanya tersedia bagi
-        pemilik dan manager.
-      </p>
-      {data.error && <p role="alert">{data.error}</p>}
+    <div className="seller-responsible-page">
+      <div className="seller-page-heading">
+        <div>
+          <h1>Penanggung jawab toko</h1>
+          <p>Informasi kontak untuk keperluan pengelolaan dan operasional toko.</p>
+        </div>
+      </div>
+      {data.error && <p role="alert" className="live-error">{data.error}</p>}
+      {!data.value && !data.error && <p aria-busy="true" className="seller-list-loading">Memuat informasi penanggung jawab…</p>}
       {data.value && (
-        <form className="work-section live-form live-editor" onSubmit={save}>
-          <label>
-            Nama lengkap
-            <input
-              name="full_name"
-              required
-              minLength={2}
-              maxLength={120}
-              defaultValue={String(p?.full_name || "")}
-              autoComplete="name"
-            />
-          </label>
-          <label>
-            Jabatan
-            <input
-              name="position"
-              required
-              minLength={2}
-              maxLength={80}
-              defaultValue={String(p?.position || "Pemilik")}
-            />
-          </label>
-          <label>
-            Nomor telepon
-            <input
-              name="contact_phone"
-              type="tel"
-              required
-              pattern="[+0-9 ()-]{8,25}"
-              defaultValue={String(p?.contact_phone || "")}
-            />
-          </label>
-          <label>
-            Email operasional
-            <input
-              name="contact_email"
-              type="email"
-              maxLength={254}
-              defaultValue={String(p?.contact_email || "")}
-            />
-          </label>
-          <label>
-            Tanggal lahir (opsional)
-            <input
-              name="birth_date"
-              type="date"
-              max={new Date().toISOString().slice(0, 10)}
-              defaultValue={String(p?.birth_date || "")}
-            />
-            <small>
-              Umur dihitung otomatis{p?.age != null ? ` · ${p.age} tahun` : ""}.
-            </small>
-          </label>
-          <label>
-            Alamat operasional
-            <textarea
-              name="operational_address"
-              maxLength={2000}
-              defaultValue={String(p?.operational_address || "")}
-            />
-          </label>
-          {status && <p role="status">{status}</p>}
-          <button className="button button-dark" disabled={busy}>
-            {busy ? "Menyimpan…" : "Simpan informasi"}
-          </button>
-        </form>
+        <div className="responsible-layout">
+          <form className="work-section responsible-form" onSubmit={save}>
+            <div className="responsible-form-heading">
+              <span className="responsible-form-icon"><Icon name="users" size={20} /></span>
+              <div><h2>Identitas & kontak</h2><p>Lengkapi data agar koordinasi toko berjalan lancar.</p></div>
+            </div>
+            <div className="responsible-form-grid">
+              <label className="responsible-field">
+                <span>Nama lengkap <em>*</em></span>
+                <input name="full_name" aria-label="Nama lengkap" required minLength={2} maxLength={120}
+                  placeholder="Nama penanggung jawab"
+                  defaultValue={String(p?.full_name || "")} autoComplete="name" />
+              </label>
+              <label className="responsible-field">
+                <span>Jabatan <em>*</em></span>
+                <input name="position" aria-label="Jabatan" required minLength={2} maxLength={80}
+                  placeholder="Contoh: Pemilik toko"
+                  defaultValue={String(p?.position || "Pemilik")} />
+              </label>
+              <label className="responsible-field">
+                <span>Nomor telepon <em>*</em></span>
+                <input name="contact_phone" aria-label="Nomor telepon" type="tel" required inputMode="tel" autoComplete="tel"
+                  placeholder="Contoh: 081234567890" pattern="[+0-9 ()-]{8,25}"
+                  defaultValue={String(p?.contact_phone || "")} />
+              </label>
+              <label className="responsible-field">
+                <span>Email operasional</span>
+                <input name="contact_email" aria-label="Email operasional" type="email" maxLength={254}
+                  placeholder="nama@tokomu.id" autoComplete="email"
+                  defaultValue={String(p?.contact_email || "")} />
+              </label>
+              <label className="responsible-field">
+                <span>Tanggal lahir <small>Opsional</small></span>
+                <input name="birth_date" aria-label="Tanggal lahir (opsional)" type="date"
+                  max={new Date().toISOString().slice(0, 10)}
+                  defaultValue={String(p?.birth_date || "")} />
+                <small>Hanya untuk administrasi internal{p?.age != null ? ` · ${p.age} tahun` : ""}.</small>
+              </label>
+              <label className="responsible-field responsible-field-wide">
+                <span>Alamat operasional</span>
+                <textarea name="operational_address" aria-label="Alamat operasional" rows={4} maxLength={2000}
+                  placeholder="Alamat kantor, gudang, atau lokasi operasional toko"
+                  defaultValue={String(p?.operational_address || "")} />
+              </label>
+            </div>
+            <div className="responsible-form-actions">
+              <p>Kolom dengan tanda * wajib diisi.</p>
+              <button type="submit" className="button button-dark" disabled={busy}>
+                <Icon name={busy ? "refresh" : "check"} size={17} />
+                {busy ? "Menyimpan…" : "Simpan informasi"}
+              </button>
+            </div>
+            {status && <p role="status" className="responsible-feedback">{status}</p>}
+          </form>
+          <aside className="work-section responsible-info">
+            <span className="responsible-info-icon"><Icon name="shield" size={22} /></span>
+            <h2>Informasimu tetap privat</h2>
+            <p>Data penanggung jawab hanya bisa diakses pemilik, manajer, dan admin platform yang berwenang. Tidak ditampilkan pada etalase pembeli.</p>
+            <div><Icon name="check" size={16} /><span>Tidak ditampilkan ke pelanggan</span></div>
+            <div><Icon name="check" size={16} /><span>Dapat diperbarui kapan saja</span></div>
+          </aside>
+        </div>
       )}
+    </div>
+  );
+}
+function ChatProductCard({ product }: { product: ChatProduct }) {
+  const content = (
+    <>
+      {product.primary_image_url ? <img src={product.primary_image_url} alt="" loading="lazy" /> :
+        <span className="chat-product-placeholder"><Icon name="box" size={20} /></span>}
+      <span className="chat-product-details">
+        <strong>{product.name}</strong>
+        <small>{rupiah(product.price_idr)}</small>
+        {product.status !== "active" && <small>Produk tidak lagi tersedia</small>}
+      </span>
+      {product.status === "active" && <Icon name="arrow-up-right" size={16} />}
     </>
   );
+  return product.status === "active"
+    ? <Link className="chat-product-card" to={`/s/${product.store_slug}/product/${product.slug}`}>{content}</Link>
+    : <div className="chat-product-card">{content}</div>;
 }
 export function ChatThread({
   path,
   chatToken = "",
   seller = false,
+  products = [],
+  initialProduct = null,
+  attachmentsEnabled = true,
 }: {
   path: string;
   chatToken?: string;
   seller?: boolean;
+  products?: Product[];
+  initialProduct?: Product | null;
+  attachmentsEnabled?: boolean;
 }) {
   const headers: Record<string, string> = chatToken
     ? { "x-chat-token": chatToken }
@@ -195,11 +227,13 @@ export function ChatThread({
     [text, setText] = useState(""),
     [busy, setBusy] = useState(false),
     [error, setError] = useState(""),
-    [pending, setPending] = useState<{ body: string; id: string } | null>(null);
+    [pending, setPending] = useState<{ body: string; id: string; product_id?: string } | null>(null),
+    [chosenProduct, setChosenProduct] = useState<Product | null>(initialProduct),
+    [pickerOpen, setPickerOpen] = useState(false);
   const data = usePoll<{
     messages: Message[];
     hasMore: boolean;
-    conversation: { customer_name: string };
+    conversation: { customer_name: string; product?: ChatProduct | null };
   }>(path, headers, revision);
   const [older, setOlder] = useState<Message[]>([]),
     [more, setMore] = useState<boolean | null>(null),
@@ -210,7 +244,12 @@ export function ChatThread({
     setText("");
     setPending(null);
     setError("");
+    setChosenProduct(initialProduct);
+    setPickerOpen(false);
   }, [path]);
+  useEffect(() => {
+    if (initialProduct) setChosenProduct(initialProduct);
+  }, [initialProduct]);
   const messages = [...older, ...(data.value?.messages || [])].filter(
     (m, index, all) => all.findIndex((a) => a.id === m.id) === index,
   );
@@ -226,22 +265,28 @@ export function ChatThread({
   }, [last, path, chatToken]);
   async function send(e: FormEvent) {
     e.preventDefault();
-    if (busy || !text.trim()) return;
+    if (busy || (!text.trim() && !chosenProduct)) return;
     setBusy(true);
     setError("");
+    const fallbackBody = chosenProduct && !attachmentsEnabled
+      ? [text.trim() || "Halo, saya ingin bertanya tentang produk ini.", "Produk: " + chosenProduct.name].join("\n")
+      : text.trim();
+    const attachmentId = attachmentsEnabled ? chosenProduct?.id : undefined;
     const draft =
-      pending?.body === text.trim()
+      pending?.body === fallbackBody && pending.product_id === attachmentId
         ? pending
-        : { body: text.trim(), id: crypto.randomUUID() };
+        : { body: fallbackBody, id: crypto.randomUUID(), product_id: attachmentId };
     setPending(draft);
     try {
       await api(
         path,
         "POST",
-        { body: draft.body, client_message_id: draft.id },
+        { body: draft.body, product_id: draft.product_id, client_message_id: draft.id },
         headers,
       );
       setText("");
+      setChosenProduct(null);
+      setPickerOpen(false);
       setPending(null);
       setRevision((r) => r + 1);
     } catch (e) {
@@ -278,6 +323,12 @@ export function ChatThread({
       <small>
         Pesan diperbarui saat halaman aktif. Jangan bagikan PIN atau kata sandi.
       </small>
+      {data.value?.conversation.product && (
+        <div className="chat-conversation-product">
+          <span>Produk yang ditanyakan</span>
+          <ChatProductCard product={data.value.conversation.product} />
+        </div>
+      )}
       {(more ?? data.value?.hasMore) && (
         <button
           type="button"
@@ -297,7 +348,8 @@ export function ChatThread({
                 : "chat-bubble"
             }
           >
-            <p>{m.body}</p>
+            {m.product && <ChatProductCard product={m.product} />}
+            {m.body && <p>{m.body}</p>}
             <small>{new Date(m.created_at).toLocaleString("id-ID")}</small>
           </article>
         ))}
@@ -322,17 +374,44 @@ export function ChatThread({
         </div>
       )}
       <form onSubmit={send}>
+        {!seller && attachmentsEnabled && !!products.length && (
+          <div className="chat-product-picker">
+            <button type="button" className="chat-attach-toggle" aria-expanded={pickerOpen}
+              onClick={() => setPickerOpen((value) => !value)}>
+              <Icon name="plus" size={16} /> Lampirkan produk
+            </button>
+            {pickerOpen && (
+              <div className="chat-product-choices" aria-label="Pilih produk untuk dilampirkan">
+                {products.filter((product) => product.status === "active").slice(0, 50).map((product) => (
+                  <button type="button" key={product.id} onClick={() => { setChosenProduct(product); setPickerOpen(false); }}>
+                    {product.primary_image_url && <img src={product.primary_image_url} alt="" loading="lazy" />}
+                    <span><strong>{product.name}</strong><small>{rupiah(product.price_idr)}</small></span>
+                    <Icon name="plus" size={16} />
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+        {chosenProduct && (
+          <div className="chat-selected-product">
+            <Icon name="box" size={18} />
+            <span><strong>{chosenProduct.name}</strong><small>{rupiah(chosenProduct.price_idr)} · Akan dilampirkan</small></span>
+            <button type="button" aria-label="Hapus lampiran produk" onClick={() => setChosenProduct(null)}><Icon name="close" size={17} /></button>
+          </div>
+        )}
         <label>
           Pesan
           <textarea
-            required
-            maxLength={4000}
+            required={!chosenProduct}
+            maxLength={3900}
+            placeholder="Tulis pesan untuk toko…"
             value={text}
             onChange={(e) => setText(e.target.value)}
             disabled={busy}
           />
         </label>
-        <button className="button button-dark" disabled={busy || !text.trim()}>
+        <button className="button button-dark" disabled={busy || (!text.trim() && !chosenProduct)}>
           {busy ? "Mengirim…" : "Kirim pesan"}
         </button>
       </form>
@@ -346,6 +425,13 @@ export function Conversations({ sid }: { sid?: string }) {
   const data = usePoll<{ conversations: Conversation[] }>(path);
   const [selected, setSelected] = useState("");
   const conversations = data.value?.conversations || [];
+  const selectedConversation = conversations.find((conversation) => conversation.id === selected);
+  const capabilities = useData<{ productChatAttachments?: boolean }>("/api/public/capabilities");
+  const availableProducts = useData<{ products: Product[] }>(
+    !sid && selectedConversation?.store_slug
+      ? "/api/public/stores/" + selectedConversation.store_slug + "/products"
+      : null,
+  );
   return (
     <>
       <div className="seller-page-heading">
@@ -391,6 +477,8 @@ export function Conversations({ sid }: { sid?: string }) {
               key={selected}
               path={sid ? path + "/" + selected : "/api/public/chat/" + selected}
               seller={!!sid}
+              products={!sid ? (availableProducts.value?.products || []) : []}
+              attachmentsEnabled={capabilities.value?.productChatAttachments === true}
             />
           </div>
         ) : conversations.length > 0 ? (
@@ -407,13 +495,20 @@ export function Conversations({ sid }: { sid?: string }) {
 export function StoreChat({
   endpoint,
   accountURL,
+  products = [],
+  request = null,
+  attachmentsEnabled = false,
 }: {
   endpoint: string;
   accountURL: string;
+  products?: Product[];
+  request?: { product: Product; key: number } | null;
+  attachmentsEnabled?: boolean;
 }) {
   const storageKey =
     "nalaro-chat:" + endpoint + ":" + (auth?.currentUser?.uid || "guest");
   const [open, setOpen] = useState(false),
+    [contextProduct, setContextProduct] = useState<Product | null>(null),
     [session, setSession] = useState<{ id: string; chat_token: string } | null>(
       () => {
         try {
@@ -432,6 +527,12 @@ export function StoreChat({
     );
   const [error, setError] = useState(""),
     [busy, setBusy] = useState(false);
+  useEffect(() => {
+    if (request?.product) {
+      setContextProduct(request.product);
+      setOpen(true);
+    }
+  }, [request?.key]);
   async function start(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setBusy(true);
@@ -441,7 +542,7 @@ export function StoreChat({
       const r = await api<{ id: string; chat_token: string }>(
         endpoint + "/conversations",
         "POST",
-        { customer_name: name },
+        { customer_name: name, product_id: contextProduct?.id },
       );
       setSession(r);
       try {
@@ -472,6 +573,9 @@ export function StoreChat({
               <ChatThread
                 path={"/api/public/chat/" + session.id}
                 chatToken={session.chat_token}
+                initialProduct={contextProduct}
+                products={products}
+                attachmentsEnabled={attachmentsEnabled}
               />
               <button
                 onClick={() => {
@@ -495,8 +599,18 @@ export function StoreChat({
               </p>
               <label>
                 Nama kamu
-                <input name="name" required minLength={2} maxLength={120} />
+                <input name="name" required minLength={2} maxLength={120} autoComplete="name" placeholder="Nama yang ingin ditampilkan" />
               </label>
+              <label>
+                Produk yang ingin ditanyakan (opsional)
+                <select value={contextProduct?.id || ""} onChange={(e) => setContextProduct(products.find((p) => p.id === e.target.value) || null)}>
+                  <option value="">Chat umum dengan toko</option>
+                  {products.filter((p) => p.status === "active").map((p) => (
+                    <option key={p.id} value={p.id}>{p.name}</option>
+                  ))}
+                </select>
+              </label>
+              {contextProduct && <p className="chat-intro-product"><Icon name="box" size={16} /> {contextProduct.name}</p>}
               {error && <p role="alert">{error}</p>}
               <button className="button button-dark" disabled={busy}>
                 Mulai chat
