@@ -493,6 +493,15 @@ async function conversationMessages(
   if (request.method === "POST") {
     await rateLimit(db, "chat-send:" + cid + ":" + kind, 100);
     const p = await body(request, message);
+    assert(!productMarker.test(p.body), 400, "Format lampiran tidak valid.");
+    if (p.product_id) {
+      const available = await db.query(
+        "SELECT id FROM products WHERE id=$1 AND store_id=$2 AND status='active'",
+        [p.product_id, c.store_id],
+      );
+      assert(!!available[0], 404, "Produk tidak lagi tersedia untuk dilampirkan.");
+    }
+    const sentBody = (p.product_id ? `[[nalaro-product:${p.product_id}]]\\n` : "") + p.body;
     const result = await db.tx(async (tx) => {
       await tx.query(
         "SELECT id FROM customer_conversations WHERE id=$1 FOR UPDATE",
@@ -506,7 +515,7 @@ async function conversationMessages(
       )[0];
       if (old) {
         assert(
-          old.sender_kind === kind && old.body === p.body,
+          old.sender_kind === kind && old.body === sentBody,
           409,
           "Referensi pesan sudah dipakai.",
         );
