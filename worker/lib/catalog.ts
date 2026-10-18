@@ -370,7 +370,7 @@ export async function catalogRoutes(
         const vid = v.id || crypto.randomUUID();
         if (old)
           await tx.query(
-            "UPDATE product_variants SET sku=$3,option_label=$4,price_override_idr=$5,stock_qty=$6,status=$7 WHERE store_id=$1 AND id=$2",
+            "UPDATE product_variants SET sku=$3,option_label=$4,price_override_idr=$5,stock_qty=$6,status=$7,image_url=$8 WHERE store_id=$1 AND product_id=$9 AND id=$2",
             [
               sid,
               vid,
@@ -379,11 +379,13 @@ export async function catalogRoutes(
               v.price_override_idr,
               v.stock_qty,
               v.status,
+              v.image_url,
+              productId,
             ],
           );
         else
           await tx.query(
-            "INSERT INTO product_variants(id,store_id,product_id,sku,option_label,price_override_idr,stock_qty,status) VALUES($1,$2,$3,$4,$5,$6,$7,$8)",
+            "INSERT INTO product_variants(id,store_id,product_id,sku,option_label,price_override_idr,stock_qty,status,image_url) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9)",
             [
               vid,
               sid,
@@ -393,6 +395,7 @@ export async function catalogRoutes(
               v.price_override_idr,
               v.stock_qty,
               v.status,
+              v.image_url,
             ],
           );
         const delta = v.stock_qty - (old?.stock_qty || 0);
@@ -425,11 +428,6 @@ export async function catalogRoutes(
         "UPDATE products SET gallery=$3 WHERE store_id=$1 AND id=$2",
         [sid, productId, JSON.stringify(c.gallery)],
       );
-      for (const v of c.variants)
-        await tx.query(
-          "UPDATE product_variants SET image_url=$3 WHERE store_id=$1 AND sku=$2",
-          [sid, v.sku, v.image_url],
-        );
       await audit(
         tx,
         user.id,

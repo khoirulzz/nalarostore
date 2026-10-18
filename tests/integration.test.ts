@@ -1048,6 +1048,48 @@ it("scopes draft preview, customer summaries, analytics and exports to authorize
   ).rejects.toMatchObject({ status: 404 });
 });
 
+it("saves the selected variant photo when a SKU is renamed", async () => {
+  const [old] = await db.query(
+    "SELECT sku,option_label,stock_qty,status,image_url FROM product_variants WHERE store_id=$1 AND id=$2",
+    [storeA, variant],
+  );
+  const photo = `/api/media/${storeA}/variant-photo.webp`;
+  const payload = (sku: string, image_url: string | null) => ({
+    slug: "kaos-alfa",
+    name: "Kaos Alfa",
+    price_idr: 120000,
+    status: "active",
+    variants: [{
+      id: variant,
+      sku,
+      option_label: old.option_label,
+      stock_qty: Number(old.stock_qty),
+      status: old.status,
+      image_url,
+    }],
+  });
+  const updated = await request(
+    `/api/merchant/stores/${storeA}/products/${product}`,
+    "PUT",
+    payload("ALFA-M-RENAMED", photo),
+    cookieA,
+  );
+  expect(updated.status).toBe(200);
+  const [saved] = await db.query(
+    "SELECT sku,image_url FROM product_variants WHERE store_id=$1 AND id=$2",
+    [storeA, variant],
+  );
+  expect(saved.sku).toBe("ALFA-M-RENAMED");
+  expect(saved.image_url).toBe(photo);
+  const restored = await request(
+    `/api/merchant/stores/${storeA}/products/${product}`,
+    "PUT",
+    payload(old.sku, old.image_url),
+    cookieA,
+  );
+  expect(restored.status).toBe(200);
+});
+
 it("rejects duplicate variant IDs without altering inventory or stock history", async () => {
   const before = (
     await db.query("SELECT * FROM product_variants WHERE id=$1", [variant])
