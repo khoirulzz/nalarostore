@@ -38,7 +38,7 @@ const menus: { key: string; label: string; icon: IconName }[] = [
   { key: "inventory", label: "Stok", icon: "chart" },
   { key: "customers", label: "Pelanggan", icon: "users" },
   { key: "chat", label: "Chat pelanggan", icon: "mail" },
-  { key: "notifications", label: "Notifikasi", icon: "alert" },
+  { key: "notifications", label: "Notifikasi", icon: "bell" },
   { key: "responsible", label: "Penanggung jawab", icon: "shield" },
   { key: "analytics", label: "Analitik", icon: "chart" },
   { key: "settings", label: "Tampilan & pengaturan", icon: "palette" },
