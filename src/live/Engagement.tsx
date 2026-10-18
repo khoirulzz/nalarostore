@@ -187,6 +187,23 @@ export function ResponsibleProfile({ sid }: { sid: string }) {
     </div>
   );
 }
+function ChatProductCard({ product }: { product: ChatProduct }) {
+  const content = (
+    <>
+      {product.primary_image_url ? <img src={product.primary_image_url} alt="" loading="lazy" /> :
+        <span className="chat-product-placeholder"><Icon name="box" size={20} /></span>}
+      <span className="chat-product-details">
+        <strong>{product.name}</strong>
+        <small>{rupiah(product.price_idr)}</small>
+        {product.status !== "active" && <small>Produk tidak lagi tersedia</small>}
+      </span>
+      {product.status === "active" && <Icon name="arrow-up-right" size={16} />}
+    </>
+  );
+  return product.status === "active"
+    ? <Link className="chat-product-card" to={`/s/${product.store_slug}/product/${product.slug}`}>{content}</Link>
+    : <div className="chat-product-card">{content}</div>;
+}
 export function ChatThread({
   path,
   chatToken = "",
