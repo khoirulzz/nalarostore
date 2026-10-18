@@ -479,13 +479,18 @@ export function Conversations({ sid }: { sid?: string }) {
 export function StoreChat({
   endpoint,
   accountURL,
+  products = [],
+  request = null,
 }: {
   endpoint: string;
   accountURL: string;
+  products?: Product[];
+  request?: { product: Product; key: number } | null;
 }) {
   const storageKey =
     "nalaro-chat:" + endpoint + ":" + (auth?.currentUser?.uid || "guest");
   const [open, setOpen] = useState(false),
+    [contextProduct, setContextProduct] = useState<Product | null>(null),
     [session, setSession] = useState<{ id: string; chat_token: string } | null>(
       () => {
         try {
@@ -504,6 +509,12 @@ export function StoreChat({
     );
   const [error, setError] = useState(""),
     [busy, setBusy] = useState(false);
+  useEffect(() => {
+    if (request?.product) {
+      setContextProduct(request.product);
+      setOpen(true);
+    }
+  }, [request?.key]);
   async function start(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setBusy(true);
@@ -513,7 +524,7 @@ export function StoreChat({
       const r = await api<{ id: string; chat_token: string }>(
         endpoint + "/conversations",
         "POST",
-        { customer_name: name },
+        { customer_name: name, product_id: contextProduct?.id },
       );
       setSession(r);
       try {
@@ -544,6 +555,8 @@ export function StoreChat({
               <ChatThread
                 path={"/api/public/chat/" + session.id}
                 chatToken={session.chat_token}
+                initialProduct={contextProduct}
+                products={products}
               />
               <button
                 onClick={() => {
@@ -567,8 +580,18 @@ export function StoreChat({
               </p>
               <label>
                 Nama kamu
-                <input name="name" required minLength={2} maxLength={120} />
+                <input name="name" required minLength={2} maxLength={120} autoComplete="name" placeholder="Nama yang ingin ditampilkan" />
               </label>
+              <label>
+                Produk yang ingin ditanyakan (opsional)
+                <select value={contextProduct?.id || ""} onChange={(e) => setContextProduct(products.find((p) => p.id === e.target.value) || null)}>
+                  <option value="">Chat umum dengan toko</option>
+                  {products.filter((p) => p.status === "active").map((p) => (
+                    <option key={p.id} value={p.id}>{p.name}</option>
+                  ))}
+                </select>
+              </label>
+              {contextProduct && <p className="chat-intro-product"><Icon name="box" size={16} /> {contextProduct.name}</p>}
               {error && <p role="alert">{error}</p>}
               <button className="button button-dark" disabled={busy}>
                 Mulai chat
