@@ -245,22 +245,24 @@ export function ChatThread({
   }, [last, path, chatToken]);
   async function send(e: FormEvent) {
     e.preventDefault();
-    if (busy || !text.trim()) return;
+    if (busy || (!text.trim() && !chosenProduct)) return;
     setBusy(true);
     setError("");
     const draft =
-      pending?.body === text.trim()
+      pending?.body === text.trim() && pending.product_id === chosenProduct?.id
         ? pending
-        : { body: text.trim(), id: crypto.randomUUID() };
+        : { body: text.trim(), id: crypto.randomUUID(), product_id: chosenProduct?.id };
     setPending(draft);
     try {
       await api(
         path,
         "POST",
-        { body: draft.body, client_message_id: draft.id },
+        { body: draft.body, product_id: draft.product_id, client_message_id: draft.id },
         headers,
       );
       setText("");
+      setChosenProduct(null);
+      setPickerOpen(false);
       setPending(null);
       setRevision((r) => r + 1);
     } catch (e) {
@@ -297,6 +299,12 @@ export function ChatThread({
       <small>
         Pesan diperbarui saat halaman aktif. Jangan bagikan PIN atau kata sandi.
       </small>
+      {data.value?.conversation.product && (
+        <div className="chat-conversation-product">
+          <span>Produk yang ditanyakan</span>
+          <ChatProductCard product={data.value.conversation.product} />
+        </div>
+      )}
       {(more ?? data.value?.hasMore) && (
         <button
           type="button"
@@ -316,7 +324,8 @@ export function ChatThread({
                 : "chat-bubble"
             }
           >
-            <p>{m.body}</p>
+            {m.product && <ChatProductCard product={m.product} />}
+            {m.body && <p>{m.body}</p>}
             <small>{new Date(m.created_at).toLocaleString("id-ID")}</small>
           </article>
         ))}
@@ -341,17 +350,44 @@ export function ChatThread({
         </div>
       )}
       <form onSubmit={send}>
+        {!seller && !!products.length && (
+          <div className="chat-product-picker">
+            <button type="button" className="chat-attach-toggle" aria-expanded={pickerOpen}
+              onClick={() => setPickerOpen((value) => !value)}>
+              <Icon name="plus" size={16} /> Lampirkan produk
+            </button>
+            {pickerOpen && (
+              <div className="chat-product-choices" aria-label="Pilih produk untuk dilampirkan">
+                {products.filter((product) => product.status === "active").slice(0, 50).map((product) => (
+                  <button type="button" key={product.id} onClick={() => { setChosenProduct(product); setPickerOpen(false); }}>
+                    {product.primary_image_url && <img src={product.primary_image_url} alt="" loading="lazy" />}
+                    <span><strong>{product.name}</strong><small>{rupiah(product.price_idr)}</small></span>
+                    <Icon name="plus" size={16} />
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+        {chosenProduct && (
+          <div className="chat-selected-product">
+            <Icon name="box" size={18} />
+            <span><strong>{chosenProduct.name}</strong><small>{rupiah(chosenProduct.price_idr)} · Akan dilampirkan</small></span>
+            <button type="button" aria-label="Hapus lampiran produk" onClick={() => setChosenProduct(null)}><Icon name="close" size={17} /></button>
+          </div>
+        )}
         <label>
           Pesan
           <textarea
-            required
-            maxLength={4000}
+            required={!chosenProduct}
+            maxLength={3900}
+            placeholder="Tulis pesan untuk toko…"
             value={text}
             onChange={(e) => setText(e.target.value)}
             disabled={busy}
           />
         </label>
-        <button className="button button-dark" disabled={busy || !text.trim()}>
+        <button className="button button-dark" disabled={busy || (!text.trim() && !chosenProduct)}>
           {busy ? "Mengirim…" : "Kirim pesan"}
         </button>
       </form>
