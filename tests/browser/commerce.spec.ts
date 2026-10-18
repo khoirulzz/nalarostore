@@ -319,7 +319,8 @@ test("owner activates and ends the six-month UMKM access", async ({ page }) => {
     (r) => r.url().endsWith("/pilot") && r.request().method() === "POST",
   );
   await page.getByRole("button", { name: "Aktifkan akses" }).click();
-  expect((await activation).ok()).toBe(true);
+  const activationResponse = await activation;
+  expect(activationResponse.ok(), `Activation HTTP ${activationResponse.status()}: ${await activationResponse.text()}`).toBe(true);
   await expect(row.getByText(/Pilot sampai/)).toBeVisible();
   await row.getByRole("button", { name: "Atur pilot" }).click();
   await page.getByLabel("Lama pilot (hari)").fill("0");
@@ -327,7 +328,8 @@ test("owner activates and ends the six-month UMKM access", async ({ page }) => {
     (r) => r.url().endsWith("/pilot") && r.request().method() === "POST",
   );
   await page.getByRole("button", { name: "Simpan perubahan" }).click();
-  expect((await ending).ok()).toBe(true);
+  const endingResponse = await ending;
+  expect(endingResponse.ok(), `Ending HTTP ${endingResponse.status()}: ${await endingResponse.text()}`).toBe(true);
   await expect(row.getByText(/Pilot sampai/)).toHaveCount(0);
 });
 
