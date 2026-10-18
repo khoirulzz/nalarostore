@@ -4211,6 +4211,9 @@ textarea:focus-visible {
   outline: 2px solid #fff;
   outline-offset: 2px;
 }
+.workspace .workspace-topbar .mobile-menu {
+  display: none;
+}
 .workspace .workspace-topbar .work-view-store {
   flex-shrink: 0;
   color: #fff;
@@ -4584,6 +4587,9 @@ textarea:focus-visible {
   background: #fff6f9;
 }
 @media (max-width: 900px) {
+  .workspace .workspace-topbar .mobile-menu {
+    display: inline-flex;
+  }
   .workspace .workspace-topbar {
     border-radius: 0 0 14px 14px;
     padding-inline: 16px;
