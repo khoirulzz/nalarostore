@@ -33,10 +33,18 @@ test("merchant → product → guest checkout → manual verification → comple
     .click();
   // Change viewport without re-fetching the same merchant data sixteen times:
   // the test server intentionally rate-limits authenticated API requests.
-  for (const route of ["/app", "/app/chat", "/app/notifications", "/app/inventory"]) {
+  for (const route of ["/app", "/app/chat", "/app/notifications", "/app/inventory", "/app/analytics", "/app/responsible"]) {
     await page.goto(route);
     await expect(page.locator(".workspace-current-store strong")).toHaveText("Toko Browser");
     if (route === "/app") await expect(page.locator(".work-numbers > div")).toHaveCount(2);
+    if (route === "/app/analytics") {
+      await expect(page.locator(".analytics-stats .analytics-stat")).toHaveCount(6);
+      await expect(page.locator(".analytics-daily-row")).toHaveCount(0);
+    }
+    if (route === "/app/responsible") {
+      await expect(page.locator(".responsible-form")).toBeVisible();
+      await expect(page.getByLabel("Nama lengkap", { exact: true })).toBeVisible();
+    }
     for (const width of [320, 390, 768, 1440]) {
       await page.setViewportSize({ width, height: 900 });
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
@@ -129,6 +137,9 @@ test("merchant → product → guest checkout → manual verification → comple
   await expect(page.getByText("Pengaturan disimpan.")).toBeVisible();
   await page.getByRole("button", { name: "Terbitkan toko" }).click();
   await expect(page.getByRole("button", { name: "Jeda toko" })).toBeVisible();
+  await page.goto("/app/analytics");
+  await expect(page.locator(".analytics-daily-row")).toHaveCount(1);
+  await expect(page.getByText(/Riwayat tersedia sejak toko dipublikasikan/)).toBeVisible();
   // Separate guest context proves checkout does not rely on merchant session.
   const guest = await context
     .browser()!
