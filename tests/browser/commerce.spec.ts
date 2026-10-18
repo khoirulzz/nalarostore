@@ -31,13 +31,15 @@ test("merchant → product → guest checkout → manual verification → comple
     .getByRole("dialog")
     .getByRole("button", { name: "Lewati", exact: true })
     .click();
-  for (const width of [320, 390, 768, 1440]) {
-    await page.setViewportSize({ width, height: 900 });
-    for (const route of ["/app", "/app/chat", "/app/notifications", "/app/inventory"]) {
-      await page.goto(route);
-      await expect(page.locator(".workspace-current-store strong")).toHaveText("Toko Browser");
+  // Change viewport without re-fetching the same merchant data sixteen times:
+  // the test server intentionally rate-limits authenticated API requests.
+  for (const route of ["/app", "/app/chat", "/app/notifications", "/app/inventory"]) {
+    await page.goto(route);
+    await expect(page.locator(".workspace-current-store strong")).toHaveText("Toko Browser");
+    if (route === "/app") await expect(page.locator(".work-numbers > div")).toHaveCount(2);
+    for (const width of [320, 390, 768, 1440]) {
+      await page.setViewportSize({ width, height: 900 });
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
-      if (route === "/app") await expect(page.locator(".work-numbers > div")).toHaveCount(2);
     }
   }
   await page.setViewportSize({ width: 390, height: 844 });
