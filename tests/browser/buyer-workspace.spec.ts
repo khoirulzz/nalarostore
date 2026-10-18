@@ -98,6 +98,14 @@ test("guest chat, private seller profile and common buyer account share the same
   await expect(
     page.getByText("Tersedia, silakan pesan.", { exact: true }),
   ).toBeVisible({ timeout: 20000 });
+  // Product shortcut opens the existing chat and sends an actionable product card.
+  await page.goto("/s/toko-chat-ui/product/kaos-chat");
+  await page.getByRole("button", { name: "Tanya produk ke penjual" }).click();
+  await expect(page.locator(".chat-selected-product")).toContainText("Kaos Chat UI");
+  await page.getByLabel("Pesan", { exact: true }).fill("Boleh tanya warna lainnya?");
+  await page.getByRole("button", { name: "Kirim pesan", exact: true }).click();
+  await expect(page.locator(".chat-bubble.mine .chat-product-card")).toContainText("Kaos Chat UI");
+  await expect(page.locator(".chat-bubble.mine .chat-product-card")).toHaveAttribute("href", "/s/toko-chat-ui/product/kaos-chat");
   await seller.goto("/app/responsible?store=" + sid);
   await seller
     .getByLabel("Nama lengkap", { exact: true })
