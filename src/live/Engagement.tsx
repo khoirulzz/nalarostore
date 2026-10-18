@@ -130,38 +130,38 @@ export function ResponsibleProfile({ sid }: { sid: string }) {
             <div className="responsible-form-grid">
               <label className="responsible-field">
                 <span>Nama lengkap <em>*</em></span>
-                <input name="full_name" required minLength={2} maxLength={120}
+                <input name="full_name" aria-label="Nama lengkap" required minLength={2} maxLength={120}
                   placeholder="Nama penanggung jawab"
                   defaultValue={String(p?.full_name || "")} autoComplete="name" />
               </label>
               <label className="responsible-field">
                 <span>Jabatan <em>*</em></span>
-                <input name="position" required minLength={2} maxLength={80}
+                <input name="position" aria-label="Jabatan" required minLength={2} maxLength={80}
                   placeholder="Contoh: Pemilik toko"
                   defaultValue={String(p?.position || "Pemilik")} />
               </label>
               <label className="responsible-field">
                 <span>Nomor telepon <em>*</em></span>
-                <input name="contact_phone" type="tel" required inputMode="tel" autoComplete="tel"
+                <input name="contact_phone" aria-label="Nomor telepon" type="tel" required inputMode="tel" autoComplete="tel"
                   placeholder="Contoh: 081234567890" pattern="[+0-9 ()-]{8,25}"
                   defaultValue={String(p?.contact_phone || "")} />
               </label>
               <label className="responsible-field">
                 <span>Email operasional</span>
-                <input name="contact_email" type="email" maxLength={254}
+                <input name="contact_email" aria-label="Email operasional" type="email" maxLength={254}
                   placeholder="nama@tokomu.id" autoComplete="email"
                   defaultValue={String(p?.contact_email || "")} />
               </label>
               <label className="responsible-field">
                 <span>Tanggal lahir <small>Opsional</small></span>
-                <input name="birth_date" type="date"
+                <input name="birth_date" aria-label="Tanggal lahir (opsional)" type="date"
                   max={new Date().toISOString().slice(0, 10)}
                   defaultValue={String(p?.birth_date || "")} />
                 <small>Hanya untuk administrasi internal{p?.age != null ? ` · ${p.age} tahun` : ""}.</small>
               </label>
               <label className="responsible-field responsible-field-wide">
                 <span>Alamat operasional</span>
-                <textarea name="operational_address" rows={4} maxLength={2000}
+                <textarea name="operational_address" aria-label="Alamat operasional" rows={4} maxLength={2000}
                   placeholder="Alamat kantor, gudang, atau lokasi operasional toko"
                   defaultValue={String(p?.operational_address || "")} />
               </label>
