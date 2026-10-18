@@ -45,10 +45,12 @@ const address = z.object({
   address: z.string().trim().min(12).max(2000),
   is_default: z.boolean().default(false),
 });
+const productMarker = /^\\[\\[nalaro-product:([a-f0-9-]{36})\\]\\](?:\\n|$)/;
 const message = z.object({
-  body: z.string().trim().min(1).max(4000),
+  body: z.string().trim().max(3900),
+  product_id: id.optional(),
   client_message_id: id,
-});
+}).refine((value) => !!value.body || !!value.product_id, "Isi pesan atau pilih produk.");
 
 export async function adminWorkspace(
   db: DB,
