@@ -417,6 +417,8 @@ test("Seller Center automatically plays the updated orders, catalog and buyer ch
   const section = page.locator("#seller-center");
   await section.scrollIntoViewIfNeeded();
   await expect(section.locator("#omzet")).toBeVisible();
+  const host = section.locator(".seller-center-motion");
+  await host.scrollIntoViewIfNeeded();
   for (const [scene, selector] of [
     ["orders", "#oc1.done"],
     ["catalog", "#p2.live"],
@@ -424,7 +426,7 @@ test("Seller Center automatically plays the updated orders, catalog and buyer ch
     ["outro", "#outro.show"],
   ]) {
     await expect(section.locator(selector)).toBeVisible({ timeout: 20000 });
-    await section.screenshot({ path: `test-results/seller-center-${scene}.png` });
+    await host.screenshot({ path: `test-results/seller-center-${scene}.png` });
   }
   await expect(section.getByRole("button")).toHaveCount(0);
 });
