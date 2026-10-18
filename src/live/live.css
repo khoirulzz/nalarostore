@@ -5008,3 +5008,8 @@ textarea:focus-visible {
   .live-mobile-checkout { font-size:0; padding-inline:11px; }
   .live-mobile-checkout .icon { width:20px; height:20px; }
 }
+
+/* Storefront product utility action. */
+.product-share-link { display:inline-flex; align-items:center; gap:7px; border:0; padding:9px 0; background:transparent; color:#596570; font-size:12px; font-weight:720; }
+.product-share-link:hover { color:#b20e47; }
+.product-share-status { margin:1px 0 12px; color:#367049; font-size:11px; }
