@@ -230,12 +230,11 @@ function Workspace() {
             <span className="workspace-store-monogram" aria-hidden="true">
               {(store?.name || "N").trim().charAt(0).toUpperCase()}
             </span>
-            <span
-              className="workspace-current-store"
-              title={store?.name || "Workspace"}
-            >
-              <small>Toko aktif</small>
-              <strong>{store?.name || "Workspace"}</strong>
+            <span className="workspace-store-copy">
+              <small className="workspace-store-context">Toko aktif</small>
+              <span className="workspace-current-store" title={store?.name || "Workspace"}>
+                <strong>{store?.name || "Workspace"}</strong>
+              </span>
             </span>
           </div>
           <button
