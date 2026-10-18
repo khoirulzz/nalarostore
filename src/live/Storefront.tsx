@@ -43,6 +43,10 @@ export function LiveStore({
   const path = location.pathname.slice(base.length) || "/";
   const isTracking = path.startsWith("/track/");
   const [revision, setRevision] = useState(0);
+  const [chatRequest, setChatRequest] = useState<{ product: Product; key: number } | null>(null);
+  const askSeller = (product: Product) => {
+    setChatRequest((previous) => ({ product, key: (previous?.key || 0) + 1 }));
+  };
   const shop = useData<{ store: Store; settings: Settings }>(
       isTracking ? null : endpoint,
       revision,
@@ -356,7 +360,7 @@ export function LiveStore({
           </div>
         ) : path.startsWith("/product/") ? (
           found ? (
-            <LiveProduct key={found.id} product={found} add={add} base={base} />
+            <LiveProduct key={found.id} product={found} add={add} base={base} onChatProduct={preview ? undefined : askSeller} />
           ) : (
             <div className="store-shell store-section">
               <h1>Produk tidak ditemukan.</h1>
@@ -407,6 +411,8 @@ export function LiveStore({
             key={endpoint + ":" + (buyer?.uid || "guest")}
             endpoint={endpoint}
             accountURL="https://store.nalaro.digital/account"
+            products={all}
+            request={chatRequest}
           />
         )}
         <div className="store-shell store-footer-grid">
@@ -577,10 +583,12 @@ function LiveProduct({
   product: p,
   add,
   base,
+  onChatProduct,
 }: {
   product: Product;
   add: (v: Variant, q: number) => void;
   base: string;
+  onChatProduct?: (product: Product) => void;
 }) {
   const navigate = useNavigate();
   const [vid, setVid] = useState(p.variants[0]?.id),
@@ -678,6 +686,12 @@ function LiveProduct({
           >
             Tambah ke keranjang <Icon name="bag" />
           </button>
+          {onChatProduct && (
+            <button type="button" className="product-ask-seller" onClick={() => onChatProduct(p)}>
+              <Icon name="mail" size={19} /> Tanya produk ke penjual
+              <Icon name="arrow-up-right" size={16} />
+            </button>
+          )}
           <button
             className="store-outline-button live-buy-now"
             disabled={
@@ -703,6 +717,9 @@ function LiveProduct({
           <span>Harga</span>
           <strong>{rupiah(v?.price_override_idr ?? p.price_idr)}</strong>
         </div>
+        {onChatProduct && <button type="button" className="live-mobile-chat" aria-label="Chat penjual tentang produk ini" onClick={() => onChatProduct(p)}>
+          <Icon name="mail" size={21} />
+        </button>}
         <button
           className="live-mobile-cart"
           aria-label="Tambah ke keranjang"
