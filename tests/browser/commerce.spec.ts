@@ -409,3 +409,22 @@ test("Seller Center motion fits phones and desktop, respects reduced motion and 
     await page.emulateMedia({ reducedMotion: "reduce" });
   }
 });
+
+test("Seller Center automatically plays the updated orders, catalog and buyer chat scenes", async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "no-preference" });
+  await page.setViewportSize({ width: 390, height: 900 });
+  await page.goto("/");
+  const section = page.locator("#seller-center");
+  await section.scrollIntoViewIfNeeded();
+  await expect(section.locator("#omzet")).toBeVisible();
+  for (const [scene, selector] of [
+    ["orders", "#oc1.done"],
+    ["catalog", "#p2.live"],
+    ["chat", "#chat.reply"],
+    ["outro", "#outro.show"],
+  ]) {
+    await expect(section.locator(selector)).toBeVisible({ timeout: 20000 });
+    await section.screenshot({ path: `test-results/seller-center-${scene}.png` });
+  }
+  await expect(section.getByRole("button")).toHaveCount(0);
+});
