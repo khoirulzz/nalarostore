@@ -101,82 +101,80 @@ export function ResponsibleProfile({ sid }: { sid: string }) {
   }
   const p = data.value?.profile;
   return (
-    <>
-      <h1>Penanggung jawab toko</h1>
-      <p className="seller-section-lead">
-        Informasi pribadi untuk operasional toko. Data ini hanya tersedia bagi
-        pemilik dan manager.
-      </p>
-      {data.error && <p role="alert">{data.error}</p>}
+    <div className="seller-responsible-page">
+      <div className="seller-page-heading">
+        <div>
+          <h1>Penanggung jawab toko</h1>
+          <p>Informasi kontak untuk keperluan pengelolaan dan operasional toko.</p>
+        </div>
+      </div>
+      {data.error && <p role="alert" className="live-error">{data.error}</p>}
+      {!data.value && !data.error && <p aria-busy="true" className="seller-list-loading">Memuat informasi penanggung jawab…</p>}
       {data.value && (
-        <form className="work-section live-form live-editor" onSubmit={save}>
-          <label>
-            Nama lengkap
-            <input
-              name="full_name"
-              required
-              minLength={2}
-              maxLength={120}
-              defaultValue={String(p?.full_name || "")}
-              autoComplete="name"
-            />
-          </label>
-          <label>
-            Jabatan
-            <input
-              name="position"
-              required
-              minLength={2}
-              maxLength={80}
-              defaultValue={String(p?.position || "Pemilik")}
-            />
-          </label>
-          <label>
-            Nomor telepon
-            <input
-              name="contact_phone"
-              type="tel"
-              required
-              pattern="[+0-9 ()-]{8,25}"
-              defaultValue={String(p?.contact_phone || "")}
-            />
-          </label>
-          <label>
-            Email operasional
-            <input
-              name="contact_email"
-              type="email"
-              maxLength={254}
-              defaultValue={String(p?.contact_email || "")}
-            />
-          </label>
-          <label>
-            Tanggal lahir (opsional)
-            <input
-              name="birth_date"
-              type="date"
-              max={new Date().toISOString().slice(0, 10)}
-              defaultValue={String(p?.birth_date || "")}
-            />
-            <small>
-              Umur dihitung otomatis{p?.age != null ? ` · ${p.age} tahun` : ""}.
-            </small>
-          </label>
-          <label>
-            Alamat operasional
-            <textarea
-              name="operational_address"
-              maxLength={2000}
-              defaultValue={String(p?.operational_address || "")}
-            />
-          </label>
-          {status && <p role="status">{status}</p>}
-          <button className="button button-dark" disabled={busy}>
-            {busy ? "Menyimpan…" : "Simpan informasi"}
-          </button>
-        </form>
+        <div className="responsible-layout">
+          <form className="work-section responsible-form" onSubmit={save}>
+            <div className="responsible-form-heading">
+              <span className="responsible-form-icon"><Icon name="users" size={20} /></span>
+              <div><h2>Identitas & kontak</h2><p>Lengkapi data agar koordinasi toko berjalan lancar.</p></div>
+            </div>
+            <div className="responsible-form-grid">
+              <label className="responsible-field">
+                <span>Nama lengkap <em>*</em></span>
+                <input name="full_name" required minLength={2} maxLength={120}
+                  placeholder="Nama penanggung jawab"
+                  defaultValue={String(p?.full_name || "")} autoComplete="name" />
+              </label>
+              <label className="responsible-field">
+                <span>Jabatan <em>*</em></span>
+                <input name="position" required minLength={2} maxLength={80}
+                  placeholder="Contoh: Pemilik toko"
+                  defaultValue={String(p?.position || "Pemilik")} />
+              </label>
+              <label className="responsible-field">
+                <span>Nomor telepon <em>*</em></span>
+                <input name="contact_phone" type="tel" required inputMode="tel" autoComplete="tel"
+                  placeholder="Contoh: 081234567890" pattern="[+0-9 ()-]{8,25}"
+                  defaultValue={String(p?.contact_phone || "")} />
+              </label>
+              <label className="responsible-field">
+                <span>Email operasional</span>
+                <input name="contact_email" type="email" maxLength={254}
+                  placeholder="nama@tokomu.id" autoComplete="email"
+                  defaultValue={String(p?.contact_email || "")} />
+              </label>
+              <label className="responsible-field">
+                <span>Tanggal lahir <small>Opsional</small></span>
+                <input name="birth_date" type="date"
+                  max={new Date().toISOString().slice(0, 10)}
+                  defaultValue={String(p?.birth_date || "")} />
+                <small>Hanya untuk administrasi internal{p?.age != null ? ` · ${p.age} tahun` : ""}.</small>
+              </label>
+              <label className="responsible-field responsible-field-wide">
+                <span>Alamat operasional</span>
+                <textarea name="operational_address" rows={4} maxLength={2000}
+                  placeholder="Alamat kantor, gudang, atau lokasi operasional toko"
+                  defaultValue={String(p?.operational_address || "")} />
+              </label>
+            </div>
+            <div className="responsible-form-actions">
+              <p>Kolom dengan tanda * wajib diisi.</p>
+              <button type="submit" className="button button-dark" disabled={busy}>
+                <Icon name={busy ? "refresh" : "check"} size={17} />
+                {busy ? "Menyimpan…" : "Simpan informasi"}
+              </button>
+            </div>
+            {status && <p role="status" className="responsible-feedback">{status}</p>}
+          </form>
+          <aside className="work-section responsible-info">
+            <span className="responsible-info-icon"><Icon name="shield" size={22} /></span>
+            <h2>Informasimu tetap privat</h2>
+            <p>Data penanggung jawab hanya bisa diakses pemilik, manajer, dan admin platform yang berwenang. Tidak ditampilkan pada etalase pembeli.</p>
+            <div><Icon name="check" size={16} /><span>Tidak ditampilkan ke pelanggan</span></div>
+            <div><Icon name="check" size={16} /><span>Dapat diperbarui kapan saja</span></div>
+          </aside>
+        </div>
       )}
-    </>
+    </div>
   );
 }
 export function ChatThread({
