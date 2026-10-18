@@ -211,12 +211,14 @@ export function ChatThread({
   seller = false,
   products = [],
   initialProduct = null,
+  attachmentsEnabled = true,
 }: {
   path: string;
   chatToken?: string;
   seller?: boolean;
   products?: Product[];
   initialProduct?: Product | null;
+  attachmentsEnabled?: boolean;
 }) {
   const headers: Record<string, string> = chatToken
     ? { "x-chat-token": chatToken }
@@ -266,10 +268,14 @@ export function ChatThread({
     if (busy || (!text.trim() && !chosenProduct)) return;
     setBusy(true);
     setError("");
+    const fallbackBody = chosenProduct && !attachmentsEnabled
+      ? [text.trim() || "Halo, saya ingin bertanya tentang produk ini.", "Produk: " + chosenProduct.name].join("\\n")
+      : text.trim();
+    const attachmentId = attachmentsEnabled ? chosenProduct?.id : undefined;
     const draft =
-      pending?.body === text.trim() && pending.product_id === chosenProduct?.id
+      pending?.body === fallbackBody && pending.product_id === attachmentId
         ? pending
-        : { body: text.trim(), id: crypto.randomUUID(), product_id: chosenProduct?.id };
+        : { body: fallbackBody, id: crypto.randomUUID(), product_id: attachmentId };
     setPending(draft);
     try {
       await api(
@@ -368,7 +374,7 @@ export function ChatThread({
         </div>
       )}
       <form onSubmit={send}>
-        {!seller && !!products.length && (
+        {!seller && attachmentsEnabled && !!products.length && (
           <div className="chat-product-picker">
             <button type="button" className="chat-attach-toggle" aria-expanded={pickerOpen}
               onClick={() => setPickerOpen((value) => !value)}>
@@ -420,6 +426,7 @@ export function Conversations({ sid }: { sid?: string }) {
   const [selected, setSelected] = useState("");
   const conversations = data.value?.conversations || [];
   const selectedConversation = conversations.find((conversation) => conversation.id === selected);
+  const capabilities = useData<{ productChatAttachments?: boolean }>("/api/public/capabilities");
   const availableProducts = useData<{ products: Product[] }>(
     !sid && selectedConversation?.store_slug
       ? "/api/public/stores/" + selectedConversation.store_slug + "/products"
@@ -471,6 +478,7 @@ export function Conversations({ sid }: { sid?: string }) {
               path={sid ? path + "/" + selected : "/api/public/chat/" + selected}
               seller={!!sid}
               products={!sid ? (availableProducts.value?.products || []) : []}
+              attachmentsEnabled={capabilities.value?.productChatAttachments === true}
             />
           </div>
         ) : conversations.length > 0 ? (
@@ -489,11 +497,13 @@ export function StoreChat({
   accountURL,
   products = [],
   request = null,
+  attachmentsEnabled = false,
 }: {
   endpoint: string;
   accountURL: string;
   products?: Product[];
   request?: { product: Product; key: number } | null;
+  attachmentsEnabled?: boolean;
 }) {
   const storageKey =
     "nalaro-chat:" + endpoint + ":" + (auth?.currentUser?.uid || "guest");
@@ -565,6 +575,7 @@ export function StoreChat({
                 chatToken={session.chat_token}
                 initialProduct={contextProduct}
                 products={products}
+                attachmentsEnabled={attachmentsEnabled}
               />
               <button
                 onClick={() => {
