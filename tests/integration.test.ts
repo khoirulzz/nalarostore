@@ -1935,7 +1935,8 @@ describe("seller and buyer workspace isolation", () => {
       )
     ).body.id;
     await db.query(
-      "UPDATE stores SET status='published',pilot_until=now()+interval '7 days' WHERE id=$1",
+      // Analytics fixtures place orders on October 18; the store must exist before them.
+      "UPDATE stores SET status='published',created_at='2026-10-17T00:00:00Z',pilot_until=now()+interval '7 days' WHERE id=$1",
       [sid],
     );
     await db.query(

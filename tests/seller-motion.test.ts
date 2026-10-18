@@ -61,29 +61,74 @@ function tick(ms = 100) {
   callbacks.forEach((callback) => callback(time));
 }
 
-it("plays the supplied dashboard/product sequence and stops scheduling frames while offscreen, then resumes and loops automatically", () => {
+it("plays all six scenes for 35.5 seconds, suspends offscreen, and resets the entire sequence on repeat", () => {
   motion = mountSellerMotion(root);
   expect(frames.size).toBe(0);
   motion.setActive(true);
-  for (let n = 0; n < 96; n++) tick();
+  tick(); // First frame establishes the playback clock.
+  const advance = (seconds: number) => {
+    for (let n = 0; n < Math.round(seconds * 10); n++) tick();
+  };
+  const has = (id: string, name: string) =>
+    root.getElementById(id)?.classList.contains(name);
+  advance(11.2);
   expect(root.getElementById("omzet")?.textContent).toBe("Rp4.650.000");
   expect(root.getElementById("nOrd")?.textContent).toBe("13");
-  expect(root.getElementById("todo")?.classList.contains("alert")).toBe(true);
+  expect(has("todo", "alert")).toBe(true);
+  expect(has("sc", "up")).toBe(true);
+  expect(has("screen", "on-dark")).toBe(true);
   motion.setActive(false);
   expect(frames.size).toBe(0);
-  const amount = root.getElementById("omzet")?.textContent;
   tick(5000);
-  expect(root.getElementById("omzet")?.textContent).toBe(amount);
+  expect(has("vPes", "on")).toBe(false);
   motion.setActive(true);
-  for (let n = 0; n < 75; n++) tick();
-  expect(root.getElementById("vProd")?.classList.contains("on")).toBe(true);
-  expect(root.getElementById("p2")?.classList.contains("live")).toBe(true);
-  motion.setActive(false);
-  expect(frames.size).toBe(0);
-  motion.setActive(true);
-  for (let n = 0; n < 65; n++) tick();
-  expect(root.getElementById("intro")?.classList.contains("out")).toBe(false);
+  tick();
+  advance(3); // 14.2s: incoming order list
+  expect(has("vPes", "on")).toBe(true);
+  expect(has("pesStack", "has")).toBe(true);
+  expect(has("vHome", "on")).toBe(false);
+  advance(2.5); // 16.7s: accept button pressed
+  expect(has("btnTerima", "press")).toBe(true);
+  advance(0.5);
+  expect(has("oc1", "done")).toBe(true);
+  expect(has("btnTerima", "press")).toBe(false);
+  advance(2.3); // 19.5s: catalog
+  expect(has("vProd", "on")).toBe(true);
+  expect(has("vPes", "on")).toBe(false);
+  advance(4.5); // 24s: product published
+  expect(has("p2w", "in")).toBe(true);
+  expect(has("p2", "live")).toBe(true);
+  expect(has("btnAdd", "press")).toBe(false);
+  advance(4); // 28s: buyer chat with unread badge
+  expect(has("chat", "on")).toBe(true);
+  expect(has("chat", "has")).toBe(true);
+  expect(has("chat", "badge")).toBe(true);
+  expect(has("screen", "on-dark")).toBe(false);
+  advance(1.5);
+  expect(has("chat", "reply")).toBe(true);
+  advance(1.5); // 31s: outro
+  expect(has("outro", "show")).toBe(true);
+  expect(root.querySelectorAll("#stories b")).toHaveLength(6);
+  advance(4.3); // Still playing the longer supplied outro at 35.3s
+  expect(has("outro", "show")).toBe(true);
+  advance(0.4); // Loop at 35.5s
+  for (const [id, name] of [
+    ["intro", "out"],
+    ["outro", "show"],
+    ["vPes", "on"],
+    ["vProd", "on"],
+    ["pesStack", "has"],
+    ["oc1", "done"],
+    ["p2", "live"],
+    ["chat", "reply"],
+    ["chat", "on"],
+    ["sc", "up"],
+  ]) {
+    expect(has(id, name), `${id}.${name} resets`).toBe(false);
+  }
   expect(root.getElementById("omzet")?.textContent).toBe("Rp0");
+  expect(has("vHome", "on")).toBe(true);
+  expect(has("tHome", "on")).toBe(true);
   motion.dispose();
   expect(frames.size).toBe(0);
   expect(disconnected).toHaveBeenCalled();

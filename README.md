@@ -97,7 +97,8 @@ Privacy/support/contract terms and plan amounts must be set by the owner; this i
 ## Seller Center landing presentation
 
 The Seller Center section reuses the owner's supplied HTML phone design, embedded
-product photography, SVG logo, UI and 23-second sequence. `SellerCenterSection`
+product photography, SVG logo, UI and 35.5-second sequence, including order
+processing and buyer chat. `SellerCenterSection`
 loads the separate motion chunk near the viewport; `SellerCenterMotion` isolates
 its styles in a shadow root. Playback stops offscreen and in background tabs,
 loops automatically without playback controls, and starts on a still dashboard when reduced
