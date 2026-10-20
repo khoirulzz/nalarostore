@@ -559,11 +559,14 @@ export function StoreChat({
   return (
     <div className="store-chat">
       <button
-        className="button button-dark"
+        type="button"
+        className="button button-dark sf-chat-launcher"
         onClick={() => setOpen(!open)}
         aria-expanded={open}
+        aria-label={open ? "Tutup chat" : "Chat toko"}
       >
-        {open ? "Tutup chat" : "Chat toko"}
+        <Icon name={open ? "close" : "mail"} size={21} />
+        <span>{open ? "Tutup chat" : "Chat toko"}</span>
       </button>
       {open && (
         <div className="store-chat-panel">

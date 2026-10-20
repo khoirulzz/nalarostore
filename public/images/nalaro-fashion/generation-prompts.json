@@ -1,0 +1,38 @@
+{
+  "tool": "Built-in image_gen",
+  "date": "2026-10-20",
+  "assets": [
+    {
+      "file": "sarung-sogan.webp",
+      "prompt": "Use case: product-mockup. Asset type: one portrait 4:5 ecommerce product photo for Nalaro Fashion, an Indonesian batik demo shop. Photorealistic premium fashion catalog, warm ivory sandstone studio, subtle teak detail, soft natural daylight, realistic cotton texture and folds, elegant restrained composition matching contemporary Indonesian heritage fashion. One image, no collage, no text, no logos, no watermark, no UI. Subject: a traditional BATIK sarong in warm dark brown sogan, cream and black, flowing diagonal parang-inspired wax-resist motifs (not woven ikat). The single sarong neatly draped over a low teak stool, full cloth edges and a folded section visible, quiet sunlit beige setting. Textile is the main subject filling most of the frame, credible wearable tubular sarong, crisp motif detail."
+    },
+    {
+      "file": "sarung-nila.webp",
+      "prompt": "Use case: product-mockup. Asset type: one portrait 4:5 ecommerce product photo for Nalaro Fashion, an Indonesian batik demo shop. Photorealistic premium fashion catalog, warm ivory sandstone studio, subtle teak detail, soft natural daylight, realistic cotton texture and folds, elegant restrained composition matching contemporary Indonesian heritage fashion. One image, no collage, no text, no logos, no watermark, no UI. Subject: a single indigo navy and off-white BATIK sarong with delicate coastal botanical and small bird motifs, wax-resist printed cotton rather than woven fabric. Folded and draped vertically on a pale wooden rail, natural hanging cloth with a small fold revealing its border. Whole product clearly visible with strong indigo color, no people, uncluttered background."
+    },
+    {
+      "file": "sarung-marun.webp",
+      "prompt": "Use case: product-mockup. Asset type: one portrait 4:5 ecommerce product photo for Nalaro Fashion, an Indonesian batik demo shop. Photorealistic premium fashion catalog, warm ivory sandstone studio, subtle teak detail, soft natural daylight, realistic cotton texture and folds, elegant restrained composition matching contemporary Indonesian heritage fashion. One image, no collage, no text, no logos, no watermark, no UI. Subject: one burgundy maroon, cinnamon and cream BATIK sarong with delicate geometric ceplok floral medallions. Draped over a rectangular ivory plinth, fabric gently pooling at the base, detailed wax-resist cotton pattern, believable sarong dimensions. No people or other products. The burgundy garment is dominant, warm fashion still life."
+    },
+    {
+      "file": "celana-kawung.webp",
+      "prompt": "Use case: product-mockup. Asset type: one portrait 4:5 ecommerce product photo for Nalaro Fashion, an Indonesian batik demo shop. Photorealistic premium fashion catalog, warm ivory sandstone studio, subtle teak detail, soft natural daylight, realistic cotton texture and folds, elegant restrained composition matching contemporary Indonesian heritage fashion. One image, no collage, no text, no logos, no watermark, no UI. Subject: an adult Indonesian male fashion model wearing loose straight-leg full-length BATIK trousers, cream and dark chocolate kawung-inspired repeating oval motifs, with a plain tucked-in ivory shirt. Frame from lower chest to shoes, entire trousers including waistband and hems visible. Standing naturally with both feet visible, hands relaxed, brown leather sandals. Trousers are the clear product, no sarong or skirt, two distinct trouser legs, no duplicated limbs."
+    },
+    {
+      "file": "kemeja-parang.webp",
+      "prompt": "Use case: product-mockup. Asset type: one portrait 4:5 ecommerce catalog photo for Nalaro Fashion Indonesian batik demo shop. Photorealistic premium Indonesian fashion, warm ivory sandstone and subtle teak studio, soft natural daylight, real textile folds and skin texture, quiet contemporary heritage editorial. No collage, no text, no logo, no watermark, no UI. Subject: an adult Indonesian male fashion model wearing a short-sleeve classic-collar BATIK shirt in rich cinnamon brown, cream and black diagonal parang-inspired motifs. Frame head to mid thigh, entire shirt visible, cream trousers as styling only, calm confident natural pose and realistic anatomy. Shirt has clear buttons and neat seams, highly detailed wax-resist cotton rather than woven texture."
+    },
+    {
+      "file": "kemeja-megamendung.webp",
+      "prompt": "Use case: product-mockup. Asset type: one portrait 4:5 ecommerce catalog photo for Nalaro Fashion Indonesian batik demo shop. Photorealistic premium Indonesian fashion, warm ivory sandstone and subtle teak studio, soft natural daylight, real textile folds and skin texture, quiet contemporary heritage editorial. No collage, no text, no logo, no watermark, no UI. Subject: an adult Indonesian male model in a short-sleeve mandarin-collar BATIK shirt, deep teal and indigo with layered cream and muted blue cloud motifs inspired by mega mendung. Front three-quarter pose, head to mid thigh, entire shirt visible, dark navy trousers as styling only. Different shirt pattern from diagonal parang, subtle expressive cloud bands, premium realistic cotton and accurate seams."
+    },
+    {
+      "file": "kebaya-sage.webp",
+      "prompt": "Use case: product-mockup. Asset type: one portrait 4:5 ecommerce catalog photo for Nalaro Fashion Indonesian batik demo shop. Photorealistic premium Indonesian fashion, warm ivory sandstone and subtle teak studio, soft natural daylight, real textile folds and skin texture, quiet contemporary heritage editorial. No collage, no text, no logo, no watermark, no UI. Subject: an adult Indonesian woman with dark hair tied in a neat low bun, wearing a sage green long-sleeve embroidered kebaya top over an opaque matching lining, with a brown cream batik skirt as styling. Portrait from head to below knees, full kebaya silhouette visible, refined floral embroidery, graceful relaxed hands, natural skin texture, timeless elegant Indonesian fashion. Kebaya is the main product, modest realistic tailoring."
+    },
+    {
+      "file": "celana-kulot.webp",
+      "prompt": "Use case: product-mockup. Asset type: one portrait 4:5 ecommerce catalog photo for Nalaro Fashion Indonesian batik demo shop. Photorealistic premium Indonesian fashion, warm ivory sandstone and subtle teak studio, soft natural daylight, real textile folds and skin texture, quiet contemporary heritage editorial. No collage, no text, no logo, no watermark, no UI. Subject: an adult Indonesian woman wearing wide-leg full-length BATIK culotte trousers in terracotta rust, cream and brown with fine floral sekar-inspired wax-resist motifs, a simple plain cream blouse tucked in. Frame lower chest to shoes, waistband and both separate wide trouser legs clearly visible, natural standing pose, leather flat shoes. Trousers are the only featured product, visibly pants not a skirt or sarong, credible flowing cotton fabric."
+    }
+  ]
+}

@@ -58,6 +58,7 @@ const Admin = lazy(() =>
   import("./live/Admin").then((m) => ({ default: m.Admin })),
 );
 const BuyerAccount = lazy(() => import("./live/BuyerAccount").then(m=>({default:m.BuyerAccount})));
+const NalaroFashionDemo = lazy(() => import("./live/NalaroFashionDemo").then(m=>({default:m.NalaroFashionDemo})));
 
 type CartLine = { id: string; size: string; quantity: number };
 type CartAPI = {
@@ -171,7 +172,7 @@ function MarketingNav() {
           </Link>
           <Link
             className="button button-dark button-small"
-            to="/demo/batiknalaro"
+            to="/demo/nalaro-fashion"
           >
             Lihat contoh toko <Icon name="arrow-up-right" size={16} />
           </Link>
@@ -208,7 +209,7 @@ function Footer() {
             <h3>Jelajahi Nalaro Store</h3>
             <a href="/#fitur">Fitur toko</a>
             <a href="/#seller-center">App Seller Center</a>
-            <Link to="/demo/batiknalaro">Coba demo toko</Link>
+            <Link to="/demo/nalaro-fashion">Coba demo toko</Link>
             <a href="/#paket">Harga & paket</a>
             <a href="/#pertanyaan">Pertanyaan umum</a>
             <Link to="/program-umkm">Program UMKM</Link>
@@ -243,7 +244,7 @@ function HeroMockup() {
         style={{ backgroundImage: `url(${editorialImage})` }}
       />
       <div className="hero-sample-note">
-        Batik Nalaro <span>Koleksi untuk keseharian</span>
+        Nalaro Fashion <span>Koleksi untuk keseharian</span>
       </div>
       <div className="hero-previews">
         <div className="floating-order">
@@ -262,12 +263,12 @@ function HeroMockup() {
           </div>
         </div>
         <Link
-          to="/demo/batiknalaro/product/kemeja-batik-sagara"
+          to="/demo/nalaro-fashion/product/kemeja-batik-sagara"
           className="floating-mobile"
           aria-label="Lihat Kemeja Batik Sagara di toko demo"
         >
           <div className="floating-mobile-top">
-            BATIK NALARO <Icon name="bag" size={15} />
+            NALARO FASHION <Icon name="bag" size={15} />
           </div>
           <div
             className="floating-product"
@@ -380,7 +381,7 @@ function Marketing() {
                   style={{ backgroundImage: `url(${collectionImage})` }}
                 />
                 <span className="corner-note">
-                  BATIK NALARO
+                  NALARO FASHION
                   <br />
                   BUSANA UNTUK KESEHARIAN
                 </span>
@@ -392,7 +393,7 @@ function Marketing() {
                   lebih mudah menentukan pilihan, tanpa menunggu kamu membalas
                   satu per satu.
                 </p>
-                <ArrowLink to="/demo/batiknalaro/catalog">
+                <ArrowLink to="/demo/nalaro-fashion/catalog">
                   Coba lihat koleksinya
                 </ArrowLink>
               </div>
@@ -482,7 +483,7 @@ function Marketing() {
                 Belanja tanpa membuat akun, dengan rincian biaya sebelum pesanan
                 dikirim.
               </p>
-              <ArrowLink to="/demo/batiknalaro">Coba jadi pembeli</ArrowLink>
+              <ArrowLink to="/demo/nalaro-fashion">Coba jadi pembeli</ArrowLink>
             </div>
             <div
               className="narrative-picture"
@@ -573,22 +574,22 @@ function Marketing() {
                 di toko <em>seperti ini.</em>
               </h2>
               <p>
-                Batik, kebaya, busana muslim, sampai tenun. Coba jelajahi Batik
-                Nalaro untuk merasakan alurnya dari memilih produk sampai
+                Sarung, kemeja, kebaya, dan celana batik. Jelajahi Nalaro
+                Fashion untuk merasakan alurnya dari memilih produk sampai
                 checkout.
               </p>
               <p className="demo-caption">
                 Toko contoh. Kamu bisa mencoba belanja tanpa pembayaran atau
                 pesanan nyata.
               </p>
-              <ArrowLink to="/demo/batiknalaro">
-                Masuk ke Batik Nalaro
+              <ArrowLink to="/demo/nalaro-fashion">
+                Masuk ke Nalaro Fashion
               </ArrowLink>
             </div>
             <Link
               className="demo-showcase-image"
-              to="/demo/batiknalaro"
-              aria-label="Jelajahi demo Batik Nalaro"
+              to="/demo/nalaro-fashion"
+              aria-label="Jelajahi demo Nalaro Fashion"
             >
               <img
                 src={editorialImage}
@@ -1609,6 +1610,7 @@ function App() {
           <Route path="/app/*" element={<Merchant />} />
           <Route path="/admin/*" element={<Admin />} />
           <Route path="/s/:slug/*" element={<StoreRoute />} />
+          <Route path="/demo/nalaro-fashion/*" element={<NalaroFashionDemo />} />
           <Route
             path="/preview/:sid/*"
             element={

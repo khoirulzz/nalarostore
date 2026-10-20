@@ -1,0 +1,224 @@
+.sf-demo-fashion .sf-demo-banner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px 26px;
+  padding: 11px 18px;
+  background: #6e392d;
+  color: #fff6eb;
+  font-size: 10px;
+  line-height: 1.5;
+  letter-spacing: 0.02em;
+}
+.sf-demo-fashion .sf-demo-banner > span:first-child {
+  font-weight: 750;
+}
+.sf-demo-fashion .sf-demo-banner a {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+}
+.sf-demo-fashion .sf-demo-banner > span:first-child {
+  margin-right: auto;
+}
+.sf-demo-fashion .store-logo {
+  font-family: Georgia, serif !important;
+  font-weight: 550 !important;
+  letter-spacing: -0.045em !important;
+}
+.sf-demo-fashion .nf-complete {
+  max-width: 760px;
+  padding-block: 64px;
+  text-align: center;
+}
+.nf-complete-mark {
+  margin: 0 auto 24px;
+  width: 64px;
+  height: 64px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #edf1e6;
+  color: #36513a;
+}
+.sf-demo-fashion .nf-complete h1 {
+  font:
+    450 clamp(32px, 4vw, 50px)/1.1 Georgia,
+    serif;
+}
+.sf-demo-fashion .nf-complete > p:not(.sf-eyebrow) {
+  font-size: 14px;
+  line-height: 1.8;
+}
+.nf-receipt {
+  padding: 30px;
+  margin: 32px 0;
+  background: #f0eee7;
+  border-radius: 5px;
+  text-align: left;
+}
+.nf-receipt > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding-bottom: 22px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid #deded4;
+}
+.nf-receipt > header > strong {
+  font-size: 13px;
+}
+.nf-receipt > header > span {
+  font-size: 11px;
+  color: #72736b;
+}
+.nf-receipt .checkout-line {
+  gap: 22px;
+  font-size: 13px;
+}
+.nf-receipt .checkout-line > span {
+  min-width: 0;
+}
+.nf-receipt .checkout-line strong {
+  white-space: nowrap;
+}
+.nf-receipt .nf-receipt-total {
+  font-size: 16px;
+  border-top: 1px solid #d2d4c7;
+  padding-top: 18px;
+  margin-top: 16px;
+}
+.nf-receipt small {
+  display: block;
+  margin-top: 5px;
+  color: #72736b;
+}
+.nf-account-avatar {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: #eee6dd;
+  color: #6e392d;
+  display: grid;
+  place-items: center;
+  margin-bottom: 24px;
+}
+.nf-demo-chat .store-chat-panel {
+  max-height: calc(100dvh - 160px);
+}
+.nf-demo-chat .store-chat-panel > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.nf-demo-chat header strong {
+  font-size: 14px;
+}
+.nf-demo-chat header p {
+  margin: 5px 0 0;
+  font-size: 11px;
+  color: #72736b;
+}
+.nf-demo-chat .nf-chat-product {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 13px;
+  font-size: 12px;
+  background: #f3eee8;
+  border-radius: 5px;
+  margin-bottom: 14px;
+}
+.nf-demo-chat .nf-chat-product > .icon:last-child {
+  margin-left: auto;
+}
+.nf-chat-messages {
+  max-height: 32dvh;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 4px 0 16px;
+}
+.nf-chat-message {
+  padding: 12px 14px;
+  border-radius: 9px;
+  background: #f0f2eb;
+  max-width: 92%;
+  align-self: flex-start;
+}
+.nf-chat-message.mine {
+  background: #eee5dc;
+  align-self: flex-end;
+}
+.nf-chat-message small {
+  font-size: 10px;
+  color: #6f6a63;
+}
+.nf-chat-message p {
+  font-size: 12px;
+  margin: 5px 0 0;
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+}
+.nf-demo-chat form label {
+  font-size: 11px;
+  display: block;
+  margin-bottom: 8px;
+}
+.nf-demo-chat form textarea {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid #dadcd3;
+  border-radius: 5px;
+  font: 14px/1.5 inherit;
+  padding: 11px;
+  margin-bottom: 12px;
+  resize: vertical;
+}
+.nf-demo-chat form .pdp-add {
+  min-height: 44px;
+  font-size: 12px;
+}
+@media (min-width: 1024px) {
+  .sf-demo-fashion .sf-featured-grid > :last-child {
+    grid-column: span 2;
+  }
+  .sf-demo-fashion .sf-featured-grid > :last-child .product-image {
+    aspect-ratio: 8/5;
+  }
+}
+@media (max-width: 767px) {
+  .sf-demo-fashion .sf-demo-banner {
+    padding: 9px 16px;
+    gap: 5px 12px;
+    justify-content: space-between;
+    font-size: 9px;
+  }
+  .sf-demo-fashion .sf-demo-banner > span:first-child {
+    margin: 0;
+  }
+  .sf-demo-fashion .sf-demo-banner a {
+    display: none;
+  }
+  .sf-demo-fashion .nf-complete {
+    padding-block: 44px;
+  }
+  .nf-receipt {
+    padding: 22px 18px;
+  }
+  .nf-receipt .checkout-line {
+    font-size: 11px;
+    gap: 12px;
+  }
+  .nf-receipt .nf-receipt-total {
+    font-size: 13px;
+  }
+  .nf-demo-chat form textarea {
+    font-size: 16px;
+  }
+}

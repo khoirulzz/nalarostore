@@ -27,6 +27,7 @@ import {
   passwordRules,
   requireFirebase,
 } from "../lib/firebase";
+import { StoreDialog } from "./storefront/Commerce";
 
 function Frame({
   children,
@@ -49,7 +50,7 @@ function Frame({
         <div>
           <h1>{title}</h1>
           <p>{description}</p>
-          <Link to="/demo/atelier">Lihat contoh toko</Link>
+          <Link to="/demo/nalaro-fashion">Lihat contoh toko</Link>
         </div>
         {children}
       </div>
@@ -151,6 +152,19 @@ async function checkPassword(password: string) {
       "Kata sandi belum memenuhi persyaratan. Lengkapi kriteria di bawah.",
     );
 }
+async function passwordAccount(
+  email: string,
+  password: string,
+  register: boolean,
+) {
+  await authReady;
+  const a = requireFirebase();
+  if (register) {
+    await checkPassword(password);
+    return (await createUserWithEmailAndPassword(a, email, password)).user;
+  }
+  return (await signInWithEmailAndPassword(a, email, password)).user;
+}
 export function Auth({
   register = false,
   buyer = false,
@@ -177,15 +191,8 @@ export function Auth({
       new FormData(e.currentTarget).get("email") || "",
     ).trim();
     try {
-      await authReady;
-      const a = requireFirebase();
       if (register) {
-        await checkPassword(password);
-        const { user } = await createUserWithEmailAndPassword(
-          a,
-          email,
-          password,
-        );
+        const user = await passwordAccount(email, password, true);
         try {
           await sendEmailVerification(user, {
             url: window.location.origin + "/verify" + (buyer ? "?buyer=1" : ""),
@@ -196,7 +203,7 @@ export function Auth({
         }
         navigate(buyer ? "/verify?buyer=1" : "/verify");
       } else {
-        await signInWithEmailAndPassword(a, email, password);
+        await passwordAccount(email, password, false);
         const route = await dashboardRoute();
         navigate(
           buyer
@@ -284,6 +291,235 @@ export function Auth({
     </Frame>
   );
 }
+export function AuthDrawer({ close }: { close: () => void }) {
+  const [mode, setMode] = useState<"login" | "register" | "reset">("login");
+  const [user, setUser] = useState(auth?.currentUser || null),
+    [ready, setReady] = useState(false),
+    [password, setPassword] = useState(""),
+    [busy, setBusy] = useState(false),
+    [error, setError] = useState(""),
+    [message, setMessage] = useState("");
+  useEffect(() => {
+    let active = true;
+    void authReady
+      .then(() => {
+        if (active) setReady(true);
+      })
+      .catch((e) => {
+        if (active) {
+          setError(authError(e));
+          setReady(true);
+        }
+      });
+    const unsubscribe = auth ? onIdTokenChanged(auth, setUser) : undefined;
+    return () => {
+      active = false;
+      unsubscribe?.();
+    };
+  }, []);
+  async function submit(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    if (busy) return;
+    setBusy(true);
+    setError("");
+    setMessage("");
+    const email = String(
+      new FormData(e.currentTarget).get("email") || "",
+    ).trim();
+    try {
+      if (mode === "reset") {
+        await sendPasswordResetEmail(requireFirebase(), email);
+        setMessage(
+          "Jika email terdaftar, tautan pemulihan akan dikirim. Periksa kotak masuk dan spam.",
+        );
+      } else {
+        const account = await passwordAccount(
+          email,
+          password,
+          mode === "register",
+        );
+        if (mode === "register")
+          await sendEmailVerification(account, {
+            url: window.location.origin + "/verify?buyer=1",
+          });
+        if (account.emailVerified) {
+          await api("/api/auth/me");
+          close();
+        } else
+          setMessage(
+            "Periksa emailmu untuk memverifikasi akun. Kamu bisa melanjutkan belanja di sini.",
+          );
+      }
+    } catch (e) {
+      setError(authError(e));
+    } finally {
+      setBusy(false);
+    }
+  }
+  async function verify(resend = false) {
+    if (!user || busy) return;
+    setBusy(true);
+    setError("");
+    setMessage("");
+    try {
+      if (resend) {
+        await sendEmailVerification(user, {
+          url: window.location.origin + "/verify?buyer=1",
+        });
+        setMessage("Email verifikasi dikirim. Periksa kotak masuk dan spam.");
+      } else {
+        await reload(user);
+        await user.getIdToken(true);
+        if (user.emailVerified) {
+          await api("/api/auth/me");
+          close();
+        } else
+          setMessage(
+            "Email belum terverifikasi. Buka tautan di email, lalu periksa lagi.",
+          );
+      }
+    } catch (e) {
+      setError(authError(e));
+    } finally {
+      setBusy(false);
+    }
+  }
+  return (
+    <StoreDialog title="Akun Nalaro Store" close={close}>
+      <p className="sf-auth-intro">
+        Satu akun untuk menyimpan alamat, pesanan, dan percakapan di semua toko
+        Nalaro.
+      </p>
+      {!ready ? (
+        <p role="status">Memulihkan sesi akun…</p>
+      ) : user ? (
+        <div className="sf-auth-session">
+          <strong>{user.email}</strong>
+          <p>
+            {user.emailVerified
+              ? "Akunmu siap digunakan untuk belanja."
+              : "Verifikasi email untuk menyimpan pesanan dan memakai alamat tersimpan."}
+          </p>
+          {user.emailVerified ? (
+            <Link className="pdp-add" to="/account">
+              Buka akun pembeli
+            </Link>
+          ) : (
+            <>
+              <button
+                type="button"
+                className="pdp-add"
+                disabled={busy}
+                onClick={() => void verify()}
+              >
+                Saya sudah memverifikasi email
+              </button>
+              <button
+                type="button"
+                className="sf-text-button"
+                disabled={busy}
+                onClick={() => void verify(true)}
+              >
+                Kirim ulang email verifikasi
+              </button>
+            </>
+          )}
+        </div>
+      ) : (
+        <form className="live-form sf-auth-form" onSubmit={submit}>
+          <h3>
+            {mode === "register"
+              ? "Buat akun baru"
+              : mode === "reset"
+                ? "Pulihkan kata sandi"
+                : "Masuk untuk lanjut belanja"}
+          </h3>
+          <label>
+            Email
+            <input
+              data-autofocus
+              autoFocus
+              type="email"
+              name="email"
+              required
+              autoComplete="email"
+              maxLength={254}
+            />
+          </label>
+          {mode !== "reset" && (
+            <PasswordField
+              value={password}
+              change={setPassword}
+              current={mode === "login"}
+            />
+          )}
+          <button className="pdp-add" disabled={busy || !firebaseConfigured}>
+            {busy
+              ? "Memproses…"
+              : mode === "register"
+                ? "Buat akun"
+                : mode === "reset"
+                  ? "Kirim tautan pemulihan"
+                  : "Masuk"}
+          </button>
+          {mode === "login" && (
+            <button
+              type="button"
+              className="sf-text-button"
+              onClick={() => {
+                setMode("reset");
+                setError("");
+                setMessage("");
+              }}
+            >
+              Lupa kata sandi?
+            </button>
+          )}
+          <p>
+            {mode === "login" ? "Belum punya akun? " : "Sudah punya akun? "}
+            <button
+              type="button"
+              className="sf-text-button"
+              onClick={() => {
+                setMode(mode === "login" ? "register" : "login");
+                setPassword("");
+                setError("");
+                setMessage("");
+              }}
+            >
+              {mode === "login" ? "Daftar akun baru" : "Masuk"}
+            </button>
+          </p>
+        </form>
+      )}
+      {message && (
+        <p role="status" className="notice">
+          {message}
+        </p>
+      )}
+      {error && (
+        <p role="alert" className="live-error">
+          {error}
+        </p>
+      )}
+      <button
+        type="button"
+        className="sf-auth-continue sf-text-button"
+        disabled={busy}
+        onClick={() => {
+          if (user && !user.emailVerified)
+            void signOut(requireFirebase())
+              .then(close)
+              .catch((e) => setError(authError(e)));
+          else close();
+        }}
+      >
+        {user?.emailVerified ? "Lanjut belanja" : "Lanjut tanpa akun"} →
+      </button>
+    </StoreDialog>
+  );
+}
+
 export function ForgotPassword() {
   const [busy, setBusy] = useState(false),
     [message, setMessage] = useState(""),

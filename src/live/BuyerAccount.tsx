@@ -28,12 +28,37 @@ type Address = {
 };
 export function CheckoutAccount({
   onAddress,
+  onSignIn,
+  platform = true,
 }: {
   onAddress: (address: Address) => void;
+  onSignIn?: () => void;
+  platform?: boolean;
 }) {
   const user = useBuyerSession();
+  return (
+    <CheckoutIdentity
+      key={user?.uid || "guest"}
+      user={user}
+      onAddress={onAddress}
+      onSignIn={onSignIn}
+      platform={platform}
+    />
+  );
+}
+function CheckoutIdentity({
+  user,
+  onAddress,
+  onSignIn,
+  platform,
+}: {
+  user: ReturnType<typeof useBuyerSession>;
+  onAddress: (address: Address) => void;
+  onSignIn?: () => void;
+  platform: boolean;
+}) {
   const addresses = useData<{ addresses: Address[] }>(
-    user?.emailVerified ? "/api/customer/addresses" : null,
+    platform && user?.emailVerified ? "/api/customer/addresses" : null,
   );
   const accountURL = window.location.pathname.startsWith("/s/")
     ? "/account"
@@ -43,47 +68,64 @@ export function CheckoutAccount({
       ).href;
   return (
     <section className="notice checkout-account">
-      <strong>
-        {user?.emailVerified
-          ? `Belanja sebagai ${user.email}`
-          : "Belanja lebih praktis dengan akun Nalaro"}
-      </strong>
-      <p>Login opsional. Kamu tetap bisa menyelesaikan pesanan sebagai tamu.</p>
-      <a href={accountURL} target="_blank" rel="noreferrer">
-        {user ? "Kelola akun dan alamat" : "Masuk / daftar akun umum"}
-      </a>
-      {user && !user.emailVerified && (
+      <Icon name="users" size={23} />
+      <div>
+        <strong>
+          {platform && user?.emailVerified
+            ? `Belanja sebagai ${user.email}`
+            : "Belanja lebih praktis dengan akun Nalaro"}
+        </strong>
         <p>
-          Verifikasi email untuk menyimpan pesanan ke akun, atau keluar agar
-          dapat checkout sebagai tamu.
+          Login opsional. Kamu tetap bisa menyelesaikan pesanan sebagai tamu.
         </p>
-      )}
-      {user && (
-        <button type="button" onClick={() => void signOut(requireFirebase())}>
-          Lanjut sebagai tamu
-        </button>
-      )}
-      {!!addresses.value?.addresses.length && (
-        <label>
-          Gunakan alamat tersimpan
-          <select
-            defaultValue=""
-            onChange={(e) => {
-              const a = addresses.value?.addresses.find(
-                (a) => a.id === e.target.value,
-              );
-              if (a) onAddress(a);
-            }}
-          >
-            <option value="">Pilih alamat</option>
-            {addresses.value.addresses.map((a) => (
-              <option key={a.id} value={a.id}>
-                {a.label} · {a.recipient_name}
-              </option>
-            ))}
-          </select>
-        </label>
-      )}
+        {onSignIn && platform ? (
+          <button type="button" data-focus-key="checkout-account" className="sf-text-button" onClick={onSignIn}>
+            {user ? "Kelola akun" : "Masuk / daftar"}
+          </button>
+        ) : (
+          <a href={accountURL} target="_blank" rel="noreferrer">
+            Buka akun Nalaro <Icon name="arrow-up-right" size={15} />
+          </a>
+        )}
+        {platform && user && !user.emailVerified && (
+          <p>
+            Verifikasi email untuk menyimpan pesanan ke akun, atau keluar agar
+            dapat checkout sebagai tamu.
+          </p>
+        )}
+        {platform && user && (
+          <button type="button" onClick={() => void signOut(requireFirebase())}>
+            Lanjut sebagai tamu
+          </button>
+        )}
+        {!!addresses.value?.addresses.length && (
+          <label>
+            Gunakan alamat tersimpan
+            <select
+              defaultValue=""
+              onChange={(e) => {
+                const a = addresses.value?.addresses.find(
+                  (a) => a.id === e.target.value,
+                );
+                if (a) onAddress(a);
+              }}
+            >
+              <option value="">Pilih alamat</option>
+              {addresses.value.addresses.map((a) => (
+                <option key={a.id} value={a.id}>
+                  {a.label} · {a.recipient_name}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
+        {addresses.error && (
+          <p role="alert">
+            Alamat tersimpan belum dapat dimuat. Kamu bisa mengisi alamat secara
+            manual.
+          </p>
+        )}
+      </div>
     </section>
   );
 }
