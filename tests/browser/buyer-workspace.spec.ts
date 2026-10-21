@@ -76,6 +76,7 @@ test("guest chat, private seller profile and common buyer account share the same
     }),
     seller = await sellerContext.newPage();
   await seller.goto("/login");
+  await seller.getByRole("button", { name: "Langsung ke form" }).click();
   await seller.getByLabel("Email", { exact: true }).fill("owner@local.test");
   await seller.getByLabel("Kata sandi", { exact: true }).fill("LocalTest123");
   await seller.getByRole("button", { name: "Masuk", exact: true }).click();

@@ -6,6 +6,7 @@ test("merchant → product → guest checkout → manual verification → comple
   test.setTimeout(process.env.CI ? 60000 : 120000);
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/login");
+  await page.getByRole("button", { name: "Langsung ke form" }).click();
   await page.getByLabel("Email", { exact: true }).fill("owner@local.test");
   await page.getByLabel("Kata sandi", { exact: true }).fill("LocalTest123");
   await page.getByRole("button", { name: "Masuk", exact: true }).click();
@@ -299,6 +300,7 @@ test("Firebase signup, verified access, password reset and password change", asy
     page.getByText("Kata sandi diperbarui. Masuk dengan kata sandi baru."),
   ).toBeVisible();
   await page.goto("/login");
+  await page.getByRole("button", { name: "Langsung ke form" }).click();
   await page.getByLabel("Email", { exact: true }).fill("merchant@local.test");
   await page.getByLabel("Kata sandi", { exact: true }).fill("MerchantNew123");
   await page.getByRole("button", { name: "Masuk", exact: true }).click();
@@ -315,6 +317,8 @@ test("Firebase signup, verified access, password reset and password change", asy
   await page
     .getByRole("button", { name: "Ubah kata sandi", exact: true })
     .click();
+  await expect(page).toHaveURL(/\/login$/);
+  await page.getByRole("button", { name: "Langsung ke form" }).click();
   await expect(
     page.getByRole("heading", { name: "Masuk ke akun" }),
   ).toBeVisible();
@@ -322,6 +326,7 @@ test("Firebase signup, verified access, password reset and password change", asy
 
 test("owner activates and ends the six-month UMKM access", async ({ page }) => {
   await page.goto("/login");
+  await page.getByRole("button", { name: "Langsung ke form" }).click();
   await page.getByLabel("Email", { exact: true }).fill("owner@local.test");
   await page.getByLabel("Kata sandi", { exact: true }).fill("LocalTest123");
   await page.getByRole("button", { name: "Masuk", exact: true }).click();

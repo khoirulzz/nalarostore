@@ -6,6 +6,7 @@ test("admin creates an internal package, previews drafts, manages access and del
   test.setTimeout(120000);
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/login");
+  await page.getByRole("button", { name: "Langsung ke form" }).click();
   await page.getByLabel("Email", { exact: true }).fill("owner@local.test");
   await page.getByLabel("Kata sandi", { exact: true }).fill("LocalTest123");
   await page.getByRole("button", { name: "Masuk", exact: true }).click();

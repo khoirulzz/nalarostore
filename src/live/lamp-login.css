@@ -1,0 +1,582 @@
+.shop-login {
+  --login-pink: #ff154f;
+  --login-paper: #fffdfb;
+  min-height: 100svh;
+  color: #faf3f6;
+  background: #16121b;
+  padding: max(28px, env(safe-area-inset-top))
+    max(28px, env(safe-area-inset-right)) max(24px, env(safe-area-inset-bottom))
+    max(28px, env(safe-area-inset-left));
+  position: relative;
+  isolation: isolate;
+  overflow: clip;
+  display: flex;
+  flex-direction: column;
+}
+.shop-login::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: radial-gradient(ellipse at 37% 55%, #70304852, transparent 65%);
+  opacity: 0;
+  transition: opacity 1.2s ease;
+}
+.shop-login.is-lit::before {
+  opacity: 1;
+}
+.shop-login-header,
+.shop-login-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  width: min(1160px, 100%);
+  margin-inline: auto;
+  position: relative;
+  z-index: 2;
+}
+.shop-login-header {
+  min-height: 44px;
+}
+.shop-login-header .brand {
+  gap: 10px;
+}
+.shop-login-header .brand-word {
+  font-size: 23px;
+}
+.shop-login-header > a:last-child,
+.shop-login-footer a {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 12px;
+  color: #c8b9c5;
+  padding-block: 10px;
+}
+.shop-login a:hover {
+  color: #ffa4bd;
+}
+.shop-login-layout {
+  display: grid;
+  grid-template-columns: 1.12fr 1fr;
+  gap: 7%;
+  width: min(1080px, 100%);
+  margin: auto;
+  padding-block: 26px;
+  align-items: center;
+  flex: 1;
+}
+.shop-login-story {
+  min-width: 0;
+  min-height: 610px;
+  position: relative;
+}
+.shop-login-copy {
+  position: relative;
+  z-index: 1;
+  padding-top: 18px;
+  pointer-events: none;
+}
+.shop-login-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  color: #c9a9b9;
+}
+.shop-login-eyebrow > span {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--login-pink);
+}
+.shop-login-copy h1 {
+  font:
+    600 clamp(34px, 3.7vw, 51px)/1.14 Manrope,
+    sans-serif;
+  letter-spacing: -0.065em;
+  margin: 23px 0 18px;
+}
+.shop-login-copy h1 em {
+  font: inherit;
+  color: #f4abc0;
+}
+.shop-login-copy > p {
+  font-size: 13px;
+  color: #c3b2c0;
+  line-height: 1.8;
+  margin: 0;
+}
+.shop-lamp {
+  position: absolute;
+  right: -35px;
+  bottom: -13px;
+  width: 420px;
+  height: 580px;
+  transform: scale(0.82);
+  transform-origin: bottom right;
+}
+.shop-lamp > svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+.shop-lamp-light {
+  opacity: 0;
+  transition: opacity 1.25s ease;
+  pointer-events: none;
+}
+.is-lit .shop-lamp-light {
+  opacity: 1;
+}
+.shop-sign-dot {
+  color: #a6909f;
+  transition: color 0.7s;
+}
+.is-lit .shop-sign-dot {
+  color: #ffc5d3;
+}
+.shop-lamp-controls {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.shop-lamp-pull {
+  position: absolute;
+  left: 230px;
+  top: 328px;
+  width: 48px;
+  height: 58px;
+  border: 0;
+  border-radius: 24px;
+  background: transparent;
+  padding: 14px 0 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  pointer-events: auto;
+  touch-action: none;
+  cursor: grab;
+  transform-origin: 24px 0;
+  -webkit-tap-highlight-color: transparent;
+}
+.shop-lamp-pull:active {
+  cursor: grabbing;
+}
+.shop-lamp-pull::before {
+  content: "";
+  position: absolute;
+  inset: -28px;
+  border-radius: 50%;
+}
+.shop-lamp-grip {
+  display: block;
+  width: 12px;
+  height: 29px;
+  border-radius: 5px 5px 7px 7px;
+  background: linear-gradient(90deg, #b45570, #ffd1dc 45%, #c77e94);
+  box-shadow: 0 3px 8px #08060d55;
+  border: 1px solid #ecc4d0;
+}
+.shop-lamp-pull:hover .shop-lamp-grip {
+  box-shadow: 0 0 16px #ff719b66;
+}
+.shop-login-instruction {
+  position: absolute;
+  left: 0;
+  bottom: 28px;
+  max-width: 180px;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+.shop-login-pull-icon {
+  transform: rotate(90deg);
+  color: #f4abc0;
+  display: inline-flex;
+  margin-top: 3px;
+}
+.shop-login-instruction p {
+  color: #c5b0bd;
+  font-size: 12px;
+  line-height: 1.7;
+  margin: 0;
+}
+.shop-login-form-area {
+  display: grid;
+  position: relative;
+  min-width: 0;
+}
+.shop-login-form-area::before {
+  content: "";
+  position: absolute;
+  inset: -120px -80px;
+  background: radial-gradient(ellipse, #f99aa02b, transparent 70%);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 1.5s;
+}
+.is-lit .shop-login-form-area::before {
+  opacity: 1;
+}
+.shop-login-wait,
+.shop-login-panel {
+  grid-area: 1 / 1;
+  align-self: center;
+  min-width: 0;
+}
+.shop-login-wait {
+  text-align: center;
+  color: #d0bdcb;
+  padding: 50px 10px;
+  transition:
+    opacity 0.25s,
+    visibility 0.25s;
+}
+.shop-login-wait-mark {
+  display: grid;
+  place-items: center;
+  margin: 0 auto 24px;
+  width: 64px;
+  height: 64px;
+  border: 1px solid #54404f;
+  border-radius: 20px;
+  color: #d59db1;
+}
+.shop-login-wait h2 {
+  font:
+    500 21px/1.4 Manrope,
+    sans-serif;
+  letter-spacing: -0.045em;
+  margin-bottom: 10px;
+}
+.shop-login-wait p {
+  color: #baa4b4;
+  font-size: 13px;
+  margin-bottom: 26px;
+}
+.shop-login-wait button {
+  display: inline-flex;
+  align-items: center;
+  gap: 16px;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid #705161;
+  padding: 12px 0;
+  color: #f1b5c9;
+  font-size: 12px;
+}
+.is-lit .shop-login-wait {
+  opacity: 0;
+  visibility: hidden;
+}
+.shop-login-panel {
+  background: var(--login-paper);
+  color: #261e24;
+  border: 1px solid #fff5f1;
+  border-radius: 20px;
+  padding: 30px 34px 24px;
+  position: relative;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(12px);
+  box-shadow: 0 24px 65px #08050c2e;
+  transition:
+    opacity 0.3s ease,
+    transform 0.3s ease,
+    visibility 0.3s;
+}
+.is-lit .shop-login-panel {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+  transition:
+    opacity 0.9s 0.12s ease,
+    transform 1s 0.12s cubic-bezier(0.2, 0.7, 0.2, 1),
+    visibility 0s;
+}
+.shop-login-panel-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding-bottom: 24px;
+  margin-bottom: 25px;
+  border-bottom: 1px solid #ebe3e6;
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: #74616b;
+}
+.shop-login-panel-top > span:last-child {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.shop-login-panel-top > span:last-child > span {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #c91649;
+}
+.shop-login-panel .live-form {
+  gap: 20px;
+}
+.shop-login-panel .live-form h2 {
+  font:
+    650 29px/1.2 Manrope,
+    sans-serif;
+  letter-spacing: -0.055em;
+  margin: 0;
+}
+.shop-login-panel .shop-login-form-intro {
+  font-size: 13px;
+  color: #776871;
+  margin: -10px 0 3px;
+  line-height: 1.65;
+}
+.shop-login-panel .live-form label {
+  font-size: 12px;
+  gap: 8px;
+  color: #493742;
+}
+.shop-login-panel .live-form input {
+  border-radius: 9px;
+  border-color: #dfd5db;
+  padding: 13px;
+  min-height: 48px;
+  font-size: 16px;
+  background: #fff;
+}
+.shop-login-panel .live-form input::placeholder {
+  color: #94838d;
+  font-size: 13px;
+}
+.shop-login-panel .password-input {
+  border-color: #dfd5db;
+  border-radius: 9px;
+  overflow: hidden;
+}
+.shop-login-panel .password-input input {
+  outline: none;
+}
+.shop-login-panel .password-input button {
+  border: 0;
+  color: #765164;
+  background: #fff;
+  min-height: 46px;
+}
+.shop-login-panel .password-input:focus-within {
+  outline-color: #cf1649;
+}
+.shop-login-panel .live-form > .button {
+  width: 100%;
+  min-height: 49px;
+  background: var(--login-pink);
+  color: white;
+  border-radius: 9px;
+  justify-content: center;
+  gap: 12px;
+  font-size: 14px;
+  margin-top: 1px;
+}
+.shop-login-panel .live-form > .button:hover {
+  background: #db0a3e;
+  transform: none;
+}
+.shop-login-panel .live-form > a {
+  font-size: 12px;
+  text-align: right;
+  margin-top: -6px;
+}
+.shop-login-panel .live-form > p:last-child {
+  font-size: 12px;
+  text-align: center;
+  color: #776871;
+  margin: 0;
+}
+.shop-login-panel a {
+  color: #bb1241;
+  font-weight: 600;
+}
+.shop-login-panel a:hover {
+  color: #8d0b2f;
+  text-decoration: underline;
+}
+.shop-login-panel .live-error {
+  font-size: 13px;
+  margin: 0;
+}
+.shop-login-panel .password-rules {
+  margin-bottom: 0;
+  font-size: 11px;
+}
+.shop-login-trust {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border-top: 1px solid #ebe3e6;
+  padding-top: 19px;
+  margin-top: 24px;
+  font-size: 10px;
+  color: #796872;
+}
+.shop-login-trust .icon {
+  flex-shrink: 0;
+}
+.shop-login-footer {
+  color: #ad98a8;
+  font-size: 11px;
+}
+.shop-login :is(a, button, input):focus-visible {
+  outline: 2px solid #fa83a5;
+  outline-offset: 4px;
+}
+.shop-login-panel input:focus-visible {
+  outline-color: #c91649;
+}
+@media (min-width: 1500px) {
+  .shop-login {
+    padding-block: 40px;
+  }
+}
+@media (max-width: 1000px) and (min-width: 901px) {
+  .shop-login-layout {
+    gap: 4%;
+    grid-template-columns: 1fr 1fr;
+  }
+  .shop-login-panel {
+    padding-inline: 25px;
+  }
+  .shop-login-copy h1 {
+    font-size: 36px;
+  }
+  .shop-lamp {
+    right: -40px;
+    transform: scale(0.75);
+  }
+  .shop-login-instruction {
+    max-width: 135px;
+  }
+}
+@media (max-width: 900px) {
+  .shop-login {
+    padding: max(18px, env(safe-area-inset-top)) 20px
+      max(15px, env(safe-area-inset-bottom));
+  }
+  .shop-login-header .brand-word {
+    font-size: 21px;
+  }
+  .shop-login-header .brand img {
+    width: 27px;
+    height: 27px;
+  }
+  .shop-login-header > a:last-child {
+    font-size: 11px;
+    gap: 5px;
+  }
+  .shop-login-layout {
+    width: min(440px, 100%);
+    grid-template-columns: 1fr;
+    gap: 12px;
+    padding-block: 16px 28px;
+    flex: initial;
+  }
+  .shop-login-story {
+    min-height: 272px;
+  }
+  .shop-login-copy {
+    padding-top: 14px;
+    max-width: 72%;
+  }
+  .shop-login-copy h1 {
+    font-size: clamp(27px, 6.6vw, 36px);
+    margin-block: 16px 12px;
+  }
+  .shop-login-eyebrow {
+    font-size: 8px;
+    letter-spacing: 0.12em;
+  }
+  .shop-login-copy > p {
+    font-size: 11px;
+  }
+  .shop-lamp {
+    transform: scale(0.44);
+    right: -32px;
+    bottom: -5px;
+  }
+  .shop-login-instruction {
+    bottom: 8px;
+    max-width: 185px;
+    gap: 7px;
+  }
+  .shop-login-instruction p {
+    font-size: 11px;
+  }
+  .shop-login-wait {
+    padding: 22px 12px 32px;
+    align-self: start;
+  }
+  .shop-login-wait-mark {
+    width: 49px;
+    height: 49px;
+    border-radius: 15px;
+    margin-bottom: 14px;
+  }
+  .shop-login-wait h2 {
+    font-size: 19px;
+  }
+  .shop-login-wait p {
+    margin-bottom: 12px;
+  }
+  .shop-login-panel {
+    padding: 23px;
+    border-radius: 17px;
+  }
+  .shop-login-panel-top {
+    margin-bottom: 23px;
+    padding-bottom: 19px;
+    font-size: 7px;
+  }
+  .shop-login-panel .live-form h2 {
+    font-size: 26px;
+  }
+  .shop-login-panel .live-form {
+    gap: 18px;
+  }
+  .shop-login-footer {
+    margin-top: auto;
+    font-size: 10px;
+    gap: 8px;
+  }
+  .shop-login-footer a {
+    font-size: 10px;
+    gap: 5px;
+  }
+}
+@media (max-width: 360px) {
+  .shop-login {
+    padding-inline: 16px;
+  }
+  .shop-login-header .brand-word {
+    font-size: 19px;
+  }
+  .shop-login-copy h1 {
+    font-size: 25px;
+  }
+  .shop-login-panel {
+    padding: 21px 19px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .shop-login *,
+  .shop-login::before {
+    transition: none !important;
+  }
+}
