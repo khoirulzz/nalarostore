@@ -28,6 +28,8 @@ import {
   requireFirebase,
 } from "../lib/firebase";
 import { StoreDialog } from "./storefront/Commerce";
+import { LampLoginFrame } from "./LampLogin";
+import { Icon } from "../components/Icon";
 
 function Frame({
   children,
@@ -220,6 +222,70 @@ export function Auth({
       setBusy(false);
     }
   }
+  const content = (
+    <form className="live-form" onSubmit={submit} aria-busy={busy}>
+      <h2>
+        {register
+          ? buyer
+            ? "Buat akun Nalaro"
+            : "Buat akun penjual"
+          : "Masuk ke akun"}
+      </h2>
+      {!buyer && (
+        <p className="shop-login-form-intro">
+          {register
+            ? "Daftar untuk mulai menyiapkan tokomu."
+            : "Gunakan akun Nalaro Store milikmu."}
+        </p>
+      )}
+      <label>
+        Email
+        <input
+          name="email"
+          type="email"
+          required
+          autoComplete="email"
+          placeholder="nama@email.com"
+          maxLength={254}
+        />
+      </label>
+      <PasswordField
+        value={password}
+        change={setPassword}
+        current={!register}
+      />
+      {error && (
+        <p role="alert" className="live-error" tabIndex={-1}>
+          {error}
+        </p>
+      )}
+      {!firebaseConfigured && (
+        <p role="alert">Konfigurasi Firebase belum tersedia.</p>
+      )}
+      <button
+        className="button button-dark"
+        disabled={busy || !firebaseConfigured}
+      >
+        {busy ? "Memproses..." : register ? "Buat akun" : "Masuk"}
+        {!buyer && !busy && <Icon name="arrow-right" size={17} />}
+      </button>
+      {!register && <Link to="/forgot-password">Lupa kata sandi?</Link>}
+      <p>
+        {register ? "Sudah punya akun?" : "Belum punya akun?"}{" "}
+        <Link
+          to={
+            (buyer ? "/buyer" : "") +
+            (register ? "/login" : "/register") +
+            (buyer ? "?next=" + encodeURIComponent(destination) : "")
+          }
+        >
+          {register ? "Masuk" : "Daftar"}
+        </Link>
+      </p>
+    </form>
+  );
+  if (!buyer)
+    return <LampLoginFrame register={register}>{content}</LampLoginFrame>;
   return (
     <Frame
       title={
@@ -237,57 +303,7 @@ export function Auth({
           : "Produk, stok, dan pesanan dikelola dalam satu tempat. Pelanggan tetap bisa berbelanja tanpa membuat akun."
       }
     >
-      <form className="live-form" onSubmit={submit}>
-        <h2>
-          {register
-            ? buyer
-              ? "Buat akun Nalaro"
-              : "Buat akun merchant"
-            : "Masuk ke akun"}
-        </h2>
-        <label>
-          Email
-          <input
-            name="email"
-            type="email"
-            required
-            autoComplete="email"
-            maxLength={254}
-          />
-        </label>
-        <PasswordField
-          value={password}
-          change={setPassword}
-          current={!register}
-        />
-        {error && (
-          <p role="alert" className="live-error" tabIndex={-1}>
-            {error}
-          </p>
-        )}
-        {!firebaseConfigured && (
-          <p role="alert">Konfigurasi Firebase belum tersedia.</p>
-        )}
-        <button
-          className="button button-dark"
-          disabled={busy || !firebaseConfigured}
-        >
-          {busy ? "Memproses..." : register ? "Buat akun" : "Masuk"}
-        </button>
-        {!register && <Link to="/forgot-password">Lupa kata sandi?</Link>}
-        <p>
-          {register ? "Sudah punya akun?" : "Belum punya akun?"}{" "}
-          <Link
-            to={
-              (buyer ? "/buyer" : "") +
-              (register ? "/login" : "/register") +
-              (buyer ? "?next=" + encodeURIComponent(destination) : "")
-            }
-          >
-            {register ? "Masuk" : "Daftar"}
-          </Link>
-        </p>
-      </form>
+      {content}
     </Frame>
   );
 }
