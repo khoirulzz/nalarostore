@@ -317,6 +317,8 @@ test("Firebase signup, verified access, password reset and password change", asy
   await page
     .getByRole("button", { name: "Ubah kata sandi", exact: true })
     .click();
+  await expect(page).toHaveURL(/\/login$/);
+  await page.getByRole("button", { name: "Langsung ke form" }).click();
   await expect(
     page.getByRole("heading", { name: "Masuk ke akun" }),
   ).toBeVisible();
