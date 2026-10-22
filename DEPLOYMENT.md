@@ -246,7 +246,7 @@ configuration and E2E test changes are local until separately committed/pushed.
 
 The production platform origin is `https://nalaro.store`. Pages serves the frontend;
 the Worker owns `/api/*` and `/s/*` on both the apex and `www` hostname.
-Pages redirects `www.nalaro.store` and `store.nalaro.digital` documents to the apex,
+Catch-all Worker routes redirect `www.nalaro.store` and `store.nalaro.digital` documents to the apex,
 preserving the path and query. Worker storefront requests use the same redirect.
 The old `/api/*` route remains same-origin for existing Seller Center clients.
 Keep `PAGES_ORIGIN=https://nalarostore.pages.dev` to avoid recursive fetches.

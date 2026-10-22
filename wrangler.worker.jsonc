@@ -9,7 +9,10 @@
   "routes": [
     { "pattern": "nalaro.store/api/*", "zone_name": "nalaro.store" },
     { "pattern": "nalaro.store/s/*", "zone_name": "nalaro.store" },
-    // Keep existing app clients and shared storefront links working.
+    // Redirect legacy/www documents while keeping API requests same-origin.
+    { "pattern": "store.nalaro.digital/*", "zone_name": "nalaro.digital" },
+    { "pattern": "www.nalaro.store/*", "zone_name": "nalaro.store" },
+    // Existing app clients and shared storefront links.
     { "pattern": "store.nalaro.digital/api/*", "zone_name": "nalaro.digital" },
     { "pattern": "store.nalaro.digital/s/*", "zone_name": "nalaro.digital" },
     { "pattern": "www.nalaro.store/api/*", "zone_name": "nalaro.store" },
