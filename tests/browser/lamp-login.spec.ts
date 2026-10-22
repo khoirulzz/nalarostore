@@ -110,6 +110,11 @@ test("lamp layout fits mobile and desktop, including reduced motion and direct r
     });
   }
   await page.goto("/register");
+  await expect(page.locator(".shop-login-panel")).toBeHidden();
+  await expect(
+    page.getByRole("button", { name: "Nyalakan lampu" }),
+  ).toHaveAttribute("aria-pressed", "false");
+  await page.getByRole("button", { name: "Daftar", exact: true }).click();
   await expect(
     page.getByRole("heading", { name: "Buat akun penjual" }),
   ).toBeVisible();
@@ -117,6 +122,11 @@ test("lamp layout fits mobile and desktop, including reduced motion and direct r
     "autocomplete",
     "new-password",
   );
+  await page.getByRole("link", { name: "Masuk", exact: true }).click();
+  await expect(page.locator(".shop-login-panel")).toBeHidden();
+  await page.getByRole("button", { name: "Nyalakan lampu" }).click();
+  await page.getByRole("link", { name: "Daftar", exact: true }).click();
+  await expect(page.locator(".shop-login-panel")).toBeHidden();
   await page.goto("/buyer/login?next=%2Faccount");
   await expect(
     page.getByRole("heading", { name: "Masuk ke akun" }),
@@ -124,6 +134,42 @@ test("lamp layout fits mobile and desktop, including reduced motion and direct r
   await expect(page.locator(".shop-lamp")).toHaveCount(0);
   await page.getByRole("link", { name: "Daftar", exact: true }).click();
   await expect(page).toHaveURL(/\/buyer\/register\?next=%2Faccount$/);
+});
+
+test("mobile lamp and card stay centered without reserving hidden form space", async ({
+  page,
+}) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  for (const width of [320, 390, 430, 768]) {
+    await page.setViewportSize({ width, height: 844 });
+    for (const route of ["/login", "/register"]) {
+      await page.goto(route);
+      const lamp = page.locator(".shop-lamp");
+      const panel = page.locator(".shop-login-panel");
+      const box = (await lamp.boundingBox())!;
+      expect(Math.abs(box.x + box.width / 2 - width / 2)).toBeLessThan(2);
+      await expect(panel).toBeHidden();
+      expect(
+        await page
+          .locator(".shop-login-form-area")
+          .evaluate((el) => el.getBoundingClientRect().height),
+      ).toBeLessThan(80);
+      await page.getByRole("button", { name: "Nyalakan lampu" }).click();
+      await expect(panel).toBeVisible();
+      const card = (await panel.boundingBox())!;
+      const story = (await page.locator(".shop-login-story").boundingBox())!;
+      expect(card.y - (story.y + story.height)).toBeGreaterThanOrEqual(16);
+      expect(card.y - (story.y + story.height)).toBeLessThanOrEqual(24);
+      expect(Math.abs(card.x + card.width / 2 - width / 2)).toBeLessThan(2);
+      expect(
+        await page.evaluate(() => document.documentElement.scrollWidth),
+      ).toBeLessThanOrEqual(width);
+      await page.screenshot({
+        path: `test-results/lamp-${route.slice(1)}-${width}.png`,
+        fullPage: true,
+      });
+    }
+  }
 });
 
 test("mobile touch can pull the lamp, while cancellation leaves it off", async ({

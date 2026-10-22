@@ -257,11 +257,12 @@ export function LampLoginFrame({
   children: ReactNode;
   register: boolean;
 }) {
-  const [on, setOn] = useState(register);
+  const [on, setOn] = useState(false);
   const panel = useRef<HTMLDivElement>(null);
   const skipFocus = useRef(false);
   useEffect(() => {
-    if (register) setOn(true);
+    setOn(false);
+    skipFocus.current = false;
   }, [register]);
   // Only the explicit shortcut moves focus; a decorative interaction must not open a mobile keyboard.
   useEffect(() => {
@@ -319,7 +320,8 @@ export function LampLoginFrame({
         >
           <div className="shop-login-wait" inert={on} aria-hidden={on}>
             <button type="button" onClick={openForm}>
-              Masuk <Icon name="arrow-right" size={16} />
+              {register ? "Daftar" : "Masuk"}{" "}
+              <Icon name="arrow-right" size={16} />
             </button>
           </div>
           <div
