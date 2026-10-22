@@ -23,7 +23,7 @@ pending and live checkout stays disabled. See the readiness audit below.
 | Build command | `npm run build` | `npm run typecheck` |
 | Output directory | `dist` | No static asset directory |
 | Deploy command | `npm run deploy:pages` | `npm run deploy:worker` |
-| Public hostname | `store.nalaro.digital` custom domain | Routes on that same hostname |
+| Public hostname | `nalaro.store` custom domain | Routes on that same hostname |
 | Variables | Public `VITE_FIREBASE_*` in build settings | Backend vars and `TOKEN_SECRET` secret |
 
 For Git-connected Pages, set build command `npm run build`, output `dist`, and
@@ -35,8 +35,8 @@ the backend config. The legacy `npm run deploy` command also targets only the Wo
 Worker values are:
 
 ```env
-APP_ORIGIN=https://store.nalaro.digital
-ROOT_DOMAIN=store.nalaro.digital
+APP_ORIGIN=https://nalaro.store
+ROOT_DOMAIN=nalaro.store
 PAGES_ORIGIN=https://nalarostore.pages.dev
 ```
 
@@ -51,7 +51,7 @@ CORS change is needed. Route activation happens when the Worker is deployed; the
 local edits do not attach the Pages custom domain or modify Cloudflare resources.
 
 `PAGES_ORIGIN` must keep serving Pages directly, without redirecting to
-`store.nalaro.digital`. The Worker uses it for streaming storefront HTML and optional
+`nalaro.store`. The Worker uses it for streaming storefront HTML and optional
 tenant assets without forwarding cookies, Firebase tokens, or tracking query strings.
 Pages handles SPA deep links by its default fallback; do not add a top-level `404.html`.
 The `public/_headers` file preserves frontend security and indexing headers.
@@ -122,11 +122,11 @@ Firebase Auth handles registration, identity verification and password-reset ema
 
 ## Platform domain and store subdomains
 
-Attach `store.nalaro.digital` as a **Pages custom domain**, with proxied DNS and HTTPS.
+Attach `nalaro.store` as a **Pages custom domain**, with proxied DNS and HTTPS.
 The Worker uses **Routes**, not a Worker Custom Domain for the entire hostname:
-`store.nalaro.digital/api/*` serves the API; `store.nalaro.digital/s/*` preserves
+`nalaro.store/api/*` serves the API; `nalaro.store/s/*` preserves
 store/product metadata while loading its HTML from Pages.
-For `{slug}.store.nalaro.digital`, verify DNS, Worker routing, and a certificate covering that exact depth before enabling a hostname. Then add the optional `*.store.nalaro.digital/*` Worker route. A wildcard DNS record alone does not guarantee TLS coverage. Review any certificate-product cost before activating it; no paid certificate product has been enabled here.
+For `{slug}.nalaro.store`, verify DNS, Worker routing, and a certificate covering that exact depth before enabling a hostname. Then add the optional `*.nalaro.store/*` Worker route. A wildcard DNS record alone does not guarantee TLS coverage. Review any certificate-product cost before activating it; no paid certificate product has been enabled here.
 
 The app's `/.well-known/nalarostore-domain` proof exposes only an existing store id/hostname. Merchant subdomain activation fetches the exact expected HTTPS hostname with redirects disallowed and compares all proof fields. Pending domains cannot serve tenant storefronts. The admin's manual verification action is for an operator who has independently validated DNS/TLS/routing.
 
@@ -178,7 +178,7 @@ The 15 October migration and binding verification supersede those observations.
 Aiven connector redacts passwords; use private DATABASE_URL/CA values for direct
 connections and migrations.
 
-Firebase project Authorized Domains was read during verification: localhost is already allowed; nalarostore.nalaro.digital is also allowed. The repository platform domain store.nalaro.digital is not in that list yet. Add the selected production domain before the production identity-email walkthrough. No Firebase domain configuration was changed remotely.
+Firebase project Authorized Domains was read during verification: localhost is already allowed; nalaronalaro.store is also allowed. The repository platform domain nalaro.store is not in that list yet. Add the selected production domain before the production identity-email walkthrough. No Firebase domain configuration was changed remotely.
 
 ## Readiness audit, 15 October 2026
 
@@ -212,7 +212,7 @@ Validation completed:
 Readiness: the database/backend foundation and local business flows are ready
 for further controlled verification, not unrestricted live checkout. Remaining:
 
-- Firebase's public project config still lacks `store.nalaro.digital` in Authorized
+- Firebase's public project config still lacks `nalaro.store` in Authorized
   Domains. Add it under Authentication > Settings > Authorized domains before
   testing production verification/reset emails; those actions use the current
   application origin as continue URL.
@@ -240,3 +240,16 @@ This run applied the authorized Aiven migrations and verified the already-deploy
 Hyperdrive binding. It did not enable checkout, change plans, send real emails,
 activate paid infrastructure, or create production test users/orders. Source
 configuration and E2E test changes are local until separately committed/pushed.
+
+
+## Domain migration — 2026-10-22
+
+The production platform origin is `https://nalaro.store`. Pages serves the frontend;
+the Worker owns `/api/*` and `/s/*` on both the apex and `www` hostname.
+Pages redirects `www.nalaro.store` and `store.nalaro.digital` documents to the apex,
+preserving the path and query. Worker storefront requests use the same redirect.
+The old `/api/*` route remains same-origin for existing Seller Center clients.
+Keep `PAGES_ORIGIN=https://nalarostore.pages.dev` to avoid recursive fetches.
+Firebase `authDomain` stays `nalarostore.firebaseapp.com`; confirm `nalaro.store`
+and `www.nalaro.store` in Authorized domains for verification/reset continue URLs.
+Tenant subdomains require separate DNS/routing verification before publishing.

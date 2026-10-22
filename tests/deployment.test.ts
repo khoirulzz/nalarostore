@@ -11,9 +11,9 @@ vi.mock("../worker/lib/db", async (original) => ({
 
 const env = {
   APP_ENV: "production",
-  APP_ORIGIN: "https://store.nalaro.digital",
+  APP_ORIGIN: "https://nalaro.store",
   PAGES_ORIGIN: "https://nalarostore.pages.dev",
-  ROOT_DOMAIN: "store.nalaro.digital",
+  ROOT_DOMAIN: "nalaro.store",
   OWNER_EMAIL: "owner@test.invalid",
   ENABLE_LIVE_CHECKOUT: "false",
   FIREBASE_PROJECT_ID: "nalarostore",
@@ -33,6 +33,79 @@ const html = () =>
 
 beforeEach(() => vi.clearAllMocks());
 afterEach(() => vi.restoreAllMocks());
+
+describe("domain migration", () => {
+  it("redirects legacy and www storefront links without dropping their path or query", async () => {
+    for (const hostname of ["store.nalaro.digital", "www.nalaro.store"]) {
+      const response = await worker.fetch(
+        new Request(`https://${hostname}/s/batik/product/kemeja?from=share`),
+        env,
+        ctx,
+      );
+      expect(response.status).toBe(301);
+      expect(response.headers.get("location")).toBe(
+        "https://nalaro.store/s/batik/product/kemeja?from=share",
+      );
+    }
+    const unusualPath = await worker.fetch(
+      new Request("https://store.nalaro.digital//foreign.test/login?next=1"),
+      env,
+      ctx,
+    );
+    expect(unusualPath.headers.get("location")).toBe(
+      "https://nalaro.store//foreign.test/login?next=1",
+    );
+    expect(connect).not.toHaveBeenCalled();
+  });
+
+  it("keeps new and existing clients on their own API origin", async () => {
+    const client = {
+      query: vi.fn().mockResolvedValue({ rows: [] }),
+      end: vi.fn(),
+    };
+    vi.mocked(connect).mockResolvedValue(new DB(client));
+    const configured = {
+      ...env,
+      HYPERDRIVE: { connectionString: "postgresql://test" },
+    } as RuntimeEnv;
+    for (const hostname of [
+      "nalaro.store",
+      "www.nalaro.store",
+      "store.nalaro.digital",
+    ]) {
+      const origin = `https://${hostname}`;
+      const response = await worker.fetch(
+        new Request(origin + "/api/health", {
+          method: "POST",
+          headers: { origin, "sec-fetch-site": "same-origin" },
+        }),
+        configured,
+        ctx,
+      );
+      expect(response.status).toBe(200);
+      expect(response.headers.get("location")).toBeNull();
+      const account = await worker.fetch(
+        new Request(origin + "/api/auth/me"),
+        configured,
+        ctx,
+      );
+      expect(account.status).toBe(200);
+      expect(await account.json()).toMatchObject({ user: null });
+      const rejected = await worker.fetch(
+        new Request(origin + "/api/health", {
+          method: "POST",
+          headers: {
+            origin: "https://foreign.test",
+            "sec-fetch-site": "cross-site",
+          },
+        }),
+        configured,
+        ctx,
+      );
+      expect(rejected.status).toBe(403);
+    }
+  });
+});
 
 describe("separate Pages frontend", () => {
   it("loads storefront HTML without visitor credentials or tracking query strings", async () => {
@@ -58,7 +131,7 @@ describe("separate Pages frontend", () => {
     const fetcher = vi.spyOn(globalThis, "fetch").mockResolvedValue(upstream);
     const response = await pagesResponse(
       new Request(
-        "https://batik.store.nalaro.digital/images/batiknalaro/hero.webp?v=2",
+        "https://batik.nalaro.store/images/batiknalaro/hero.webp?v=2",
         {
           headers: { "if-none-match": "asset-v1", authorization: "private" },
         },
@@ -230,8 +303,8 @@ describe("deployment artifacts", () => {
     expect(pages).toContain('"pages_build_output_dir": "./dist"');
     expect(pages).not.toMatch(/"(?:main|assets|r2_buckets|secrets|vars)"\s*:/);
     expect(backend).not.toMatch(/"(?:assets|pages_build_output_dir)"\s*:/);
-    expect(backend).toContain("store.nalaro.digital/api/*");
-    expect(backend).toContain("store.nalaro.digital/s/*");
+    expect(backend).toContain("nalaro.store/api/*");
+    expect(backend).toContain("nalaro.store/s/*");
     const scripts = JSON.parse(read("package.json")).scripts;
     expect(scripts["deploy:worker"]).toContain(
       "--config wrangler.worker.jsonc",

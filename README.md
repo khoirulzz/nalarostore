@@ -53,7 +53,7 @@ Follow [DEPLOYMENT.md](DEPLOYMENT.md). Required bindings/configuration:
 
 Frontend and backend deploy independently. `wrangler.jsonc` configures Pages
 (`npm run build`, output `dist`); `wrangler.worker.jsonc` configures the API Worker,
-without bundled frontend assets. Pages serves `store.nalaro.digital`; Worker routes
+without bundled frontend assets. Pages serves `nalaro.store`; Worker routes
 handle `/api/*` and storefront HTML metadata under `/s/*` on that same hostname.
 The Worker fetches storefront HTML from `PAGES_ORIGIN=https://nalarostore.pages.dev`.
 Deploy with `npm run deploy:pages` and `npm run deploy:worker` separately.
@@ -111,3 +111,4 @@ APK release in the app repository. `SELLER_APP_URL` points to the existing Nalar
 WhatsApp number for requesting the Android beta; the displayed copy states this
 explicitly. Replace that URL **and its availability/button copy** when a public
 APK or store listing is ready. Do not link visitors to private CI artifacts.
+

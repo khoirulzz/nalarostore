@@ -229,15 +229,10 @@ export function Auth({
           ? buyer
             ? "Buat akun Nalaro"
             : "Buat akun penjual"
-          : "Masuk ke akun"}
+          : buyer
+            ? "Masuk ke akun"
+            : "Masuk"}
       </h2>
-      {!buyer && (
-        <p className="shop-login-form-intro">
-          {register
-            ? "Daftar untuk mulai menyiapkan tokomu."
-            : "Gunakan akun Nalaro Store milikmu."}
-        </p>
-      )}
       <label>
         Email
         <input
@@ -245,7 +240,6 @@ export function Auth({
           type="email"
           required
           autoComplete="email"
-          placeholder="nama@email.com"
           maxLength={254}
         />
       </label>

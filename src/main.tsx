@@ -1584,7 +1584,11 @@ function LegalRoute() {
   return <><MarketingNav/><LegalPage kind={kind}/><Footer/></>;
 }
 function App() {
-  if (window.location.hostname.endsWith(".store.nalaro.digital"))
+  if (
+    window.location.hostname !== "www.nalaro.store" &&
+    (window.location.hostname.endsWith(".nalaro.store") ||
+      window.location.hostname.endsWith(".store.nalaro.digital"))
+  )
     return (
       <BrowserRouter>
         <LiveStore hostname />
@@ -1657,3 +1661,4 @@ createRoot(document.getElementById("root")!).render(
     </Suspense>
   </React.StrictMode>,
 );
+

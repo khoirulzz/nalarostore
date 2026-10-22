@@ -352,7 +352,7 @@ export function LiveStore({
     : null;
   const accountURL = new URL(
     "/account",
-    import.meta.env.VITE_APP_ORIGIN || "https://store.nalaro.digital",
+    import.meta.env.VITE_APP_ORIGIN || "https://nalaro.store",
   ).href;
   return (
     <div
@@ -680,7 +680,7 @@ export function LiveStore({
         </div>
         <div className="store-shell store-footer-bottom">
           <span>© {store.name}</span>
-          <a href="https://store.nalaro.digital">Powered by Nalaro Store ↗</a>
+          <a href="https://nalaro.store">Powered by Nalaro Store ↗</a>
         </div>
       </footer>
       {demo
@@ -754,3 +754,4 @@ export function LiveStore({
     </div>
   );
 }
+

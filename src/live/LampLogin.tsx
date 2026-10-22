@@ -301,40 +301,16 @@ export function LampLoginFrame({
           aria-labelledby="shop-login-title"
         >
           <div className="shop-login-copy">
-            <span className="shop-login-eyebrow">
-              <span /> SELLER CENTER
-            </span>
             <h1 id="shop-login-title">
-              {register ? (
-                <>
-                  Toko baru.
-                  <br />
-                  <em>Langkah pertamamu.</em>
-                </>
-              ) : (
-                <>
-                  Nyalakan lampunya.
-                  <br />
-                  <em>Lanjutkan jualannya.</em>
-                </>
-              )}
+              {register ? "Daftar penjual" : "Akun penjual"}
             </h1>
-            <p>
-              Produk, pesanan, dan penjualan.
-              <br />
-              Semuanya ada di tokomu.
-            </p>
           </div>
           <PullLamp on={on} toggle={() => setOn((v) => !v)} />
           <div className="shop-login-instruction">
             <span className="shop-login-pull-icon">
               <Icon name="arrow-right" size={16} />
             </span>
-            <p id="lamp-instruction">
-              {on
-                ? "Lampu menyala. Tokomu siap dikelola."
-                : "Tarik atau ketuk ujung tali untuk masuk."}
-            </p>
+            <p id="lamp-instruction">Tarik atau ketuk tali.</p>
           </div>
         </section>
         <section
@@ -342,13 +318,8 @@ export function LampLoginFrame({
           aria-label={register ? "Pendaftaran penjual" : "Login penjual"}
         >
           <div className="shop-login-wait" inert={on} aria-hidden={on}>
-            <span className="shop-login-wait-mark">
-              <Icon name="bag" size={26} />
-            </span>
-            <h2>Selamat datang di tokomu.</h2>
-            <p>Satu tarikan kecil untuk mulai.</p>
             <button type="button" onClick={openForm}>
-              Langsung ke form <Icon name="arrow-right" size={16} />
+              Masuk <Icon name="arrow-right" size={16} />
             </button>
           </div>
           <div
@@ -357,22 +328,11 @@ export function LampLoginFrame({
             inert={!on}
             aria-hidden={!on}
           >
-            <div className="shop-login-panel-top">
-              <span>NALARO STORE</span>
-              <span>
-                <span /> {register ? "MULAI JUALAN" : "SELAMAT DATANG"}
-              </span>
-            </div>
             {children}
-            <div className="shop-login-trust">
-              <Icon name="shield" size={15} />
-              <span>Akunmu terhubung dengan Nalaro Store.</span>
-            </div>
           </div>
         </section>
       </div>
       <footer className="shop-login-footer">
-        <span>Ruang untuk usahamu.</span>
         <Link to="/demo/nalaro-fashion">
           Lihat contoh toko <Icon name="arrow-up-right" size={14} />
         </Link>

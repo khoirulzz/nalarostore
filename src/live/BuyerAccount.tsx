@@ -64,7 +64,7 @@ function CheckoutIdentity({
     ? "/account"
     : new URL(
         "/account",
-        import.meta.env.VITE_APP_ORIGIN || "https://store.nalaro.digital",
+        import.meta.env.VITE_APP_ORIGIN || "https://nalaro.store",
       ).href;
   return (
     <section className="notice checkout-account">
@@ -444,3 +444,4 @@ function Account() {
     </div>
   );
 }
+
