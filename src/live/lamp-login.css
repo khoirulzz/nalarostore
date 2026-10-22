@@ -485,20 +485,25 @@
   .shop-login-layout {
     width: min(440px, 100%);
     grid-template-columns: 1fr;
-    gap: 12px;
-    padding-block: 16px 28px;
+    gap: 20px;
+    padding-block: 24px 28px;
     flex: initial;
   }
   .shop-login-story {
-    min-height: 272px;
+    min-height: 320px;
+    transition: min-height 0.65s cubic-bezier(0.2, 0.7, 0.2, 1);
+  }
+  .is-lit .shop-login-story {
+    min-height: 250px;
   }
   .shop-login-copy {
-    padding-top: 14px;
-    max-width: 72%;
+    padding-top: 0;
+    max-width: none;
+    text-align: center;
   }
   .shop-login-copy h1 {
     font-size: clamp(27px, 6.6vw, 36px);
-    margin-block: 16px 12px;
+    margin: 0;
   }
   .shop-login-eyebrow {
     font-size: 8px;
@@ -508,21 +513,34 @@
     font-size: 11px;
   }
   .shop-lamp {
-    transform: scale(0.44);
-    right: -32px;
-    bottom: -5px;
+    left: 50%;
+    right: auto;
+    bottom: 30px;
+    transform: translateX(-50%) scale(0.46);
+    transform-origin: bottom center;
+    transition: transform 0.65s cubic-bezier(0.2, 0.7, 0.2, 1);
+  }
+  .is-lit .shop-lamp {
+    transform: translateX(-50%) scale(0.34);
   }
   .shop-login-instruction {
-    bottom: 8px;
-    max-width: 185px;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    max-width: none;
+    justify-content: center;
     gap: 7px;
   }
   .shop-login-instruction p {
     font-size: 11px;
   }
   .shop-login-wait {
-    padding: 22px 12px 32px;
+    padding: 0 12px 12px;
     align-self: start;
+  }
+  .shop-login:not(.is-lit) .shop-login-panel,
+  .shop-login.is-lit .shop-login-wait {
+    display: none;
   }
   .shop-login-wait-mark {
     width: 49px;

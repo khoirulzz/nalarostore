@@ -241,6 +241,7 @@ test("Firebase signup, verified access, password reset and password change", asy
   request,
 }) => {
   await page.goto("/register");
+  await page.getByRole("button", { name: "Nyalakan lampu" }).click();
   await page.getByLabel("Email", { exact: true }).fill("merchant@local.test");
   await page.getByLabel("Kata sandi", { exact: true }).fill("Merchant123");
   await page.getByRole("button", { name: "Buat akun", exact: true }).click();
