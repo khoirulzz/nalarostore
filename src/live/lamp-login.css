@@ -1,4 +1,5 @@
 .shop-login {
+  --login-reveal-duration: 1.2s;
   --login-pink: #ff154f;
   --login-paper: #fffdfb;
   min-height: 100svh;
@@ -128,7 +129,7 @@
 }
 .shop-lamp-light {
   opacity: 0;
-  transition: opacity 1.25s ease;
+  transition: opacity var(--login-reveal-duration) ease;
   pointer-events: none;
 }
 .is-lit .shop-lamp-light {
@@ -219,7 +220,7 @@
   background: radial-gradient(ellipse, #f99aa02b, transparent 70%);
   pointer-events: none;
   opacity: 0;
-  transition: opacity 1.5s;
+  transition: opacity var(--login-reveal-duration) ease;
 }
 .is-lit .shop-login-form-area::before {
   opacity: 1;
@@ -284,7 +285,7 @@
   position: relative;
   opacity: 0;
   visibility: hidden;
-  transform: translateY(12px);
+  transform: translateY(8px);
   box-shadow: 0 24px 65px #08050c2e;
   transition:
     opacity 0.3s ease,
@@ -296,8 +297,9 @@
   visibility: visible;
   transform: translateY(0);
   transition:
-    opacity 0.9s 0.12s ease,
-    transform 1s 0.12s cubic-bezier(0.2, 0.7, 0.2, 1),
+    opacity var(--login-reveal-duration) 0.08s cubic-bezier(0.22, 0.61, 0.36, 1),
+    transform var(--login-reveal-duration) 0.08s
+      cubic-bezier(0.22, 0.61, 0.36, 1),
     visibility 0s;
 }
 .shop-login-panel-top {
@@ -485,25 +487,20 @@
   .shop-login-layout {
     width: min(440px, 100%);
     grid-template-columns: 1fr;
-    gap: 20px;
-    padding-block: 24px 28px;
+    gap: 12px;
+    padding-block: 16px 28px;
     flex: initial;
   }
   .shop-login-story {
-    min-height: 320px;
-    transition: min-height 0.65s cubic-bezier(0.2, 0.7, 0.2, 1);
-  }
-  .is-lit .shop-login-story {
-    min-height: 250px;
+    min-height: 272px;
   }
   .shop-login-copy {
-    padding-top: 0;
-    max-width: none;
-    text-align: center;
+    padding-top: 14px;
+    max-width: 72%;
   }
   .shop-login-copy h1 {
     font-size: clamp(27px, 6.6vw, 36px);
-    margin: 0;
+    margin-block: 16px 12px;
   }
   .shop-login-eyebrow {
     font-size: 8px;
@@ -513,34 +510,21 @@
     font-size: 11px;
   }
   .shop-lamp {
-    left: 50%;
-    right: auto;
-    bottom: 30px;
-    transform: translateX(-50%) scale(0.46);
-    transform-origin: bottom center;
-    transition: transform 0.65s cubic-bezier(0.2, 0.7, 0.2, 1);
-  }
-  .is-lit .shop-lamp {
-    transform: translateX(-50%) scale(0.34);
+    transform: scale(0.44);
+    right: -32px;
+    bottom: -5px;
   }
   .shop-login-instruction {
-    bottom: 0;
-    left: 0;
-    right: 0;
-    max-width: none;
-    justify-content: center;
+    bottom: 8px;
+    max-width: 185px;
     gap: 7px;
   }
   .shop-login-instruction p {
     font-size: 11px;
   }
   .shop-login-wait {
-    padding: 0 12px 12px;
+    padding: 22px 12px 32px;
     align-self: start;
-  }
-  .shop-login:not(.is-lit) .shop-login-panel,
-  .shop-login.is-lit .shop-login-wait {
-    display: none;
   }
   .shop-login-wait-mark {
     width: 49px;
@@ -591,6 +575,51 @@
   }
   .shop-login-panel {
     padding: 21px 19px;
+  }
+}
+@media (min-width: 901px) {
+  .shop-login-layout {
+    width: min(1000px, 100%);
+    grid-template-columns: 0.92fr 1fr;
+    gap: clamp(40px, 5vw, 72px);
+    padding-block: 16px;
+  }
+  .shop-login-story {
+    min-height: clamp(440px, calc(100svh - 210px), 540px);
+  }
+  .shop-login-copy {
+    padding-top: 0;
+    text-align: center;
+  }
+  .shop-login-copy h1 {
+    font-size: clamp(32px, 2.8vw, 40px);
+  }
+  .shop-lamp {
+    left: 50%;
+    right: auto;
+    bottom: 28px;
+    transform: translateX(-50%) scale(0.72);
+    transform-origin: bottom center;
+  }
+  .shop-login-instruction {
+    left: 0;
+    right: 0;
+    bottom: 0;
+    max-width: none;
+    justify-content: center;
+  }
+  .shop-login-form-area {
+    width: 100%;
+    max-width: 440px;
+    justify-self: center;
+  }
+}
+@media (min-width: 901px) and (max-height: 650px) {
+  .shop-login-story {
+    min-height: 400px;
+  }
+  .shop-lamp {
+    transform: translateX(-50%) scale(0.62);
   }
 }
 @media (prefers-reduced-motion: reduce) {
