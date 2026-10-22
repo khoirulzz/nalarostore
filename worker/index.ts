@@ -37,6 +37,8 @@ export type RuntimeEnv = Env & {
 function isPlatform(host: string, env: RuntimeEnv) {
   return (
     host === new URL(env.APP_ORIGIN).hostname ||
+    host === "www.nalaro.store" ||
+    host === "store.nalaro.digital" ||
     host === "localhost" ||
     host === "127.0.0.1" ||
     (env.APP_ENV === "preview" && host.endsWith(".workers.dev"))
@@ -296,6 +298,17 @@ const handler = {
     let db: DB | undefined;
     const rid = crypto.randomUUID();
     try {
+      // Move public documents to the canonical domain; old API clients stay same-origin.
+      if (
+        ["store.nalaro.digital", "www.nalaro.store"].includes(url.hostname) &&
+        !url.pathname.startsWith("/api/") &&
+        ["GET", "HEAD"].includes(request.method)
+      ) {
+        const destination = new URL(env.APP_ORIGIN);
+        destination.pathname = url.pathname;
+        destination.search = url.search;
+        return Response.redirect(destination, 301);
+      }
       if (url.pathname === "/api/live") return json({ status: "ok" });
       if (!url.pathname.startsWith("/api/")) {
         if (url.pathname === "/.well-known/nalarostore-domain") {

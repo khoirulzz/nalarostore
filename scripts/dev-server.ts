@@ -47,7 +47,7 @@ if (!secret || secret.length < 32)
 const env = {
   APP_ENV: test ? "test" : "development",
   APP_ORIGIN: appOrigin,
-  ROOT_DOMAIN: process.env.ROOT_DOMAIN || "store.nalaro.digital",
+  ROOT_DOMAIN: process.env.ROOT_DOMAIN || "nalaro.store",
   OWNER_EMAIL: test
     ? "owner@local.test"
     : process.env.OWNER_EMAIL || "uniquefactuhl@gmail.com",
@@ -196,3 +196,4 @@ async function stop() {
 }
 for (const signal of ["SIGINT", "SIGTERM"] as const)
   process.on(signal, () => void stop());
+

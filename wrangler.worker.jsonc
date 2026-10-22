@@ -7,8 +7,13 @@
   "compatibility_flags": ["nodejs_compat"],
   // Pages owns the frontend. These routes share its public origin.
   "routes": [
+    { "pattern": "nalaro.store/api/*", "zone_name": "nalaro.store" },
+    { "pattern": "nalaro.store/s/*", "zone_name": "nalaro.store" },
+    // Keep existing app clients and shared storefront links working.
     { "pattern": "store.nalaro.digital/api/*", "zone_name": "nalaro.digital" },
     { "pattern": "store.nalaro.digital/s/*", "zone_name": "nalaro.digital" },
+    { "pattern": "www.nalaro.store/api/*", "zone_name": "nalaro.store" },
+    { "pattern": "www.nalaro.store/s/*", "zone_name": "nalaro.store" },
   ],
   "r2_buckets": [{ "binding": "MEDIA", "bucket_name": "nalarostore-media" }],
   "hyperdrive": [
@@ -16,9 +21,9 @@
   ],
   "vars": {
     "APP_ENV": "production",
-    "APP_ORIGIN": "https://store.nalaro.digital",
+    "APP_ORIGIN": "https://nalaro.store",
     "PAGES_ORIGIN": "https://nalarostore.pages.dev",
-    "ROOT_DOMAIN": "store.nalaro.digital",
+    "ROOT_DOMAIN": "nalaro.store",
     "OWNER_EMAIL": "admin@nalaro.digital",
     "FIREBASE_PROJECT_ID": "nalarostore",
     "FIREBASE_API_KEY": "AIzaSyAymTQU-0lwS_p7yLe0JgsFlNkZPpUo8ow",
@@ -30,5 +35,5 @@
   "observability": { "enabled": true, "head_sampling_rate": 0.1 },
   // HYPERDRIVE uses caching disabled and verified Aiven TLS.
   // Add EMAIL only after Email Sending is activated.
-  // Optional tenant route *.store.nalaro.digital/* requires ready DNS and TLS.
+  // Optional tenant route *.nalaro.store/* requires ready DNS and TLS.
 }

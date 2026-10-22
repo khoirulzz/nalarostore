@@ -500,7 +500,7 @@ function NewStore({ onCreated }: { onCreated: (id: string) => void }) {
         </label>
         <div className="new-store-preview" aria-live="polite">
           <span>Link tokomu nanti</span>
-          <strong>store.nalaro.digital/s/{slug || "nama-toko"}</strong>
+          <strong>nalaro.store/s/{slug || "nama-toko"}</strong>
           {slug.length > 0 && !slugValid ? (
             <small>
               Gunakan minimal 3 karakter dan akhiri dengan huruf atau angka.
@@ -1872,7 +1872,7 @@ function StoreSettings({
         </div>
         <div className="seller-link-primary">
           <span>Link toko utama</span>
-          <strong>store.nalaro.digital/s/{store.slug}</strong>
+          <strong>nalaro.store/s/{store.slug}</strong>
           <Link
             to={"/s/" + store.slug}
             target="_blank"
@@ -1885,7 +1885,7 @@ function StoreSettings({
           <summary>Gunakan alamat toko yang lebih singkat</summary>
           <p>
             Alamat alternatif:{" "}
-            <strong>{store.slug}.store.nalaro.digital</strong>
+            <strong>{store.slug}.nalaro.store</strong>
           </p>
           <button
             type="button"
@@ -2555,3 +2555,4 @@ function Billing({ sid }: { sid: string }) {
     </div>
   );
 }
+

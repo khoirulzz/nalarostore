@@ -13,7 +13,7 @@ test("revealed form keeps Firebase credential errors and submit recovery", async
     }),
   );
   await page.goto("/login");
-  await page.getByRole("button", { name: "Langsung ke form" }).click();
+  await page.getByRole("button", { name: "Masuk", exact: true }).click();
   await page
     .getByRole("textbox", { name: "Email", exact: true })
     .fill("seller@example.com");
@@ -73,7 +73,7 @@ test("seller lamp supports keyboard, drag, focus shortcut and preserves entered 
   await expect(
     page.getByRole("button", { name: "Nyalakan lampu" }),
   ).toHaveAttribute("aria-pressed", "false");
-  await page.getByRole("button", { name: "Langsung ke form" }).click();
+  await page.getByRole("button", { name: "Masuk", exact: true }).click();
   await expect(
     page.getByRole("textbox", { name: "Email", exact: true }),
   ).toBeFocused();

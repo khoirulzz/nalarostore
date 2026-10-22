@@ -4,7 +4,7 @@
 **Tanggal:** 14 Oktober 2026  
 **Status:** Produk SaaS toko online mandiri; proyek custom ditangani Nalaro Dev terpisah. Harga promosi di landing belum otomatis menjadi harga billing produksi.  
 **Pemilik produk:** Nalaro Digital  
-**Domain usulan:** `store.nalaro.digital` (platform), `{slug}.store.nalaro.digital` (toko; perlu validasi wildcard DNS/routing/sertifikat)
+**Domain usulan:** `nalaro.store` (platform), `{slug}.nalaro.store` (toko; perlu validasi wildcard DNS/routing/sertifikat)
 
 ## Pembaruan strategi 15 Oktober 2026
 
@@ -65,23 +65,23 @@ Bukan marketplace lintas pedagang; tidak ada escrow, dompet internal, saldo Nala
 
 ## 4. Arsitektur produk dan navigasi
 
-### 4.1 Platform SaaS publik (`store.nalaro.digital`)
+### 4.1 Platform SaaS publik (`nalaro.store`)
 
 Beranda, fitur, contoh toko/tema, harga (jika telah ditentukan), FAQ, masuk, daftar, kebijakan dan status layanan. CTA utama: **Buat toko online**; CTA sekunder: **Lihat contoh toko**.
 
-### 4.2 Dashboard merchant (`store.nalaro.digital/app/...`)
+### 4.2 Dashboard merchant (`nalaro.store/app/...`)
 
 `Beranda / Pesanan / Produk / Stok / Pelanggan / Promosi / Analitik / Tampilan Toko / Pengaturan`.
 
 Beranda menampilkan tindakan yang paling mendesak: pesanan menunggu konfirmasi, harus dikirim, stok menipis, dan aktivitas terbaru. Jangan menjadikan metrik sebagai satu-satunya konten beranda.
 
-### 4.3 Storefront (`{slug}.store.nalaro.digital`)
+### 4.3 Storefront (`{slug}.nalaro.store`)
 
 `Beranda / Katalog / Koleksi / Detail / Keranjang / Checkout / Konfirmasi / Lacak Pesanan / Akun / Info Toko & Kebijakan`.
 
 Toko berbeda merek dapat menggunakan layout/tema yang berbeda secara substantif, sementara checkout, aksesibilitas, transaksi, dan komponen perilaku tetap seragam.
 
-### 4.4 Super admin (`store.nalaro.digital/admin`)
+### 4.4 Super admin (`nalaro.store/admin`)
 
 Merchant, status onboarding, laporan penyalahgunaan, paket, harga bulanan/tahunan, masa berlangganan, permintaan custom, penggunaan kuota, pengaturan sistem, insiden, audit log dan support. Hak akses berbeda total dengan merchant.
 
@@ -355,3 +355,4 @@ Localhost memakai satu server UI/API dengan konfigurasi `.env.local`, pilihan PG
 MVP menambahkan preview draft, galeri/foto varian, persetujuan pilot berumur terbatas, kontak/kebijakan sebelum publikasi, pencarian/filter/pagination pesanan, ringkasan pelanggan, analitik pendapatan dasar, ekspor CSV, cetak ringkasan pesanan dan retry notifikasi gagal. Tracking tidak bergantung pada publikasi katalog. Metadata/canonical/structured data disiapkan di Worker; full SSR dan pengukuran field performance belum diklaim.
 
 Domain dan resource produksi, legal/support terms serta harga paket tetap memerlukan konfigurasi dan verifikasi pemilik. Penambahan ini tidak membuka checkout produksi, tidak menjalankan migrasi remote dan tidak mengaktifkan resource berbayar.
+

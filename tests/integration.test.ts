@@ -22,7 +22,7 @@ let db: DB;
 const env = {
   APP_ENV: "development",
   APP_ORIGIN: "http://localhost",
-  ROOT_DOMAIN: "store.nalaro.digital",
+  ROOT_DOMAIN: "nalaro.store",
   OWNER_EMAIL: "owner@test.invalid",
   ENABLE_LIVE_CHECKOUT: "true",
   EMAIL_FROM: "hello@nalaro.digital",
@@ -310,7 +310,7 @@ describe("Phase 1 identity & tenancy", () => {
   });
   it("resolves verified tenant hostname without trusting requested store id", async () => {
     const req = new Request(
-      "https://toko-alfa.store.nalaro.digital/api/public/store",
+      "https://toko-alfa.nalaro.store/api/public/store",
     );
     await expect(handleAPI(db, req, env)).rejects.toMatchObject({
       status: 404,
@@ -326,7 +326,7 @@ describe("Phase 1 identity & tenancy", () => {
       handleAPI(
         db,
         new Request(
-          "https://toko-beta.store.nalaro.digital/api/public/stores/toko-alfa",
+          "https://toko-beta.nalaro.store/api/public/stores/toko-alfa",
         ),
         env,
       ),
@@ -888,12 +888,12 @@ it("verifies tenant subdomain through real HTTPS proof, rejecting spoofed respon
     mock.mockResolvedValueOnce(
       Response.json({
         store_id: storeB,
-        hostname: "toko-alfa.store.nalaro.digital",
-        platform: "store.nalaro.digital",
+        hostname: "toko-alfa.nalaro.store",
+        platform: "nalaro.store",
       }),
     );
     await expect(
-      verifyDomain(db, storeA, user, "store.nalaro.digital"),
+      verifyDomain(db, storeA, user, "nalaro.store"),
     ).rejects.toMatchObject({ status: 409 });
     expect(mock.mock.calls.at(-1)?.[1]?.redirect).toBe("manual");
     mock.mockResolvedValueOnce(
@@ -905,17 +905,17 @@ it("verifies tenant subdomain through real HTTPS proof, rejecting spoofed respon
       }),
     );
     await expect(
-      verifyDomain(db, storeA, user, "store.nalaro.digital"),
+      verifyDomain(db, storeA, user, "nalaro.store"),
     ).rejects.toMatchObject({ status: 409 });
     mock.mockResolvedValueOnce(
       Response.json({
         store_id: storeA,
-        hostname: "toko-alfa.store.nalaro.digital",
-        platform: "store.nalaro.digital",
+        hostname: "toko-alfa.nalaro.store",
+        platform: "nalaro.store",
       }),
     );
     expect(
-      (await verifyDomain(db, storeA, user, "store.nalaro.digital")).status,
+      (await verifyDomain(db, storeA, user, "nalaro.store")).status,
     ).toBe(200);
   } finally {
     mock.mockRestore();
@@ -2481,3 +2481,4 @@ describe("seller and buyer workspace isolation", () => {
     expect(Number(result.body.top_products[0].revenue)).toBe(200000);
   });
 });
+
