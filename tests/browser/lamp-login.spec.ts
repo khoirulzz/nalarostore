@@ -136,7 +136,7 @@ test("lamp layout fits mobile and desktop, including reduced motion and direct r
   await expect(page).toHaveURL(/\/buyer\/register\?next=%2Faccount$/);
 });
 
-test("mobile lamp and card stay centered without reserving hidden form space", async ({
+test("mobile preserves the original lamp and card positions in both states", async ({
   page,
 }) => {
   await page.emulateMedia({ reducedMotion: "reduce" });
@@ -146,29 +146,120 @@ test("mobile lamp and card stay centered without reserving hidden form space", a
       await page.goto(route);
       const lamp = page.locator(".shop-lamp");
       const panel = page.locator(".shop-login-panel");
-      const box = (await lamp.boundingBox())!;
-      expect(Math.abs(box.x + box.width / 2 - width / 2)).toBeLessThan(2);
+      const before = await lamp.boundingBox();
+      const style = await lamp.evaluate((el) => ({
+        right: getComputedStyle(el).right,
+        scale: new DOMMatrixReadOnly(getComputedStyle(el).transform).a,
+      }));
+      expect(style.right).toBe("-32px");
+      expect(style.scale).toBeCloseTo(0.44);
       await expect(panel).toBeHidden();
-      expect(
-        await page
-          .locator(".shop-login-form-area")
-          .evaluate((el) => el.getBoundingClientRect().height),
-      ).toBeLessThan(80);
       await page.getByRole("button", { name: "Nyalakan lampu" }).click();
       await expect(panel).toBeVisible();
+      expect(await lamp.boundingBox()).toEqual(before);
       const card = (await panel.boundingBox())!;
       const story = (await page.locator(".shop-login-story").boundingBox())!;
-      expect(card.y - (story.y + story.height)).toBeGreaterThanOrEqual(16);
-      expect(card.y - (story.y + story.height)).toBeLessThanOrEqual(24);
-      expect(Math.abs(card.x + card.width / 2 - width / 2)).toBeLessThan(2);
+      expect(story.height).toBe(272);
+      expect(card.y - (story.y + story.height)).toBeCloseTo(12);
       expect(
         await page.evaluate(() => document.documentElement.scrollWidth),
       ).toBeLessThanOrEqual(width);
       await page.screenshot({
-        path: `test-results/lamp-${route.slice(1)}-${width}.png`,
+        path: `test-results/restored-${route.slice(1)}-${width}.png`,
         fullPage: true,
       });
     }
+  }
+});
+
+test("desktop balances lamp and card within laptop and large viewports", async ({
+  page,
+}) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  for (const [width, height] of [
+    [960, 700],
+    [1280, 600],
+    [1280, 720],
+    [1366, 678],
+    [1440, 900],
+    [1920, 1080],
+  ]) {
+    await page.setViewportSize({ width, height });
+    for (const route of ["/login", "/register"]) {
+      await page.goto(route);
+      await page.getByRole("button", { name: "Nyalakan lampu" }).click();
+      const panel = page.locator(".shop-login-panel");
+      await expect(panel).toBeInViewport({ ratio: 1 });
+      await expect(page.locator(".shop-login-header")).toBeInViewport({
+        ratio: 1,
+      });
+      await expect(page.locator(".shop-login-footer")).toBeInViewport({
+        ratio: 1,
+      });
+      const card = (await panel.boundingBox())!;
+      const story = (await page.locator(".shop-login-story").boundingBox())!;
+      const lamp = (await page.locator(".shop-lamp").boundingBox())!;
+      expect(
+        Math.abs(card.y + card.height / 2 - story.y - story.height / 2),
+      ).toBeLessThan(2);
+      expect(
+        Math.abs(lamp.x + lamp.width / 2 - story.x - story.width / 2),
+      ).toBeLessThan(2);
+      expect(lamp.x + lamp.width).toBeLessThan(card.x);
+      expect(
+        await page.evaluate(() => document.documentElement.scrollHeight),
+      ).toBeLessThanOrEqual(height);
+      await page.screenshot({
+        path: `test-results/desktop-${route.slice(1)}-${width}-${height}.png`,
+        fullPage: true,
+      });
+    }
+  }
+});
+
+test("card and lamp light fade together on mobile and desktop", async ({
+  page,
+}) => {
+  for (const width of [390, 1366]) {
+    await page.setViewportSize({ width, height: 844 });
+    await page.goto("/login");
+    await expect(page.locator(".shop-lamp-pull")).toBeVisible();
+    const result = await page.evaluate(async () => {
+      getComputedStyle(document.querySelector(".shop-login-panel")!).opacity;
+      document.querySelector<HTMLButtonElement>(".shop-lamp-pull")!.click();
+      await new Promise(requestAnimationFrame);
+      await new Promise(requestAnimationFrame);
+      const panel = document.querySelector<HTMLElement>(".shop-login-panel")!;
+      const beam = document.querySelector<SVGElement>(".shop-lamp-light")!;
+      const fades = [panel, beam].map((el) =>
+        el
+          .getAnimations()
+          .find((a) => (a as CSSTransition).transitionProperty === "opacity"),
+      );
+      if (fades.some((a) => !a)) return null;
+      fades.forEach((a) => {
+        a!.pause();
+        a!.currentTime = 400;
+      });
+      const middle = [panel, beam].map((el) =>
+        Number(getComputedStyle(el).opacity),
+      );
+      const durations = fades.map((a) =>
+        Number(a!.effect!.getTiming().duration),
+      );
+      fades.forEach((a) => a!.finish());
+      const end = [panel, beam].map((el) =>
+        Number(getComputedStyle(el).opacity),
+      );
+      return { middle, durations, end };
+    });
+    expect(result).not.toBeNull();
+    expect(result!.durations).toEqual([1200, 1200]);
+    for (const opacity of result!.middle) {
+      expect(opacity).toBeGreaterThan(0);
+      expect(opacity).toBeLessThan(1);
+    }
+    expect(result!.end).toEqual([1, 1]);
   }
 });
 
