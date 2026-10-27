@@ -198,10 +198,10 @@ function Footer() {
         <div className="footer-top footer-expanded">
           <div className="footer-brand">
             <Logo light />
-            <p>Tokomu sendiri, jualan lebih mudah. Nalaro yang bantu urusan teknisnya.</p>
+            <p>Punya toko sendiri. Jualan lebih tenang.</p>
             <div className="footer-contacts">
               <a href="mailto:store@nalaro.digital"><Icon name="mail" size={17}/>store@nalaro.digital</a>
-              <a href={subscriptionWhatsApp} target="_blank" rel="noopener noreferrer"><Icon name="phone" size={17}/>0857 7129 8582</a>
+              <a href={subscriptionWhatsApp} target="_blank" rel="noopener noreferrer"><Icon name="phone" size={17}/>WhatsApp: 0857 7129 8582</a>
               <a href="https://order.nalaro.digital/form/" target="_blank" rel="noopener noreferrer"><Icon name="file" size={17}/>Form order Nalaro</a>
             </div>
           </div>
@@ -258,34 +258,22 @@ function HeroMockup() {
           <strong>BN-00248</strong>
           <p>2 produk · Siap dikemas</p>
           <div className="floating-bottom">
-            <span>Hari ini, 10.24</span>
+            <span>Data contoh</span>
             <b>{rupiah(products[0].price + products[3].price)}</b>
           </div>
         </div>
-        <Link
-          to="/demo/nalaro-fashion/product/kemeja-batik-sagara"
-          className="floating-mobile"
-          aria-label="Lihat Kemeja Batik Sagara di toko demo"
-        >
-          <div className="floating-mobile-top">
-            NALARO FASHION <Icon name="bag" size={15} />
-          </div>
-          <div
-            className="floating-product"
-            style={{ backgroundImage: `url(${products[0].image})` }}
-          />
-          <span>Pilihan koleksi</span>
-          <b>{products[0].name}</b>
-          <p>{rupiah(products[0].price)}</p>
-          <div className="floating-cart-label">
-            Lihat produk <Icon name="arrow-right" size={13} />
-          </div>
-        </Link>
+
       </div>
     </div>
   );
 }
 function Marketing() {
+  const [useCase, setUseCase] = useState(0);
+  const useCases = [
+    { label: "Jualan lewat IG/WhatsApp", text: "Pelanggan memilih produk dan checkout sendiri, sementara pesanan tercatat di dashboard." },
+    { label: "Punya usaha fisik", text: "Buka etalase online untuk usaha yang sudah berjalan. Produk, stok, dan pesanan online tercatat di dashboard." },
+    { label: "Bisnis mulai ramai", text: "Kelola variasi produk, lihat laporan penjualan, dan ekspor data saat dibutuhkan." },
+  ];
   return (
     <>
       <MarketingNav />
@@ -293,25 +281,18 @@ function Marketing() {
         <section className="marketing-hero">
           <div className="shell hero-grid">
             <div className="hero-copy">
-              <span className="hero-decor" aria-hidden="true" />
               <h1>
-                Saatnya punya
-                <br />
-                <em className="hero-store-line">toko online mu</em>
-                <br />
-                sendiri.
+                Toko online milik sendiri, tanpa potongan transaksi.
               </h1>
               <p>
-                Tokomu sendiri, stok kamu atur, pesanan terkumpul rapi.
-                Bagikan satu link ke pelanggan dan fokus pada jualanmu,
-                tanpa potongan transaksi dari Nalaro.
+                Kelola produk, stok, dan pesanan dari dashboard. Pembayaran pembeli masuk langsung ke tokomu.
               </p>
               <div className="hero-ctas">
                 <Link to="/register" className="button button-orange">
                   Mulai buka toko <Icon name="arrow-up-right" size={19} />
                 </Link>
                 <a href="#seller-center" className="button button-ghost">
-                  App Android <Icon name="arrow-right" size={18} />
+                  Nalaro Seller Center · Beta <Icon name="arrow-right" size={18} />
                 </a>
               </div>
               <div className="hero-foot">
@@ -322,6 +303,18 @@ function Marketing() {
               </div>
             </div>
             <HeroMockup />
+          </div>
+        </section>
+        <section className="use-case-section" aria-labelledby="use-case-title">
+          <div className="shell use-case-layout">
+            <h2 id="use-case-title">Mulai dari usahamu sekarang</h2>
+            <div>
+              <div className="use-case-controls" aria-label="Pilih jenis usaha">
+                {useCases.map((item, index) => <button key={item.label} type="button" aria-pressed={useCase === index} onClick={() => setUseCase(index)}>{item.label}</button>)}
+              </div>
+              <p>{useCases[useCase].text}</p>
+              <Link className="text-link" to="/register">Mulai buka toko <Icon name="arrow-right" size={18} /></Link>
+            </div>
           </div>
         </section>
         <section className="partner-strip">
@@ -346,9 +339,7 @@ function Marketing() {
         <section className="problem-section">
           <div className="shell problem-layout">
             <h2>
-              Sudah saatnya
-              <br />
-              <em className="hero-store-line">go digital.</em>
+              Dari chat ke toko sendiri.
             </h2>
             <div>
               <p>
@@ -400,7 +391,7 @@ function Marketing() {
               <div className="editorial-feature feature-stacked">
                 <div className="mini-order-head">
                   <Icon name="orders" size={22} />
-                  <span>CONTOH RINGKASAN PESANAN</span>
+                  <span>RINGKASAN PESANAN · DATA CONTOH</span>
                 </div>
                 <div className="mini-order-row">
                   <span className="small-green" />
@@ -416,7 +407,7 @@ function Marketing() {
                 </div>
               </div>
               <div className="editorial-feature feature-content feature-content-alt">
-                <h3>Pesanan masuk. Kamu tahu harus mulai dari mana.</h3>
+                <h3>Pantau pesanan yang perlu diproses.</h3>
                 <p>
                   Pantau pembayaran, cek produk yang dipesan, dan perbarui
                   status pengiriman dari satu tempat. Tidak perlu mencari ulang
@@ -441,8 +432,8 @@ function Marketing() {
             <div className="journey">
               <div>
                 <b>01</b>
-                <Icon name="palette" size={28} />
-                <h3>Beri nama tokomu</h3>
+                <Icon name="bag" size={28} />
+                <h3>Siapkan identitas tokomu</h3>
                 <p>
                   Pasang logo, pilih tampilan, dan isi kontak agar pelanggan
                   mengenali bisnismu.
@@ -513,25 +504,6 @@ function Marketing() {
             </div>
           </div>
         </section>
-        <section className="mobile-access-section section-spacing" id="akses">
-          <div className="shell mobile-access-layout">
-            <div className="mobile-access-copy">
-              <h2>Jualan terus jalan, meski kamu sedang di luar toko.</h2>
-              <p>
-                Buka dashboard lewat browser ponsel untuk mengecek pesanan,
-                memperbarui produk, dan mengatur stok. Tak perlu selalu duduk
-                di depan laptop.
-              </p>
-              <a className="text-link" href="/app">Buka dashboard toko <Icon name="arrow-up-right" size={18}/></a>
-              <a className="mobile-access-note" href="#seller-center">Lebih suka pakai app? Kenali Seller Center untuk Android.</a>
-            </div>
-            <div className="mobile-access-visual" role="img" aria-label="Ilustrasi model muda Indonesia tersenyum saat melihat toko dari ponsel">
-              <img src="/images/mobile-merchant.webp" alt="" loading="lazy"/>
-              <span className="access-floating access-floating-left"><Icon name="bag" size={18}/>Pesanan di tanganmu</span>
-              <span className="access-floating access-floating-right"><Icon name="chart" size={18}/>Cek perkembangan jualan</span>
-            </div>
-          </div>
-        </section>
         <section className="service-section" id="pilihan">
           <div className="shell">
             <div className="service-top">
@@ -548,7 +520,7 @@ function Marketing() {
                   lalu bagikan alamat tokomu. Semuanya lewat dashboard yang mudah dipakai.
                 </p>
                 <div className="service-detail">Tambah produk · Atur stok · Kelola pesanan · Lihat penjualan</div>
-                <Link className="text-link" to="/register">Mulai buat tokomu <Icon name="arrow-up-right" size={19}/></Link>
+                <Link className="text-link" to="/register">Mulai buka toko <Icon name="arrow-up-right" size={19}/></Link>
               </article>
               <article>
                 <h3>Tak perlu repot urus kode dan maintenance.</h3>
@@ -583,7 +555,7 @@ function Marketing() {
                 pesanan nyata.
               </p>
               <ArrowLink to="/demo/nalaro-fashion">
-                Masuk ke Nalaro Fashion
+                Lihat toko contoh
               </ArrowLink>
             </div>
             <Link
@@ -667,6 +639,10 @@ function Marketing() {
                 </p>
               </details>
               <details>
+                <summary>Uang pembayaran masuk ke mana?</summary>
+                <p>Pembayaran pembeli masuk ke rekening atau QRIS yang diatur pemilik toko. Nalaro tidak memotong transaksi penjualan; biaya bank atau penyedia pembayaran mungkin berlaku.</p>
+              </details>
+              <details>
                 <summary>Bisa dibantu memilih layanan?</summary>
                 <p>
                   Tentu.{" "}
@@ -689,9 +665,9 @@ function Marketing() {
         <section className="closing-section">
           <div className="shell closing-layout">
             <h2>
-              Produkmu punya cerita.
+              Produkmu sudah ada.
               <br />
-              <em>Beri tempat untuk belanja.</em>
+              Beri tempat untuk belanja.
             </h2>
             <div>
               <p>
@@ -699,7 +675,7 @@ function Marketing() {
                 memilih, kita bantu membahas kebutuhan tokomu.
               </p>
               <Link className="button button-orange" to="/register">
-                Yuk, buka toko <Icon name="arrow-up-right" size={19} />
+                Mulai buka toko <Icon name="arrow-up-right" size={19} />
               </Link>
               <a
                 className="closing-chat"
