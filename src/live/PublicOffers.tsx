@@ -38,6 +38,7 @@ export function PublicPricing() {
             <ul>
               <li>Kesempatan akses toko selama 6 bulan</li>
               <li>Etalase, produk, dan pesanan online</li>
+              <li>Pembayaran transfer atau QRIS toko</li>
               <li>Alamat toko dalam domain Nalaro Store</li>
               <li>Pendampingan awal sesuai ketersediaan program</li>
             </ul>
@@ -49,7 +50,7 @@ export function PublicPricing() {
               <h3>Starter</h3>
               <p>Untuk mulai punya tempat belanja yang rapi dan mudah dikelola.</p>
             </div>
-            <div className="pricing-value"><s>Rp199.000</s><strong>Rp69.000</strong><span>/ bulan</span></div>
+            <div className="pricing-value"><strong>Rp69.000</strong><span>/ bulan</span></div>
             <p className="pricing-summary">Tidak perlu pusing bikin website atau urus server. Isi produk, lalu mulai jualan.</p>
             <ul>{planBenefits.starter.map(item => <li key={item}>{item}</li>)}</ul>
             <Link to="/register" className="button button-orange pricing-action">Mulai buka toko <span aria-hidden="true">↗</span></Link>
@@ -60,7 +61,7 @@ export function PublicPricing() {
               <h3>Growth</h3>
               <p>Untuk bisnis yang mulai ramai dan ingin bergerak lebih jauh.</p>
             </div>
-            <div className="pricing-value"><s>Rp399.000</s><strong>Rp129.000</strong><span>/ bulan</span></div>
+            <div className="pricing-value"><strong>Rp129.000</strong><span>/ bulan</span></div>
             <p className="pricing-summary">Ruang lebih lega untuk mengelola pesanan dan perkembangan bisnismu.</p>
             <ul>{planBenefits.growth.map(item => <li key={item}>{item}</li>)}</ul>
             <Link to="/register" className="button button-dark pricing-action">Pilih paket Growth <span aria-hidden="true">↗</span></Link>
