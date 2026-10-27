@@ -740,3 +740,17 @@
  .marketing-main .hero-ctas .button{font-size:10px;padding-inline:5px}
  .access-floating{max-width:170px}
 }
+
+/* Improve readability of marketing headings and plan notes. */
+.marketing-main h1,.marketing-main h2,.marketing-main h3 { letter-spacing: -.02em; word-spacing: .02em; }
+.marketing-main .hero-copy h1 { letter-spacing: -.02em; line-height: 1.08; }
+.pricing-disclaimer { font-size: 14px; color: #514c46; }
+
+.use-case-section { padding: 64px 0; border-bottom: 1px solid #d8d3ca; }
+.use-case-layout { display: grid; grid-template-columns: 1fr 1.35fr; gap: 48px; }
+.use-case-layout h2 { font-size: clamp(28px, 3vw, 42px); line-height: 1.15; }
+.use-case-controls { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 22px; }
+.use-case-controls button { background: transparent; border: 1px solid #777168; padding: 10px 14px; min-height: 44px; color: #24211f; }
+.use-case-controls button[aria-pressed="true"] { background: #24211f; color: #fff; }
+.use-case-layout p { max-width: 580px; font-size: 16px; }
+@media (max-width: 680px) { .use-case-layout { grid-template-columns: 1fr; gap: 12px; } .use-case-section { padding: 48px 0; } }
