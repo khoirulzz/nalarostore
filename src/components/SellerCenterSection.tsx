@@ -48,18 +48,11 @@ export function SellerCenterSection() {
       <div className="shell seller-center-layout">
         <div className="seller-center-copy">
           <h2 id="seller-center-title">
-            Tokomu ikut jalan.
-            <br />
-            <em>
-              Kelolanya dari{" "}
-              <br />
-              genggaman.
-            </em>
+            Kelola tokomu dari mana saja.
           </h2>
           <p className="seller-center-intro">Nalaro Seller Center</p>
           <p>
-            Cek omzet sebelum buka toko. Perbarui produk saat barang datang.
-            Proses pesanan dari HP, tanpa menunggu buka laptop.
+            Cek pesanan, perbarui produk, dan atur stok lewat Nalaro Seller Center untuk Android atau dashboard web, termasuk di iPhone.
           </p>
           <ul className="seller-center-benefits">
             <li>
